@@ -5,16 +5,18 @@ import { useEffect } from 'react'
 
 import { DEFAULT_CERTIFICATES } from '../../config/certificates'
 import type { useInviteSession } from '../../model/useInviteSession'
+import type { PersonalInviteDetails } from '../../model/types'
 import { CertificateCard } from '../CertificateCard'
 import { MessengerButton } from '../MessengerButton'
 import styles from './CertificatesModal.module.scss'
 
 interface CertificatesModalProps {
   delivery: ReturnType<typeof useInviteSession>
+  details: PersonalInviteDetails
   onClose: () => void
 }
 
-export function CertificatesModal({ delivery, onClose }: CertificatesModalProps) {
+export function CertificatesModal({ delivery, details, onClose }: CertificatesModalProps) {
   const { session, status, error, opened, openChat } = delivery
 
   useEffect(() => {
@@ -56,7 +58,7 @@ export function CertificatesModal({ delivery, onClose }: CertificatesModalProps)
 
         <div className={styles.cards}>
           {(session?.certificates ?? DEFAULT_CERTIFICATES).map((certificate) => (
-            <CertificateCard key={certificate.id} certificate={certificate} />
+            <CertificateCard key={certificate.id} certificate={certificate} details={details} />
           ))}
         </div>
 

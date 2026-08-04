@@ -1,10 +1,11 @@
 'use client'
 
 import Image from 'next/image'
-import type { CSSProperties, TouchEvent as ReactTouchEvent } from 'react'
+import type { TouchEvent as ReactTouchEvent } from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import styles from './NewsSlider.module.scss'
+import { useSceneAssets } from '@/shared/lib/useSceneAssets'
 
 interface Slide {
   src: string
@@ -16,13 +17,22 @@ interface Slide {
   address?: string
 }
 
+interface LightboxDrag {
+  dx: number
+  dy: number
+  live: boolean
+  animating: boolean
+}
+
+const IDLE_DRAG: LightboxDrag = { dx: 0, dy: 0, live: false, animating: false }
+
 const SLIDES: Slide[] = [
   {
-    src: '/images/gallery-map.jpg',
+    src: '/images/redesign/service-center.webp',
     caption: 'Современный сервисный центр',
-    address: 'Снеговая, 1 стр.7',
-    w: 1280,
-    h: 963,
+    address: 'Снеговая, 1 · «Таксопарк»',
+    w: 1264,
+    h: 823,
   },
   { src: '/images/gallery-2.webp', caption: 'Премиальный уровень обслуживания', w: 1024, h: 769 },
   { src: '/images/gallery-3.webp', caption: 'Комфорт для каждого гостя', w: 1024, h: 1024 },
@@ -34,7 +44,9 @@ const SLIDES: Slide[] = [
 // на десктопе стрелки: мышью горизонтальную ленту не прокрутить.
 // Тап по карточке разворачивает кадр на весь экран.
 export function NewsSlider() {
+  const assetsReady = useSceneAssets(SLIDES.map((slide) => slide.src))
   const railRef = useRef<HTMLUListElement>(null)
+  const motionRef = useRef<number | null>(null)
   const [active, setActive] = useState(0)
   const [atStart, setAtStart] = useState(true)
   const [atEnd, setAtEnd] = useState(false)
@@ -58,11 +70,62 @@ export function NewsSlider() {
     return () => window.removeEventListener('resize', sync)
   }, [sync])
 
+  useEffect(
+    () => () => {
+      if (motionRef.current !== null) cancelAnimationFrame(motionRef.current)
+    },
+    [],
+  )
+
+  const stopRailMotion = () => {
+    if (motionRef.current !== null) {
+      cancelAnimationFrame(motionRef.current)
+      motionRef.current = null
+    }
+    railRef.current?.removeAttribute('data-moving')
+  }
+
+  // Нативный smooth-scroll вместе со scroll-snap на мобильных делал два
+  // последовательных рывка: сначала прокрутку, затем дополнительное
+  // прилипание. Двигаем ленту сами к уже рассчитанной snap-позиции.
+  const animateRail = (left: number) => {
+    const rail = railRef.current
+    if (!rail) return
+    stopRailMotion()
+    const from = rail.scrollLeft
+    const to = Math.max(0, Math.min(left, rail.scrollWidth - rail.clientWidth))
+    const distance = to - from
+    if (Math.abs(distance) < 1 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      rail.scrollLeft = to
+      return
+    }
+
+    const started = performance.now()
+    const duration = Math.min(620, Math.max(380, 360 + Math.abs(distance) * 0.28))
+    rail.dataset.moving = ''
+    const tick = (now: number) => {
+      const progress = Math.min(1, (now - started) / duration)
+      const eased =
+        progress < 0.5
+          ? 4 * progress * progress * progress
+          : 1 - Math.pow(-2 * progress + 2, 3) / 2
+      rail.scrollLeft = from + distance * eased
+      if (progress < 1) motionRef.current = requestAnimationFrame(tick)
+      else {
+        motionRef.current = null
+        rail.removeAttribute('data-moving')
+      }
+    }
+    motionRef.current = requestAnimationFrame(tick)
+  }
+
   const goTo = (i: number) => {
     const rail = railRef.current
     const target = rail?.children[i] as HTMLElement | undefined
     if (!rail || !target) return
-    rail.scrollTo({ left: target.offsetLeft - rail.offsetLeft, behavior: 'smooth' })
+    const centered = window.matchMedia('(max-width: 768px)').matches
+    const left = target.offsetLeft - rail.offsetLeft - (centered ? (rail.clientWidth - target.offsetWidth) / 2 : 0)
+    animateRail(left)
   }
 
   // на десктопе шагаем видимым экраном карточек, а не по одной
@@ -74,7 +137,7 @@ export function NewsSlider() {
       ? first.offsetWidth + parseFloat(getComputedStyle(rail).columnGap || '0')
       : rail.clientWidth
     const page = Math.max(1, Math.floor(rail.clientWidth / step))
-    rail.scrollBy({ left: dir * step * page, behavior: 'smooth' })
+    goTo(Math.max(0, Math.min(SLIDES.length - 1, active + dir * page)))
   }
 
   // ── разворот кадра ────────────────────────────────────────────────────────
@@ -82,8 +145,10 @@ export function NewsSlider() {
   // overflow ленты, ни трансформы занавеса между экранами.
   const dlgRef = useRef<HTMLDialogElement>(null)
   const [opened, setOpened] = useState<number | null>(null)
-  const swipe = useRef<{ x: number; y: number } | null>(null)
-  const [drag, setDrag] = useState({ dx: 0, dy: 0, live: false })
+  const swipe = useRef<{ x: number; y: number; axis: 'x' | 'y' | null } | null>(null)
+  const gestureTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [drag, setDrag] = useState<LightboxDrag>(IDLE_DRAG)
+  const lightboxOpen = opened !== null
 
   useEffect(() => {
     const d = dlgRef.current
@@ -105,17 +170,40 @@ export function NewsSlider() {
     return () => d.removeEventListener('close', sink)
   }, [])
 
+  useEffect(
+    () => () => {
+      if (gestureTimer.current) clearTimeout(gestureTimer.current)
+    },
+    [],
+  )
+
   // страница под развёрнутым кадром не должна ехать
   useEffect(() => {
-    if (opened === null) return
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = prev
+    if (!lightboxOpen) return
+    const scrollY = window.scrollY
+    const prev = {
+      overflow: document.body.style.overflow,
+      position: document.body.style.position,
+      top: document.body.style.top,
+      width: document.body.style.width,
     }
-  }, [opened])
+    document.body.style.overflow = 'hidden'
+    document.body.style.position = 'fixed'
+    document.body.style.top = `-${scrollY}px`
+    document.body.style.width = '100%'
+    return () => {
+      document.body.style.overflow = prev.overflow
+      document.body.style.position = prev.position
+      document.body.style.top = prev.top
+      document.body.style.width = prev.width
+      window.scrollTo(0, scrollY)
+    }
+  }, [lightboxOpen])
 
   const close = () => {
+    if (gestureTimer.current) clearTimeout(gestureTimer.current)
+    gestureTimer.current = null
+    setDrag(IDLE_DRAG)
     // возвращаемся к тому кадру, который смотрели
     if (opened !== null) goTo(opened)
     setOpened(null)
@@ -124,28 +212,68 @@ export function NewsSlider() {
   const step = (to: 1 | -1) =>
     setOpened((i) => (i === null ? i : (i + to + SLIDES.length) % SLIDES.length))
 
-  // Кадр едет за пальцем. Это и есть самый понятный намёк, что его можно
-  // листать: подсказку текстом человек не читает, а сдвинувшееся фото видит.
+  const settleGesture = () => {
+    if (gestureTimer.current) clearTimeout(gestureTimer.current)
+    setDrag({ ...IDLE_DRAG, animating: true })
+    gestureTimer.current = setTimeout(() => {
+      gestureTimer.current = null
+      setDrag(IDLE_DRAG)
+    }, 300)
+  }
+
+  const dismissGesture = (fromDy: number) => {
+    if (gestureTimer.current) clearTimeout(gestureTimer.current)
+    setDrag({ dx: 0, dy: Math.max(window.innerHeight, fromDy + 280), live: false, animating: true })
+    gestureTimer.current = setTimeout(() => {
+      gestureTimer.current = null
+      close()
+    }, 280)
+  }
+
+  // Горизонтальный жест только выбирает соседний кадр. Саму сцену за пальцем
+  // не тянем: при мгновенной смене это давало заметный скачок назад.
+  // Вертикальный жест остаётся живым — им окно можно мягко закрыть вниз.
   const onTouchMove = (e: ReactTouchEvent<HTMLDivElement>) => {
     const from = swipe.current
     if (!from) return
     const t = e.touches[0]
-    setDrag({ dx: t.clientX - from.x, dy: Math.max(0, t.clientY - from.y), live: true })
+    const rawDx = t.clientX - from.x
+    const rawDy = t.clientY - from.y
+    if (!from.axis) {
+      if (Math.max(Math.abs(rawDx), Math.abs(rawDy)) < 8) return
+      from.axis = Math.abs(rawDx) > Math.abs(rawDy) ? 'x' : 'y'
+    }
+    e.preventDefault()
+    if (from.axis === 'y') {
+      // Вверх кадр двигается с сопротивлением, вниз следует за пальцем.
+      const resisted = rawDy < 0 ? rawDy * 0.16 : rawDy
+      setDrag({ dx: 0, dy: resisted, live: true, animating: false })
+    }
   }
 
-  const stageStyle = drag.live
+  const stageStyle = drag.live || drag.animating
     ? {
         transform: `translate(${drag.dx}px, ${drag.dy}px)`,
-        // чем дальше тянут вниз, тем прозрачнее: понятно, что кадр закроется
-        opacity: 1 - Math.min(drag.dy / 420, 0.45),
-        transition: 'none',
+        opacity: drag.animating && drag.dy > 300
+          ? 0
+          : 1 - Math.min(Math.max(drag.dy, Math.abs(drag.dx) * 0.35) / 520, 0.42),
+        transition: drag.live
+          ? 'none'
+          : 'transform 280ms cubic-bezier(0.2, 0.72, 0.2, 1), opacity 220ms ease',
       }
     : undefined
 
   const shown = opened === null ? null : SLIDES[opened]
+  const frameSlot = (index: number): 'previous' | 'current' | 'next' | null => {
+    if (opened === null) return null
+    if (index === opened) return 'current'
+    if (index === (opened - 1 + SLIDES.length) % SLIDES.length) return 'previous'
+    if (index === (opened + 1) % SLIDES.length) return 'next'
+    return null
+  }
 
   return (
-    <section className={styles.wrap}>
+    <section className={styles.wrap} data-ready={assetsReady}>
       <div className={styles.panel}>
         <h2 className={styles.heading}>
           <span className={styles.line} />
@@ -162,9 +290,19 @@ export function NewsSlider() {
             aria-label="Предыдущие фотографии"
           />
 
-          <ul className={styles.rail} ref={railRef} onScroll={sync}>
+          <ul
+            className={styles.rail}
+            ref={railRef}
+            onScroll={sync}
+            onPointerDown={stopRailMotion}
+            onWheel={stopRailMotion}
+          >
             {SLIDES.map((s, i) => (
-              <li className={styles.slide} key={`${s.src}-${i}`}>
+              <li
+                className={styles.slide}
+                data-active={i === active || undefined}
+                key={`${s.src}-${i}`}
+              >
                 <button
                   type="button"
                   className={styles.card}
@@ -246,20 +384,32 @@ export function NewsSlider() {
             className={styles.lightInner}
             onTouchStart={(e) => {
               const t = e.touches[0]
-              swipe.current = { x: t.clientX, y: t.clientY }
+              swipe.current = { x: t.clientX, y: t.clientY, axis: null }
             }}
             onTouchMove={onTouchMove}
             onTouchEnd={(e) => {
               const from = swipe.current
               swipe.current = null
-              setDrag({ dx: 0, dy: 0, live: false })
               if (!from) return
               const t = e.changedTouches[0]
               const dx = t.clientX - from.x
               const dy = t.clientY - from.y
-              // в сторону, следующий кадр; вниз, закрыть
-              if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) step(dx < 0 ? 1 : -1)
-              else if (dy > 90 && Math.abs(dy) > Math.abs(dx)) close()
+              if (from.axis === 'x' && Math.abs(dx) > 55) {
+                step(dx < 0 ? 1 : -1)
+                setDrag(IDLE_DRAG)
+              } else if (from.axis === 'x') {
+                setDrag(IDLE_DRAG)
+              } else if (from.axis === 'y' && dy > 110) {
+                dismissGesture(dy)
+              } else {
+                settleGesture()
+              }
+            }}
+            onTouchCancel={() => {
+              const horizontal = swipe.current?.axis === 'x'
+              swipe.current = null
+              if (horizontal) setDrag(IDLE_DRAG)
+              else settleGesture()
             }}
           >
             <div className={styles.lightBar}>
@@ -281,29 +431,37 @@ export function NewsSlider() {
                 onClick={() => step(-1)}
                 aria-label="Предыдущее фото"
               />
-              {/* Все кадры лежат стопкой и переключаются прозрачностью. Так
-                  переход идёт в обе стороны сразу, а не только у нового кадра,
-                  и уходящее фото не пропадает рывком. */}
-              {SLIDES.map((s, i) => (
-                <div
-                  key={`${s.src}-${i}`}
-                  className={styles.frame}
-                  data-active={i === opened || undefined}
-                  aria-hidden={i === opened ? undefined : true}
-                  // пропорцию берём из данных, а не из картинки: у части фото
-                  // исходник узкий, и по нему кадр выходил меньше остальных
-                  style={{ '--r': s.w / s.h } as CSSProperties}
-                >
-                  <Image
-                    className={styles.frameImg}
-                    src={s.src}
-                    alt={i === opened ? s.caption : ''}
-                    fill
-                    sizes="(max-width: 767px) 94vw, 82vw"
-                    loading="eager"
-                  />
-                </div>
-              ))}
+              {SLIDES.map((s, i) => {
+                const slot = frameSlot(i)
+                if (!slot) return null
+                return (
+                  <button
+                    type="button"
+                    key={`${s.src}-${i}`}
+                    className={styles.frame}
+                    data-slot={slot}
+                    aria-label={
+                      slot === 'current'
+                        ? s.caption
+                        : `${slot === 'previous' ? 'Предыдущее' : 'Следующее'} фото: ${s.caption}`
+                    }
+                    tabIndex={slot === 'current' ? -1 : 0}
+                    onClick={() => {
+                      if (slot === 'previous') step(-1)
+                      if (slot === 'next') step(1)
+                    }}
+                  >
+                    <Image
+                      className={styles.frameImg}
+                      src={s.src}
+                      alt=""
+                      fill
+                      sizes="(max-width: 767px) 82vw, 72vw"
+                      loading="eager"
+                    />
+                  </button>
+                )
+              })}
               <button
                 type="button"
                 className={`${styles.lightArrow} ${styles.lightNext}`}

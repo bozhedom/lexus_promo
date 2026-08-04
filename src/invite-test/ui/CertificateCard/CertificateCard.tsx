@@ -1,12 +1,39 @@
 import Image from 'next/image'
 
-import type { Certificate } from '../../model/types'
+import type { Certificate, PersonalInviteDetails } from '../../model/types'
 import styles from './CertificateCard.module.scss'
 
-export function CertificateCard({ certificate }: { certificate: Certificate }) {
+interface CertificateCardProps {
+  certificate: Certificate
+  details: PersonalInviteDetails
+}
+
+export function CertificateCard({ certificate, details }: CertificateCardProps) {
+  const gift = certificate.id === 'gift'
+  const car = [details.brand, details.model, details.year].filter(Boolean).join(' ')
+  const amount = new Intl.NumberFormat('ru-RU').format(details.amount)
+
   return (
-    <figure className={styles.card}>
-      <Image src={certificate.image} alt={certificate.alt} width={120} height={220} />
-    </figure>
+    <article className={styles.card} data-kind={gift ? 'gift' : 'diagnostics'}>
+      <Image
+        className={styles.logo}
+        src="/images/redesign/lexus-logo.svg"
+        alt="Lexus"
+        width={154}
+        height={28}
+      />
+      <span className={styles.kicker}>
+        {gift ? 'Подарок в честь знакомства' : 'Персональный сертификат'}
+      </span>
+      {gift ? (
+        <strong className={styles.amount}>{amount} ₽</strong>
+      ) : (
+        <strong className={styles.title}>Комплексная диагностика</strong>
+      )}
+      <span className={styles.for}>для</span>
+      <span className={styles.name}>{details.fullName}</span>
+      <span className={styles.car}>{car}</span>
+      {details.plate && <span className={styles.plate}>{details.plate}</span>}
+    </article>
   )
 }

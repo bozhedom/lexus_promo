@@ -22,6 +22,12 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ru" className={fontVariables}>
+      <head>
+        <link rel="preload" as="image" href="/images/redesign/intro-stage.webp" fetchPriority="high" />
+        <link rel="preload" as="image" href="/images/curtain-left.webp" />
+        <link rel="preload" as="image" href="/images/curtain-right.webp" />
+        <link rel="preload" as="image" href="/images/logo-agc.svg" />
+      </head>
       <body>
         <FunnelProvider>
           <StageTransitionProvider>{children}</StageTransitionProvider>

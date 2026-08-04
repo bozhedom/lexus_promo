@@ -1,4 +1,4 @@
-import { Manrope, Marck_Script, Open_Sans } from 'next/font/google'
+import { Forum, Manrope, Marck_Script, Open_Sans, Roboto_Condensed } from 'next/font/google'
 
 // Основной шрифт интерфейса
 export const manrope = Manrope({
@@ -24,4 +24,19 @@ export const openSans = Open_Sans({
   display: 'swap',
 })
 
-export const fontVariables = `${manrope.variable} ${marckScript.variable} ${openSans.variable}`
+// Шрифты нового золотого макета Lexus.
+export const forum = Forum({
+  subsets: ['latin', 'cyrillic'],
+  weight: '400',
+  variable: '--font-forum',
+  display: 'swap',
+})
+
+export const robotoCondensed = Roboto_Condensed({
+  subsets: ['latin', 'cyrillic'],
+  weight: ['300', '400', '500', '600'],
+  variable: '--font-roboto-condensed',
+  display: 'swap',
+})
+
+export const fontVariables = `${manrope.variable} ${marckScript.variable} ${openSans.variable} ${forum.variable} ${robotoCondensed.variable}`

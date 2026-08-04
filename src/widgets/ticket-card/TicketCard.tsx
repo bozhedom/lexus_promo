@@ -1,7 +1,6 @@
 import Image from 'next/image'
 import { forwardRef } from 'react'
 
-import { formatPlate } from '@/features/plate-lookup'
 import styles from './TicketCard.module.scss'
 
 export interface TicketCardProps {
@@ -11,62 +10,87 @@ export interface TicketCardProps {
   year: number | null
   plate: string
   amount: number
+  onMeet?: () => void
 }
 
-// Виджет пригласительного (экран 5). Ref нужен для рендера карточки в PNG.
+const capitalize = (value: string) =>
+  value ? value.charAt(0).toUpperCase() + value.slice(1).toLowerCase() : value
+
+// Персональный экран команды. Ref остаётся на всём макете, чтобы существующий
+// механизм сохранения PNG продолжал работать без изменений.
 export const TicketCard = forwardRef<HTMLDivElement, TicketCardProps>(function TicketCard(
-  { fullName, brand, model, year, plate, amount },
+  { fullName, onMeet },
   ref,
 ) {
-  const pretty = formatPlate(plate)
-  const car = `${brand} ${model}`.trim().toUpperCase()
+  const displayName = fullName
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map(capitalize)
+    .join(' ')
 
   return (
     <div className={styles.card} ref={ref}>
-      {/* Коробка ровно по кадру фотографии: госномер лежит внутри неё, поэтому
-          остаётся на бампере при любом соотношении сторон экрана. */}
-      <span className={styles.scene}>
-        <span className={styles.carPlate}>
-          <span className={styles.carPlateMain}>{pretty.main}</span>
-          <span className={styles.carPlateRegion}>
-            <span className={styles.carPlateDigits}>{pretty.region}</span>
+      <span className={styles.backdrop} aria-hidden />
+
+      <div className={styles.content}>
+        <header className={styles.heading}>
+          <h1>{displayName}</h1>
+          <p>Ваши персональные пригласительные готовы</p>
+          <span className={styles.ornament} aria-hidden><i /></span>
+          <h2>Ждем Вас в гости!</h2>
+        </header>
+
+        <section className={styles.teamCard}>
+          <header className={styles.teamHeading}>
+            <p>Ваша персональная</p>
+            <h3>Команда автомобиля</h3>
+            <span className={styles.ornament} aria-hidden><i /></span>
+          </header>
+
+          <div className={styles.teamVisual} aria-hidden>
             <Image
-              className={styles.carPlateFlag}
-              src="/images/plate-rus-flag.svg"
+              className={styles.car}
+              src="/images/redesign/invite-car.webp"
               alt=""
-              width={40}
-              height={16}
+              width={1024}
+              height={1450}
+              priority
+              unoptimized
             />
-          </span>
-        </span>
-      </span>
+            <Image
+              className={styles.people}
+              src="/images/redesign/invite-team.webp"
+              alt=""
+              width={1024}
+              height={1450}
+              priority
+              unoptimized
+            />
+            <span className={styles.visualFade} />
+          </div>
 
-      <p className={styles.frame}>Персональный пригласительный на тех.открытие</p>
+          <div className={styles.teamNames}>
+            <div>
+              <small>Ваш автосекретарь</small>
+              <strong className={styles.secretary}>Любовь</strong>
+            </div>
+            <span className={styles.nameDivider} aria-hidden><i /></span>
+            <div>
+              <small>Ваш главный механик</small>
+              <strong className={styles.mechanic}>Александр</strong>
+            </div>
+          </div>
 
-      <p className={styles.brand}>
-        <span className={styles.brandAccent}>TOYOTA</span>
-        <span className={styles.brandSep}>|</span>
-        <span className={styles.brandLight}>LEXUS</span>
-      </p>
-      <p className={styles.spec}>Специализированный автоцентр от «АвтоГарантСити»</p>
+          <button type="button" className={styles.meet} onClick={onMeet}>
+            Познакомиться
+          </button>
+        </section>
 
-      <div className={styles.data}>
-        <span className={styles.name}>{fullName.toUpperCase()}</span>
-        <span className={styles.vline} />
-        <span className={styles.car}>
-          <b>{car}</b>
-          {year ? <em className={styles.year}>{year}</em> : null}
-        </span>
-      </div>
-
-      <div className={styles.gift}>
-        <p className={styles.giftTitle}>Ваш персональный подарок</p>
-        <p className={styles.amount}>{amount}₽</p>
-        <p className={styles.giftSub}>
-          <span className={styles.giftLine} />
-          <span>В честь знакомства</span>
-          <span className={styles.giftLine} />
-        </p>
+        <footer className={styles.trust}>
+          <p>Доверие. Качество. Забота</p>
+          <small>Ваш автомобиль — наша ответственность</small>
+        </footer>
       </div>
     </div>
   )

@@ -7,10 +7,17 @@ import { saveTicket } from '@/features/download-ticket'
 import { completeApplication, isApiError, type CompleteResult } from '@/shared/api/funnel'
 import { useScreenView } from '@/shared/analytics'
 import { useFunnel, useFunnelGuard } from '@/shared/lib/funnel'
+import { useSceneAssets } from '@/shared/lib/useSceneAssets'
 import { useStageTransition } from '@/widgets/curtain-transition'
 import { Button, Loader } from '@/shared/ui'
 import { TicketCard } from '@/widgets/ticket-card'
 import styles from './TicketScreen.module.scss'
+
+const TICKET_ASSETS = [
+  '/images/redesign/invite-center.webp',
+  '/images/redesign/invite-car.webp',
+  '/images/redesign/invite-team.webp',
+] as const
 
 type Phase = 'loading' | 'ready' | 'error'
 
@@ -30,6 +37,7 @@ export function TicketScreen() {
   const [errorMsg, setErrorMsg] = useState('')
   const [saving, setSaving] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
+  const assetsReady = useSceneAssets(TICKET_ASSETS)
 
   // идемпотентно создаём сертификат
   useEffect(() => {
@@ -81,8 +89,8 @@ export function TicketScreen() {
     <main className={styles.screen}>
       {/* пока идёт оформление, показываем саму сцену с лоадером поверх —
           чёрного экрана ожидания больше нет */}
-      {phase === 'loading' && (
-        <div className={styles.pending}>
+      {(phase === 'loading' || (phase === 'ready' && !assetsReady)) && (
+        <div className={styles.pending} data-ready={assetsReady}>
           <span className={styles.pendingScene} aria-hidden />
           <span className={styles.pendingDim} aria-hidden />
           <Loader variant="stage" label="Готовим ваш пригласительный" className={styles.status} />
@@ -96,7 +104,7 @@ export function TicketScreen() {
         </div>
       )}
 
-      {phase === 'ready' && result && (
+      {phase === 'ready' && result && assetsReady && (
         <div className={styles.reveal}>
           <TicketCard
             ref={cardRef}
@@ -106,21 +114,26 @@ export function TicketScreen() {
             year={result.application.carYear ?? data.carYear ?? null}
             plate={result.application.plateNumber ?? data.plateNumber ?? ''}
             amount={result.certificate.amount}
+            onMeet={() => {
+              track('outbound_click', { id: 'meet_team' })
+              go('/links')
+            }}
           />
 
-          {/* нижний ряд поверх сцены — в PNG не попадает */}
+          {/* Кнопка находится за пределами карточки и в сохраняемое изображение не попадает. */}
           <div className={styles.bar}>
-            <p className={styles.cornerLeft}>дело, как искусство</p>
-
-            <Button variant="outline" className={styles.saveBtn} onClick={save} disabled={saving}>
-              {saving ? <Loader label="Сохраняем" /> : 'Сохранить'}
+            <Button className={styles.saveBtn} onClick={save} disabled={saving}>
+              {saving ? (
+                <Loader label="Сохраняем" />
+              ) : (
+                <>
+                  <svg viewBox="0 0 24 24" aria-hidden>
+                    <path d="M12 3v12m0 0 5-5m-5 5-5-5M5 20h14" />
+                  </svg>
+                  Скачать пригласительный
+                </>
+              )}
             </Button>
-
-            <p className={styles.cornerRight}>
-              сравни цены и сервис
-              <br />
-              почувствуй разницу
-            </p>
           </div>
         </div>
       )}

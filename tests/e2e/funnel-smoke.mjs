@@ -125,14 +125,14 @@ await shot('4b-personal-filled')
 await page.getByRole('button', { name: /Получить пригласительный/i }).click()
 
 await page.waitForURL('**/certificate', { timeout: 30000 })
-await page.getByRole('button', { name: /^Сохранить$/i }).waitFor({ timeout: 40000 })
+await page.getByRole('button', { name: /Скачать пригласительный/i }).waitFor({ timeout: 40000 })
 await page.waitForTimeout(1600)
 
 // 5 — пригласительный
 await shot('5-certificate')
 ok = (await metrics('certificate')) && ok
 
-await page.getByRole('button', { name: /^Сохранить$/i }).click()
+await page.getByRole('button', { name: /Скачать пригласительный/i }).click()
 await page.waitForURL('**/links', { timeout: 40000 })
 await page.waitForTimeout(1800)
 

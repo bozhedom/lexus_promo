@@ -1,8 +1,13 @@
 import { randomInt } from 'node:crypto'
 
 import { inviteTestEnv } from '../config/env'
-import { InviteContentFields, resolveInviteContent } from '../config/certificates'
-import type { DeliveryStatus, InviteSession } from '../model/types'
+import {
+  InviteContentFields,
+  personalCertificates,
+  replyText,
+  resolveInviteContent,
+} from '../config/certificates'
+import type { DeliveryStatus, InviteSession, PersonalInviteDetails } from '../model/types'
 
 // Сессии живут в памяти процесса: модуль тестовый, ради него не заводим
 // коллекцию и миграцию. При перезапуске сервера выданные коды протухают.
@@ -27,7 +32,11 @@ function sweep() {
   }
 }
 
-export function createSession(fullName: string, fields?: InviteContentFields | null): InviteSession {
+export function createSession(
+  fullName: string,
+  fields?: InviteContentFields | null,
+  personal?: PersonalInviteDetails | null,
+): InviteSession {
   sweep()
   if (sessions.size >= MAX_SESSIONS) sessions.clear()
 
@@ -35,6 +44,14 @@ export function createSession(fullName: string, fields?: InviteContentFields | n
   while (sessions.has(code)) code = makeCode()
 
   const content = resolveInviteContent(fullName, fields)
+  const details: PersonalInviteDetails = personal ?? {
+    fullName,
+    brand: 'Lexus',
+    model: '',
+    year: null,
+    plate: '',
+    amount: 1500,
+  }
   const session: InviteSession = {
     code,
     fullName,
@@ -42,6 +59,9 @@ export function createSession(fullName: string, fields?: InviteContentFields | n
     status: 'idle',
     error: null,
     ...content,
+    certificates: fields?.certificates?.length ? content.certificates : personalCertificates(code),
+    deliveryText: fields?.deliveryText?.trim() ? content.deliveryText : replyText(fullName, details),
+    details,
   }
   sessions.set(code, session)
   return session

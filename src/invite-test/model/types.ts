@@ -8,6 +8,15 @@ export interface Certificate {
   alt: string
 }
 
+export interface PersonalInviteDetails {
+  fullName: string
+  brand: string
+  model: string
+  year: number | null
+  plate: string
+  amount: number
+}
+
 export interface InviteSession {
   code: string
   fullName: string
@@ -16,6 +25,7 @@ export interface InviteSession {
   error: string | null
   certificates: Certificate[]
   deliveryText: string
+  details: PersonalInviteDetails
 }
 
 export interface ChannelInfo {

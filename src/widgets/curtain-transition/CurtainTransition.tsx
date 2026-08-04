@@ -12,14 +12,32 @@ import {
   type ReactNode,
 } from 'react'
 
+import { preloadSceneAssets } from '@/shared/lib/useSceneAssets'
 import styles from './CurtainTransition.module.scss'
 
 // Театральный переход между актами воронки: занавес закрывается, под ним
 // происходит навигация, затем занавес открывается уже на новом экране.
-const CLOSE_MS = 620
-const OPEN_MS = 950
-const SETTLE_MS = 140 // пауза «за закрытым занавесом», чтобы новый экран успел отрисоваться
-const FAILSAFE_MS = 1600 // если навигация не случилась — всё равно открываем
+const CLOSE_MS = 480
+const NAVIGATE_MS = 310 // маршрут меняется ещё во время закрытия и готовится за тканью
+const OPEN_MS = 680
+const SETTLE_MS = 24
+const FAILSAFE_MS = 900
+
+const COMMON_STAGE_ASSETS = [
+  '/images/curtain-left.webp',
+  '/images/curtain-right.webp',
+  '/images/redesign/form-stage.webp',
+  '/images/redesign/reception.webp',
+  '/images/redesign/gold-dust.webp',
+  '/images/redesign/invite-center.webp',
+  '/images/redesign/invite-car.webp',
+  '/images/redesign/invite-team.webp',
+  '/images/redesign/service-center.webp',
+  '/images/gallery-1.webp',
+  '/images/gallery-2.webp',
+  '/images/gallery-3.webp',
+  '/images/gallery-map.jpg',
+] as const
 
 type Phase = 'idle' | 'closing' | 'closed' | 'opening'
 
@@ -43,6 +61,23 @@ export function StageTransitionProvider({ children }: { children: ReactNode }) {
   const [phase, setPhase] = useState<Phase>('idle')
   const target = useRef<string | null>(null)
 
+  // После первого кадра тихо готовим изображения следующих шагов. Они весят
+  // немного, зато при переходе фон уже находится в памяти и не догоняет текст.
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null
+    const schedule = () => {
+      // Сначала отдаём канал стартовой сцене; остальные изображения начинаем
+      // после window.load и короткой паузы, чтобы они не конкурировали с ней.
+      timer = setTimeout(() => void preloadSceneAssets(COMMON_STAGE_ASSETS), 420)
+    }
+    if (document.readyState === 'complete') schedule()
+    else window.addEventListener('load', schedule, { once: true })
+    return () => {
+      window.removeEventListener('load', schedule)
+      if (timer) clearTimeout(timer)
+    }
+  }, [])
+
   const go = useCallback(
     (href: string) => {
       if (target.current) return // переход уже идёт
@@ -60,11 +95,16 @@ export function StageTransitionProvider({ children }: { children: ReactNode }) {
   // занавес сомкнулся: уходим на новый экран
   useEffect(() => {
     if (phase !== 'closing') return
-    const t = setTimeout(() => {
-      setPhase('closed')
+    const navigation = setTimeout(() => {
       if (target.current) router.push(target.current)
+    }, NAVIGATE_MS)
+    const closed = setTimeout(() => {
+      setPhase('closed')
     }, CLOSE_MS)
-    return () => clearTimeout(t)
+    return () => {
+      clearTimeout(navigation)
+      clearTimeout(closed)
+    }
   }, [phase, router])
 
   // новый экран смонтирован: раскрываем занавес

@@ -1,4 +1,4 @@
-import type { SessionResponse, StatusResponse } from '../model/types'
+import type { PersonalInviteDetails, SessionResponse, StatusResponse } from '../model/types'
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init)
@@ -7,11 +7,11 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
   return data
 }
 
-export const createSession = (fullName: string): Promise<SessionResponse> =>
+export const createSession = (details: PersonalInviteDetails): Promise<SessionResponse> =>
   request('/api/invite-test/session', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ fullName }),
+    body: JSON.stringify(details),
   })
 
 export const fetchStatus = (code: string): Promise<StatusResponse> =>

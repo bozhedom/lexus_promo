@@ -1,16 +1,120 @@
 @use 'invite-test/styles/tokens' as t;
 
 .card {
+  position: relative;
+  isolation: isolate;
+  display: flex;
   flex: 1 1 0;
   max-width: 160px;
+  min-height: 244px;
+  padding: 16px 12px 14px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
   border-radius: 10px;
   overflow: hidden;
+  color: t.$text;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
   @include t.gold-border(t.$surface-modal);
 
-  img {
-    width: 100%;
-    height: auto;
-    border-radius: inherit;
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    pointer-events: none;
   }
+
+  &::before {
+    inset: 0;
+    background:
+      linear-gradient(180deg, rgba(7, 8, 8, 0.35), rgba(7, 8, 8, 0.95) 61%),
+      url('/images/redesign/invite-center.webp') center / cover;
+  }
+
+  &::after {
+    top: 34px;
+    left: 50%;
+    width: 190px;
+    height: 125px;
+    transform: translateX(-50%);
+    background: radial-gradient(ellipse, rgba(228, 204, 174, 0.16), transparent 70%);
+  }
+
+  &[data-kind='gift']::before {
+    background:
+      linear-gradient(180deg, rgba(20, 13, 7, 0.28), rgba(14, 9, 6, 0.96) 62%),
+      url('/images/redesign/invite-team.webp') center / cover;
+  }
+}
+
+.logo {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  width: 92px;
+  height: auto;
+  transform: translateX(-50%);
+}
+
+.kicker {
+  color: rgba(228, 204, 174, 0.72);
+  font-size: 7px;
+  line-height: 1.3;
+  letter-spacing: 0.12em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.title,
+.amount {
+  width: 100%;
+  margin-top: 5px;
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.05;
+  text-align: center;
+  @include t.gold-text;
+}
+
+.amount { font-size: 27px; }
+
+.for {
+  margin-top: 11px;
+  color: rgba(255, 255, 255, 0.48);
+  font-size: 8px;
+  text-transform: uppercase;
+}
+
+.name {
+  width: 100%;
+  margin-top: 2px;
+  overflow: hidden;
+  font-size: 10px;
+  line-height: 1.2;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.car {
+  width: 100%;
+  margin-top: 4px;
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 8px;
+  line-height: 1.2;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plate {
+  margin-top: 7px;
+  padding: 2px 5px;
+  border: 1px solid rgba(228, 204, 174, 0.52);
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.58);
+  font-size: 7px;
+  letter-spacing: 0.06em;
 }

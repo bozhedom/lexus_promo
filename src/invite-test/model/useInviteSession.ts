@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import * as api from '../api/client'
-import type { Channel, DeliveryStatus, SessionResponse } from './types'
+import type { Channel, DeliveryStatus, PersonalInviteDetails, SessionResponse } from './types'
 
 const POLL_MS = 2500
 const POLL_LIMIT_MS = 120_000
 
-export function useInviteSession(fullName: string) {
+export function useInviteSession(details: PersonalInviteDetails | null) {
   const [session, setSession] = useState<SessionResponse | null>(null)
   const [status, setStatus] = useState<DeliveryStatus>('idle')
   const [error, setError] = useState<string | null>(null)
@@ -16,15 +16,16 @@ export function useInviteSession(fullName: string) {
   const startedAt = useRef(0)
 
   useEffect(() => {
+    if (!details?.fullName) return
     let alive = true
     api
-      .createSession(fullName)
+      .createSession(details)
       .then((data) => alive && setSession(data))
       .catch(() => alive && setSession(null))
     return () => {
       alive = false
     }
-  }, [fullName])
+  }, [details])
 
   // Пока клиент в диалоге с менеджером, спрашиваем сервер, дошли ли сертификаты
   useEffect(() => {

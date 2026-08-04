@@ -3,17 +3,18 @@
 .wrap {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 6px;
   width: 100%;
 }
 
 .label {
-  font-size: 16px;
-  font-weight: 500;
-  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.8);
+  font-family: t.$font-condensed;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.6px;
   text-transform: uppercase;
-  text-align: center;
-  color: t.$text-light;
+  text-align: left;
 }
 
 .control {
@@ -27,35 +28,34 @@
 .trigger {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   width: 100%;
-  height: 39px;
-  // справа место под шеврон, слева столько же: значение стоит ровно по центру
-  padding: 0 32px;
-  border: 1px solid t.$input-border;
-  border-radius: t.$radius-input;
-  background: t.$white;
-  color: t.$input-text;
-  font-family: t.$font-main;
-  font-size: 16px;
-  font-weight: 600;
-  text-align: center;
+  height: 40px;
+  padding: 0 38px 0 12px;
+  border: 1px solid t.$gold;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.28);
+  color: rgba(255, 255, 255, 0.88);
+  font-family: t.$font-condensed;
+  font-size: 14px;
+  font-weight: 400;
+  text-align: left;
   cursor: pointer;
   transition: border-color 0.15s ease, box-shadow 0.2s ease;
 
   &:hover:not(:disabled) {
-    border-color: #9b9b9b;
+    border-color: t.$gold-light;
   }
 
   &:focus-visible {
     outline: none;
-    border-color: t.$accent;
-    box-shadow: 0 0 0 3px rgba(216, 47, 47, 0.18);
+    border-color: t.$gold-light;
+    box-shadow: 0 0 0 3px rgba(228, 204, 174, 0.13);
   }
 
   &[aria-expanded='true'] {
-    border-color: t.$accent;
-    box-shadow: 0 0 0 3px rgba(216, 47, 47, 0.18);
+    border-color: t.$gold-light;
+    box-shadow: 0 0 0 3px rgba(228, 204, 174, 0.13);
   }
 
   &:disabled {
@@ -71,25 +71,25 @@
 }
 
 .empty {
-  color: t.$placeholder;
-  font-weight: 500;
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: 400;
 }
 
 .chevron {
   position: absolute;
-  right: 14px;
+  right: 15px;
   top: 50%;
-  width: 7px;
-  height: 11px;
-  // исходная иконка смотрит вправо: доворачиваем вниз
-  transform: translateY(-50%) rotate(90deg);
-  background: url('/images/icon-chevron.svg') no-repeat center / contain;
+  width: 9px;
+  height: 9px;
+  border-right: 1px solid t.$gold;
+  border-bottom: 1px solid t.$gold;
+  transform: translateY(-70%) rotate(45deg);
   transition: transform 0.2s ease;
   pointer-events: none;
 }
 
 .trigger[aria-expanded='true'] .chevron {
-  transform: translateY(-50%) rotate(-90deg);
+  transform: translateY(-25%) rotate(-135deg);
 }
 
 // ── список ─────────────────────────────────────────────────────────────────
@@ -105,22 +105,23 @@
   // список длинный: прокрутка пальцем по вертикали, без горизонтальных жестов
   touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
-  border: 1px solid rgba(216, 47, 47, 0.55);
-  border-radius: 12px;
-  background: #131416;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.65), 0 0 22px rgba(216, 47, 47, 0.22);
+  border: 1px solid t.$gold;
+  border-radius: 10px;
+  background: #0a0806;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.72), 0 0 22px rgba(154, 123, 86, 0.2);
+  backdrop-filter: blur(18px);
   animation: pop-in 0.16s cubic-bezier(0.2, 0.7, 0.2, 1);
 
   // тонкий скролл в цвет акцента
   scrollbar-width: thin;
-  scrollbar-color: rgba(216, 47, 47, 0.65) transparent;
+  scrollbar-color: rgba(228, 204, 174, 0.65) transparent;
 
   &::-webkit-scrollbar {
     width: 6px;
   }
   &::-webkit-scrollbar-thumb {
     border-radius: 3px;
-    background: rgba(216, 47, 47, 0.65);
+    background: rgba(228, 204, 174, 0.65);
   }
 }
 
@@ -132,21 +133,22 @@
 .option {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   min-height: 38px;
-  padding: 8px 30px;
+  padding: 8px 30px 8px 12px;
   border-radius: 7px;
-  color: t.$text-light;
-  font-size: 15px;
-  font-weight: 500;
+  color: rgba(255, 255, 255, 0.75);
+  font-family: t.$font-condensed;
+  font-size: 14px;
+  font-weight: 400;
   line-height: 1.25;
-  text-align: center;
+  text-align: left;
   cursor: pointer;
   transition: background 0.12s ease, color 0.12s ease;
 }
 
 .optionActive {
-  background: rgba(216, 47, 47, 0.18);
+  background: rgba(154, 123, 86, 0.22);
   color: t.$white;
 }
 
@@ -164,21 +166,21 @@
     width: 11px;
     height: 6px;
     margin-top: -4px;
-    border-left: 2px solid t.$accent;
-    border-bottom: 2px solid t.$accent;
+    border-left: 2px solid t.$gold-light;
+    border-bottom: 2px solid t.$gold-light;
     transform: rotate(-45deg);
   }
 }
 
 .invalid {
-  border-color: t.$accent;
+  border-color: #ff6767;
   animation: field-shake 0.3s ease;
 }
 
 .error {
   font-size: 12px;
   text-align: center;
-  color: t.$accent;
+  color: #ff6767;
 }
 
 @keyframes pop-in {

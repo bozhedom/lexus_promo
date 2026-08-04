@@ -1,4 +1,4 @@
-import type { Certificate } from '../model/types'
+import type { Certificate, PersonalInviteDetails } from '../model/types'
 
 export const DEFAULT_CERTIFICATES: Certificate[] = [
   {
@@ -13,6 +13,19 @@ export const DEFAULT_CERTIFICATES: Certificate[] = [
   },
 ]
 
+export const personalCertificates = (code: string): Certificate[] => [
+  {
+    id: 'diagnostics',
+    image: `/api/invite-test/certificate/${encodeURIComponent(code)}/diagnostics.png`,
+    alt: 'Персональный сертификат на комплексную диагностику',
+  },
+  {
+    id: 'gift',
+    image: `/api/invite-test/certificate/${encodeURIComponent(code)}/gift.png`,
+    alt: 'Персональный подарочный сертификат',
+  },
+]
+
 /** Подставляется клиенту в поле ввода: по коду находим, кому что отправлять. */
 export const openingText = (code: string): string =>
   `Здравствуйте! Даю согласие на отправку мне двух пригласительных. Код: ${code}`
@@ -23,16 +36,21 @@ export const extractCode = (text: string): string | null =>
   text.match(CODE_PATTERN)?.[1]?.toUpperCase() ?? null
 
 /** Ответ менеджера: сертификаты и сразу вопрос, чтобы завязать разговор. */
-export const replyText = (fullName: string): string =>
-  [
+export const replyText = (fullName: string, details?: PersonalInviteDetails | null): string => {
+  const car = details
+    ? [details.brand, details.model, details.year].filter(Boolean).join(' ')
+    : ''
+  return [
     `${fullName}, добрый день!`,
     '',
     'Отправляю ваши пригласительные: сертификат на комплексную диагностику',
-    'и подарок 1500 ₽ в честь знакомства.',
+    `и подарок ${new Intl.NumberFormat('ru-RU').format(details?.amount ?? 1500)} ₽ в честь знакомства.`,
+    ...(car ? ['', `Автомобиль: ${car}${details?.plate ? `, номер ${details.plate}` : ''}.`] : []),
     '',
     'Подскажите, когда вам удобно подъехать — в будни или в выходной?',
     'Мы на Снеговой 1 стр. 7.',
   ].join('\n')
+}
 
 export interface InviteContentFields {
   certificates?: Certificate[] | null

@@ -23,13 +23,13 @@
 
 .arc {
   fill: none;
-  stroke: t.$accent;
+  stroke: t.$gold-light;
   stroke-width: 3;
   stroke-linecap: round;
   // 2 * pi * 19 = 119.4: полная длина окружности
   stroke-dasharray: 1 119.4;
   transform-origin: center;
-  filter: drop-shadow(0 0 4px rgba(216, 47, 47, 0.85));
+  filter: drop-shadow(0 0 4px rgba(228, 204, 174, 0.72));
   animation: loader-dash 1.5s ease-in-out infinite;
 }
 
@@ -51,8 +51,18 @@
   stroke-width: 4.5;
 }
 
+.beam .track {
+  stroke: rgba(0, 0, 0, 0.2);
+}
+
+.beam .arc {
+  stroke: #080808;
+  filter: none;
+}
+
 .beam .label {
   font-size: 15px;
+  color: #080808;
 }
 
 .stage {

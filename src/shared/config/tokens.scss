@@ -11,6 +11,15 @@ $accent-line: #d32728; // градиент-линии
 $accent-rhombus: #d12728; // ромб-разделитель
 $accent-start-btn: #ef002a; // рамка кнопки на стартовом
 
+// Палитра редизайна Lexus. Старые красные токены оставлены для экранов,
+// которых нет в новых Figma-фреймах.
+$gold-dark: #7b7254;
+$gold: #9a7b56;
+$gold-light: #e4ccae;
+$gold-button: #edb965;
+$gold-button-end: #cc8c3b;
+$gold-border: rgba(255, 239, 188, 0.5);
+
 $white: #fff;
 $text-light: #e2e2e2;
 $text-light-2: #e3e3e3;
@@ -46,6 +55,27 @@ $bp-desktop: 1200px;
 $font-main: var(--font-manrope), system-ui, sans-serif;
 $font-script: var(--font-marck), cursive;
 $font-plate: var(--font-opensans), system-ui, sans-serif;
+$font-display: var(--font-forum), Georgia, serif;
+$font-condensed: var(--font-roboto-condensed), Arial Narrow, sans-serif;
+
+@mixin gold-text {
+  color: $gold-light;
+  background: linear-gradient(270deg, $gold 0%, $gold-light 51.7%, $gold-dark 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@mixin gold-button {
+  border: 1px solid $gold-border;
+  border-radius: 8px;
+  background: linear-gradient(90deg, $gold-button 0%, #ebb664 50%, $gold-button-end 100%);
+  color: #050505;
+  font-family: $font-condensed;
+  font-weight: 400;
+  letter-spacing: 1.28px;
+  text-transform: uppercase;
+}
 
 // Максимальная ширина контента
 $content-max: 1200px;

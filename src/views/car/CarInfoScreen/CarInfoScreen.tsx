@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
@@ -12,7 +13,7 @@ import { Button, Loader, SelectField, StageLayout, TextField } from '@/shared/ui
 import { validatePlate, validateShortText } from '@/lib/validation'
 import styles from './CarInfoScreen.module.scss'
 
-type UiState = 'loading' | 'found' | 'manual-brand' | 'manual-year'
+type UiState = 'loading' | 'found' | 'manual'
 
 interface FoundCar {
   brand: string
@@ -33,13 +34,17 @@ export function CarInfoScreen() {
   const [model, setModel] = useState(data.carModel ?? '')
   const [customModel, setCustomModel] = useState('')
   const [year, setYear] = useState(data.carYear ? String(data.carYear) : '')
-  const [plate, setPlate] = useState(data.plateNumber ?? '')
+  // До гидратации FunnelProvider данные ещё пустые. `null` означает «пользователь
+  // пока не редактировал поле», поэтому после восстановления берём номер из сессии.
+  const [plate, setPlate] = useState<string | null>(null)
+  const [manualNotice, setManualNotice] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
 
   const models = carModels(brand)
   const needsCustomModel = brand === OTHER_OPTION || model === OTHER_OPTION || models.length === 0
   const finalModel = needsCustomModel ? customModel.trim() : model
+  const plateValue = plate ?? data.plateNumber ?? ''
 
   // определение авто по номеру
   useEffect(() => {
@@ -50,7 +55,8 @@ export function CarInfoScreen() {
       .then((info) => {
         if (!active) return
         if (!info.found) {
-          setUi('manual-brand')
+          setManualNotice(true)
+          setUi('manual')
           track('car_not_found')
           return
         }
@@ -59,7 +65,8 @@ export function CarInfoScreen() {
         if (!info.model) {
           setBrand(info.brand)
           if (info.year) setYear(String(info.year))
-          setUi('manual-brand')
+          setManualNotice(false)
+          setUi('manual')
           track('car_found', { brand: info.brand, model: null })
           return
         }
@@ -69,7 +76,8 @@ export function CarInfoScreen() {
       })
       .catch(() => {
         if (!active) return
-        setUi('manual-brand')
+        setManualNotice(true)
+        setUi('manual')
         track('car_not_found')
       })
     return () => {
@@ -108,23 +116,17 @@ export function CarInfoScreen() {
     }
   }
 
-  // 3b -> 3c
-  const nextManual = () => {
+  // Подтверждение ручного ввода. В новом макете все поля находятся на одном
+  // экране; состав данных и запрос к API остаются прежними.
+  const confirmManual = async () => {
     const next: Record<string, string> = {}
     if (!brand) next.brand = 'Выберите марку'
     if (!finalModel) next.model = 'Укажите модель'
     else if (needsCustomModel && !validateShortText(finalModel, 40)) {
       next.model = 'Только буквы, цифры и дефис'
     }
-    setErrors(next)
-    if (Object.keys(next).length === 0) setUi('manual-year')
-  }
-
-  // 3c: подтверждение ручного ввода
-  const confirmManual = async () => {
-    const next: Record<string, string> = {}
     if (!year) next.year = 'Выберите год'
-    const { main, region } = splitPlate(plate)
+    const { main, region } = splitPlate(plateValue)
     const canonical = validatePlate(main + region)
     if (!isPlateComplete(main, region) || !canonical) next.plate = 'Введите номер полностью'
     setErrors(next)
@@ -159,59 +161,140 @@ export function CarInfoScreen() {
 
   const plateShown = formatPlate(data.plateNumber ?? '')
 
-  return (
-    <StageLayout
-      subtitle={
-        <>
-          Заполните, чтобы получить <b>персональное приглашение</b> на тех. открытие автоцентра
-        </>
-      }
-    >
-      {ui === 'loading' && (
-        <div className={styles.center}>
-          <Loader variant="stage" label="Определяем автомобиль" className={styles.lookup} />
-        </div>
-      )}
+  if (ui === 'found' && car) {
+    return (
+      <main className={styles.foundScreen}>
+        <p className={styles.foundEyebrow}>Автомобиль успешно найден</p>
 
-      {ui === 'found' && car && (
-        <div className={styles.center}>
-          <p className={styles.caption}>Автомобиль успешно определен</p>
-          <div className={styles.foundCard}>
-            <span className={styles.foundCar}>
-              {car.brand.toUpperCase()} {car.model.toUpperCase()}
-              {car.year ? (
-                <>
-                  <i className={styles.sep}>|</i>
-                  {car.year}
-                </>
-              ) : null}
-            </span>
-            <span className={styles.foundPlate}>
-              {plateShown.main} | {plateShown.region}
+        <section className={styles.foundPanel}>
+          <Image
+            className={styles.lexusLogo}
+            src="/images/redesign/lexus-logo.svg"
+            alt="Lexus"
+            width={154}
+            height={28}
+            priority
+          />
+
+          <h1 className={styles.carName}>
+            <span>{car.brand} {car.model}</span>
+            {car.year ? <><i /> <span>{car.year}</span></> : null}
+          </h1>
+
+          <div className={styles.staticPlate} aria-label={`Госномер ${plateShown.main} ${plateShown.region}`}>
+            <span className={styles.staticMain}>{plateShown.main}</span>
+            <span className={styles.staticRegion}>
+              <strong>{plateShown.region}</strong>
+              <Image src="/images/plate-rus-flag.svg" alt="RUS" width={48} height={12} />
             </span>
           </div>
+
+          <p className={styles.carCharacter}>Брутальный внедорожник</p>
+
+          <ul className={styles.progressList}>
+            <li>
+              <span className={styles.lineIcon} aria-hidden>♧</span>
+              <span>Персональное<br />приглашение готово</span>
+              <b>✓</b>
+            </li>
+            <li>
+              <span className={styles.lineIcon} aria-hidden>✉</span>
+              <span>Подарок зарезервирован<br />за вашим автомобилем</span>
+              <b>✓</b>
+            </li>
+            <li>
+              <span className={styles.lineIcon} aria-hidden>∞</span>
+              <span>Осталось подтвердить<br />владельца</span>
+              <b className={styles.pendingCheck} />
+            </li>
+          </ul>
+
+          <p className={styles.giftLead}>
+            Для Вашего автомобиля приготовлены
+            <span>персональные подарки в честь знакомства</span>
+          </p>
+
+          <article className={styles.giftCard}>
+            <div>
+              <small>Сертификат</small>
+              <strong>15 000 ₽</strong>
+              <p>на оригинальные запасные части<br />и аксессуары</p>
+              <span>Подробнее</span>
+            </div>
+          </article>
+
+          <div className={styles.giftDots} aria-hidden><i /><i /></div>
+
           {errors.form && <p className={styles.error}>{errors.form}</p>}
-          <Button block onClick={confirmFound} disabled={submitting}>
+
+          <Button block className={styles.confirmButton} onClick={confirmFound} disabled={submitting}>
             {submitting ? <Loader label="Сохраняем" /> : 'Это мой автомобиль'}
           </Button>
           <button
             type="button"
-            className={styles.link}
+            className={styles.changeButton}
             onClick={() => {
-              setUi('manual-brand')
+              setManualNotice(false)
+              setUi('manual')
               track('car_manual', { from: 'reject' })
             }}
           >
-            Это не мой автомобиль
+            Изменить автомобиль
           </button>
+        </section>
+      </main>
+    )
+  }
+
+  return (
+    <StageLayout
+      cardClassName={styles.lookupCard}
+      secureInside
+      subtitle={
+        <>
+          Внесите номер, чтобы получить <b>персональное приглашение</b>
+        </>
+      }
+    >
+      {ui === 'loading' && (
+        <div className={styles.lookupPanel}>
+          <div className={styles.tabs} aria-label="Способ ввода автомобиля">
+            <span className={styles.tabActive}>По номеру авто</span>
+            <span>Указать вручную</span>
+          </div>
+          <PlateInput
+            defaultValue={data.plateNumber}
+            disabled
+            onChange={() => undefined}
+          />
+          <div className={styles.lookupButton} role="status" aria-label="Определяем автомобиль">
+            <Loader />
+          </div>
         </div>
       )}
 
-      {ui === 'manual-brand' && (
-        <div className={styles.form}>
+      {ui === 'manual' && (
+        <div className={styles.manualPanel}>
+          <div className={styles.tabs} aria-label="Способ ввода автомобиля">
+            <button type="button" onClick={() => router.push('/car-number')}>По номеру авто</button>
+            <span className={styles.tabActive}>Указать вручную</span>
+          </div>
+
+          <PlateInput
+            defaultValue={plateValue}
+            invalid={Boolean(errors.plate)}
+            onChange={(v) => {
+              setPlate(v)
+              if (errors.plate) setErrors((p) => ({ ...p, plate: '' }))
+            }}
+          />
+
+          {manualNotice && (
+            <p className={styles.notFound}>Автомобиль не найден<br />Введите данные вручную</p>
+          )}
+
           <SelectField
-            label="Марка"
-            placeholder="Выбрать"
+            placeholder="Марка"
             value={brand}
             error={errors.brand}
             onChange={(v) => {
@@ -223,10 +306,17 @@ export function CarInfoScreen() {
             options={CAR_BRANDS.map((b) => ({ value: b, label: b }))}
           />
 
-          {models.length > 0 ? (
+          {!brand ? (
             <SelectField
-              label="Модель"
-              placeholder="Выбрать"
+              placeholder="Модель"
+              value=""
+              disabled
+              onChange={() => undefined}
+              options={[]}
+            />
+          ) : models.length > 0 ? (
+            <SelectField
+              placeholder="Модель"
               value={model}
               error={errors.model}
               onChange={setModel}
@@ -234,8 +324,7 @@ export function CarInfoScreen() {
             />
           ) : (
             <TextField
-              label="Модель"
-              placeholder="Например, RX"
+              placeholder="Модель"
               maxLength={40}
               value={customModel}
               error={errors.model}
@@ -253,40 +342,23 @@ export function CarInfoScreen() {
             />
           )}
 
-          <Button block onClick={nextManual}>
-            Далее
-          </Button>
-        </div>
-      )}
-
-      {ui === 'manual-year' && (
-        <div className={styles.form}>
           <SelectField
-            label="Год"
-            placeholder="Выбрать"
+            placeholder="Год"
             value={year}
             error={errors.year}
             onChange={setYear}
             options={carYears().map((y) => ({ value: String(y), label: String(y) }))}
           />
 
-          <div className={styles.plateField}>
-            <span className={styles.plateLabel}>Гос номер</span>
-            <PlateInput
-              size="compact"
-              defaultValue={data.plateNumber}
-              invalid={Boolean(errors.plate)}
-              onChange={(v) => {
-                setPlate(v)
-                if (errors.plate) setErrors((p) => ({ ...p, plate: '' }))
-              }}
-            />
-            {errors.plate && <span className={styles.error}>{errors.plate}</span>}
-          </div>
+          {errors.plate && <span className={styles.error}>{errors.plate}</span>}
 
           {errors.form && <p className={styles.error}>{errors.form}</p>}
 
-          <Button block onClick={confirmManual} disabled={submitting}>
+          <Button
+            block
+            onClick={confirmManual}
+            disabled={!brand || !finalModel || !year || submitting}
+          >
             {submitting ? <Loader label="Сохраняем" /> : 'Подтвердить'}
           </Button>
         </div>

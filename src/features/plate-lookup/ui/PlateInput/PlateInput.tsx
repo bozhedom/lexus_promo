@@ -15,6 +15,7 @@ interface PlateInputProps {
   onChange: (plate: string) => void
   invalid?: boolean
   autoFocus?: boolean
+  disabled?: boolean
   /** `plate`: крупный номерной знак (экран 2), `compact`, обычное поле (экран 3c) */
   size?: 'plate' | 'compact'
 }
@@ -38,6 +39,7 @@ export function PlateInput({
   onChange,
   invalid,
   autoFocus,
+  disabled = false,
   size = 'plate',
 }: PlateInputProps) {
   const initial = splitPlate(defaultValue)
@@ -57,10 +59,10 @@ export function PlateInput({
   // Только там, где есть железная клавиатура: на телефоне автофокус поднимает
   // экранную и закрывает пол-формы.
   useEffect(() => {
-    if (!autoFocus) return
+    if (!autoFocus || disabled) return
     if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return
     mainRef.current?.focus()
-  }, [autoFocus])
+  }, [autoFocus, disabled])
 
   // закрываем панель тапом мимо номера, как это делает системная клавиатура
   useEffect(() => {
@@ -127,6 +129,7 @@ export function PlateInput({
   }
 
   const openPad = (which: 'main' | 'region') => {
+    if (disabled) return
     setPart(which)
     setPadOpen(true)
   }
@@ -150,7 +153,7 @@ export function PlateInput({
   if (size === 'compact') {
     const parts = [main.slice(0, 1), main.slice(1, 4), main.slice(4, 6), region].filter(Boolean)
     return (
-      <div className={styles.compactWrap} ref={rootRef}>
+      <div className={styles.compactWrap} data-disabled={disabled || undefined} ref={rootRef}>
         <input
           className={styles.compact}
           data-invalid={invalid || undefined}
@@ -165,7 +168,8 @@ export function PlateInput({
           }}
           onFocus={() => touch && openPad(main.length === 6 ? 'region' : 'main')}
           // на тач-экране печатает наша клавиатура, системную не поднимаем
-          readOnly={touch}
+          readOnly={touch || disabled}
+          disabled={disabled}
           inputMode={touch ? 'none' : 'text'}
           autoCapitalize="characters"
           autoCorrect="off"
@@ -183,12 +187,17 @@ export function PlateInput({
   const caretAt = touch ? (padOpen ? part : null) : focus
 
   return (
-    <div className={styles.plate} data-invalid={invalid || undefined} ref={rootRef}>
+    <div
+      className={styles.plate}
+      data-invalid={invalid || undefined}
+      data-disabled={disabled || undefined}
+      ref={rootRef}
+    >
       {/* основная часть */}
       <label
         className={styles.mainBlock}
         data-focus={caretAt === 'main' || undefined}
-        onPointerDown={touch ? () => openPad('main') : undefined}
+        onPointerDown={touch && !disabled ? () => openPad('main') : undefined}
       >
         <span className={styles.display}>
           {MAIN_SLOTS.map((kind, i) => {
@@ -214,7 +223,8 @@ export function PlateInput({
           onChange={(e) => onMain(e.target.value)}
           onFocus={() => setFocus('main')}
           onBlur={() => setFocus(null)}
-          readOnly={touch}
+          readOnly={touch || disabled}
+          disabled={disabled}
           inputMode={touch ? 'none' : mainKind === 'digit' ? 'numeric' : 'text'}
           autoCapitalize="characters"
           autoCorrect="off"
@@ -229,7 +239,7 @@ export function PlateInput({
       <label
         className={styles.regionBlock}
         data-focus={caretAt === 'region' || undefined}
-        onPointerDown={touch ? () => openPad('region') : undefined}
+        onPointerDown={touch && !disabled ? () => openPad('region') : undefined}
       >
         <span className={styles.regionDisplay}>
           {[0, 1, 2].map((i) => {
@@ -265,7 +275,8 @@ export function PlateInput({
           }}
           onFocus={() => setFocus('region')}
           onBlur={() => setFocus(null)}
-          readOnly={touch}
+          readOnly={touch || disabled}
+          disabled={disabled}
           inputMode={touch ? 'none' : 'numeric'}
           autoComplete="off"
           maxLength={3}

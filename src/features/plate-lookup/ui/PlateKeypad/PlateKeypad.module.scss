@@ -10,10 +10,12 @@
   flex-direction: column;
   gap: 6px;
   padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
-  background: rgba(19, 21, 23, 0.985);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 14px 14px 0 0;
-  box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.6);
+  background:
+    linear-gradient(180deg, rgba(27, 21, 14, 0.98), rgba(6, 5, 4, 0.995));
+  border-top: 1px solid t.$gold;
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.72), 0 -2px 20px rgba(154, 123, 86, 0.16);
+  backdrop-filter: blur(18px);
   animation: rise 0.18s ease;
   // тап по клавише не должен ни скроллить страницу, ни выделять текст
   touch-action: manipulation;
@@ -29,20 +31,20 @@
 }
 
 .hint {
-  font-family: t.$font-main;
+  font-family: t.$font-condensed;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 1.1px;
   text-transform: uppercase;
-  color: t.$text-muted;
+  color: rgba(255, 255, 255, 0.62);
 }
 
 .done {
   padding: 5px 6px;
   border: none;
   background: none;
-  color: t.$accent;
-  font-family: t.$font-main;
+  color: t.$gold-light;
+  font-family: t.$font-condensed;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -55,7 +57,7 @@
 
   // половина, которая на этой позиции не подходит: видно, но нажать нельзя
   &[data-off] {
-    opacity: 0.3;
+    opacity: 0.27;
   }
 }
 
@@ -80,10 +82,10 @@
 .key {
   min-height: 46px;
   padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(154, 123, 86, 0.72);
   border-radius: 8px;
-  background: #23262a;
-  color: t.$white;
+  background: rgba(22, 18, 13, 0.96);
+  color: rgba(255, 255, 255, 0.9);
   font-family: t.$font-plate;
   font-size: 21px;
   font-weight: 600;
@@ -91,14 +93,15 @@
   transition: background 0.12s ease, transform 0.08s ease;
 
   &:active:not(:disabled) {
-    background: t.$accent;
+    background: linear-gradient(135deg, t.$gold-button, t.$gold-button-end);
+    color: #050505;
     transform: scale(0.94);
   }
 
   &:disabled {
-    background: #191b1d;
-    border-color: rgba(255, 255, 255, 0.06);
-    color: t.$text-disclaimer;
+    background: rgba(8, 7, 6, 0.82);
+    border-color: rgba(154, 123, 86, 0.2);
+    color: rgba(255, 255, 255, 0.32);
     cursor: default;
   }
 }
@@ -106,11 +109,11 @@
 .erase {
   min-height: 42px;
   padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(154, 123, 86, 0.72);
   border-radius: 8px;
-  background: #1c1f22;
-  color: t.$text-light;
-  font-family: t.$font-main;
+  background: rgba(10, 8, 6, 0.86);
+  color: t.$gold-light;
+  font-family: t.$font-condensed;
   font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.6px;
@@ -118,7 +121,7 @@
   transition: background 0.12s ease;
 
   &:active:not(:disabled) {
-    background: #2b2f33;
+    background: rgba(154, 123, 86, 0.3);
   }
 
   &:disabled {

@@ -10,7 +10,7 @@ import {
   isWhatsappAutoReady,
   isWhatsappReady,
 } from '@/invite-test/config/env'
-import type { SessionResponse } from '@/invite-test/model/types'
+import type { PersonalInviteDetails, SessionResponse } from '@/invite-test/model/types'
 import { createSession, getBusinessId } from '@/invite-test/server/store'
 import { getClientIp, jsonError, readJsonBody } from '@/lib/http'
 import { rateLimit } from '@/lib/rateLimit'
@@ -21,16 +21,29 @@ export async function POST(req: NextRequest) {
     return jsonError(429, 'Слишком много запросов')
   }
 
-  const body = (await readJsonBody(req)) as { fullName?: unknown } | null
+  const body = (await readJsonBody(req)) as Partial<Record<keyof PersonalInviteDetails, unknown>> | null
   const fullName = typeof body?.fullName === 'string' ? body.fullName.trim().slice(0, 80) : ''
   if (!fullName) return jsonError(422, 'Не передано имя')
 
+  const text = (value: unknown, max: number) =>
+    typeof value === 'string' ? value.trim().slice(0, max) : ''
+  const rawYear = typeof body?.year === 'number' ? Math.trunc(body.year) : null
+  const rawAmount = typeof body?.amount === 'number' ? Math.trunc(body.amount) : 1500
+  const details: PersonalInviteDetails = {
+    fullName,
+    brand: text(body?.brand, 40) || 'Lexus',
+    model: text(body?.model, 60),
+    year: rawYear && rawYear >= 1900 && rawYear <= new Date().getFullYear() + 1 ? rawYear : null,
+    plate: text(body?.plate, 16).toUpperCase(),
+    amount: Math.max(0, Math.min(rawAmount, 1_000_000)),
+  }
+
   // Позже здесь получаем поля сертификатов по заявке/CMS и передаём вторым
   // аргументом в createSession. undefined включает безопасный fallback.
-  const created = createSession(fullName)
+  const created = createSession(fullName, undefined, details)
   const { code } = created
   const { telegram, max, whatsapp } = inviteTestEnv
-  const text = encodeURIComponent(openingText(code))
+  const openingMessage = encodeURIComponent(openingText(code))
 
   const response: SessionResponse = {
     code,
@@ -38,13 +51,13 @@ export async function POST(req: NextRequest) {
     channels: {
       telegram: {
         enabled: isTelegramReady(),
-        chatLink: isTelegramReady() ? `https://t.me/${telegram.manager}?text=${text}` : null,
+        chatLink: isTelegramReady() ? `https://t.me/${telegram.manager}?text=${openingMessage}` : null,
         // автоответ работает, только когда менеджер подключил бота к аккаунту
         autoDelivery: isTelegramAutoReady() && Boolean(getBusinessId()),
       },
       whatsapp: {
         enabled: isWhatsappReady(),
-        chatLink: isWhatsappReady() ? `https://wa.me/${whatsapp.phone}?text=${text}` : null,
+        chatLink: isWhatsappReady() ? `https://wa.me/${whatsapp.phone}?text=${openingMessage}` : null,
         autoDelivery: isWhatsappAutoReady(),
       },
       max: {

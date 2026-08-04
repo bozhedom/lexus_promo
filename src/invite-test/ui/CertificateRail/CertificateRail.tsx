@@ -1,17 +1,49 @@
 import Image from 'next/image'
 
+import type { PersonalInviteDetails } from '../../model/types'
 import styles from './CertificateRail.module.scss'
 
-const SLIDES = ['Сертификат на комплексную диагностику', 'Подарок в честь знакомства']
+interface CertificateRailProps {
+  details: PersonalInviteDetails
+}
 
-export function CertificateRail() {
+const carLabel = ({ brand, model, year }: PersonalInviteDetails) =>
+  [brand, model, year].filter(Boolean).join(' ')
+
+export function CertificateRail({ details }: CertificateRailProps) {
+  const amount = new Intl.NumberFormat('ru-RU').format(details.amount)
+
   return (
-    <div className={styles.rail}>
-      {SLIDES.map((alt) => (
-        <figure key={alt} className={styles.slide}>
-          <Image src="/invite-test/cert-wide.png" alt={alt} width={306} height={187} />
-        </figure>
-      ))}
+    <div className={styles.rail} aria-label="Персональные сертификаты">
+      <article className={styles.slide} data-kind="diagnostics">
+        <Image
+          className={styles.logo}
+          src="/images/redesign/lexus-logo.svg"
+          alt="Lexus"
+          width={154}
+          height={28}
+        />
+        <span className={styles.eyebrow}>Персональный сертификат</span>
+        <strong className={styles.title}>Комплексная диагностика</strong>
+        <span className={styles.person}>{details.fullName}</span>
+        <span className={styles.car}>{carLabel(details)}</span>
+        {details.plate && <span className={styles.plate}>{details.plate}</span>}
+      </article>
+
+      <article className={styles.slide} data-kind="gift">
+        <Image
+          className={styles.logo}
+          src="/images/redesign/lexus-logo.svg"
+          alt="Lexus"
+          width={154}
+          height={28}
+        />
+        <span className={styles.eyebrow}>Подарок в честь знакомства</span>
+        <strong className={styles.amount}>{amount} ₽</strong>
+        <span className={styles.person}>{details.fullName}</span>
+        <span className={styles.car}>{carLabel(details)}</span>
+        {details.plate && <span className={styles.plate}>{details.plate}</span>}
+      </article>
     </div>
   )
 }

@@ -4,16 +4,25 @@
   position: relative;
   z-index: 2;
   width: 100%;
-  background: t.$card-bg;
-  border-radius: t.$radius-card t.$radius-card 0 0;
-  box-shadow: t.$glow-accent;
+  background: #000;
+  border-radius: 0;
+  box-shadow: none;
+  color: rgba(255, 255, 255, 0.8);
+  font-family: t.$font-condensed;
+
+  &[data-ready='false'] .panel { opacity: 0; visibility: hidden; }
+  &[data-ready='true'] .panel {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.16s ease;
+  }
 }
 
 .panel {
   width: 100%;
   max-width: 1440px;
   margin: 0 auto;
-  padding: clamp(18px, 2.6vh, 30px) 0 clamp(18px, 2.6vh, 30px);
+  padding: 4px 0 20px;
 }
 
 .heading {
@@ -26,11 +35,12 @@
 
 .title {
   font-size: clamp(12px, 1.15vw, 16px);
-  font-weight: 600;
+  font-family: t.$font-display;
+  font-weight: 400;
   letter-spacing: clamp(1.2px, 0.16vw, 2.2px);
   text-transform: uppercase;
   white-space: nowrap;
-  color: t.$white;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .line {
@@ -39,10 +49,10 @@
   max-width: 260px;
 
   &:first-child {
-    background: linear-gradient(90deg, rgba(211, 39, 40, 0) 0%, t.$accent-line 100%);
+    background: linear-gradient(90deg, rgba(154, 123, 86, 0) 0%, t.$gold 100%);
   }
   &:last-child {
-    background: linear-gradient(90deg, t.$accent-line 0%, rgba(211, 39, 40, 0) 100%);
+    background: linear-gradient(90deg, t.$gold 0%, rgba(154, 123, 86, 0) 100%);
   }
 }
 
@@ -64,7 +74,7 @@
   width: 52px;
   height: 52px;
   padding: 0;
-  border: 1.5px solid t.$accent;
+  border: 1.5px solid t.$gold;
   border-radius: 50%;
   background: rgba(10, 9, 10, 0.94);
   cursor: pointer;
@@ -84,8 +94,8 @@
   }
 
   &:hover:not(:disabled) {
-    background: t.$accent;
-    box-shadow: 0 0 0 7px rgba(216, 47, 47, 0.22), 0 0 26px rgba(216, 47, 47, 0.5);
+    background: t.$gold;
+    box-shadow: 0 0 0 7px rgba(154, 123, 86, 0.2), 0 0 26px rgba(228, 204, 174, 0.32);
     transform: scale(1.06);
   }
 
@@ -132,14 +142,21 @@
   // на мобиле лента встаёт по одной линии с полем и кнопкой в карточке выше,
   // а не по её рамке: иначе нижний блок выглядит съехавшим к краю
   @include t.mobile {
-    --gutter: 16px;
+    --gutter: max(16px, calc((100% - 360px) / 2));
   }
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
+  scroll-behavior: auto;
 
   &::-webkit-scrollbar {
     display: none;
+  }
+
+  // Во время управляемой прокрутки snap выключен: иначе браузер начинает
+  // самостоятельно тянуть ленту к карточке и ускоряет нашу анимацию рывком.
+  &[data-moving] {
+    scroll-snap-type: none;
   }
 }
 
@@ -149,10 +166,22 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  scroll-snap-stop: always;
 
   @include t.mobile {
-    flex-basis: min(78%, 320px);
+    flex-basis: min(calc(100% - 32px), 360px);
     scroll-snap-align: center;
+    opacity: 0.58;
+    transform: scale(0.94);
+    transform-origin: center;
+    transition:
+      opacity 0.42s ease,
+      transform 0.48s cubic-bezier(0.2, 0.72, 0.2, 1);
+
+    &[data-active] {
+      opacity: 1;
+      transform: scale(1);
+    }
   }
 }
 
@@ -161,8 +190,8 @@
   display: block;
   width: 100%;
   padding: 0;
-  border: none;
-  border-radius: t.$radius-gallery;
+  border: 1px solid t.$gold;
+  border-radius: 16px;
   overflow: hidden;
   aspect-ratio: 314 / 178;
   background: #16181a;
@@ -177,7 +206,7 @@
   }
 
   &:focus-visible {
-    outline: 2px solid t.$accent;
+    outline: 2px solid t.$gold-light;
     outline-offset: 2px;
   }
 
@@ -235,9 +264,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  background:
-    linear-gradient(0deg, rgba(154, 124, 98, 0.6), rgba(154, 124, 98, 0.6)),
-    linear-gradient(0deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2));
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.48), rgba(0, 0, 0, 0.08) 58%);
   color: t.$white;
   font-size: clamp(13px, 1.25vw, 18px);
   font-weight: 500;
@@ -256,7 +283,7 @@
   line-height: 1.35;
   letter-spacing: 0.4px;
   text-transform: uppercase;
-  color: t.$text-gallery;
+  @include t.gold-text;
   text-align: center;
 }
 
@@ -280,13 +307,15 @@
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.28);
   cursor: pointer;
-  transition: background 0.2s ease, width 0.2s ease;
+  transition: background 0.32s ease, width 0.38s cubic-bezier(0.2, 0.72, 0.2, 1), transform 0.25s ease;
+
+  &:hover { transform: scale(1.18); }
 }
 
 .dotActive {
   width: 18px;
   border-radius: 4px;
-  background: t.$accent;
+  background: linear-gradient(90deg, t.$gold-dark, t.$gold-light, t.$gold);
 }
 
 // ── развёрнутый кадр ───────────────────────────────────────────────────────
@@ -301,7 +330,11 @@
   padding: 0;
   border: none;
   background: transparent;
-  overflow: hidden;
+  // clip, а не hidden: фокус на боковом кадре не должен программно
+  // прокручивать dialog по горизонтали и сдвигать весь слайдер.
+  overflow: clip;
+  overscroll-behavior: contain;
+  touch-action: none;
 
   &::backdrop {
     background: rgba(6, 6, 7, 0.9);
@@ -323,8 +356,11 @@
   gap: clamp(10px, 1.6vh, 18px);
   width: 100%;
   max-width: 1180px;
+  max-height: 100dvh;
   padding: clamp(12px, 2vh, 22px) clamp(12px, 2.4vw, 28px);
   animation: pop 0.24s cubic-bezier(0.2, 0.7, 0.2, 1);
+  overscroll-behavior: contain;
+  touch-action: none;
 }
 
 .lightBar {
@@ -388,7 +424,8 @@
   // а сам переход читался как рывок.
   height: var(--stage-h);
   // отпустили палец, кадр возвращается на место сам
-  transition: transform 0.26s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.26s ease;
+  transition: transform 0.28s cubic-bezier(0.2, 0.72, 0.2, 1), opacity 0.22s ease;
+  will-change: transform, opacity;
   // палец тянет кадр, а не скроллит страницу под ним
   touch-action: none;
 
@@ -398,36 +435,68 @@
   }
 }
 
-// кадры лежат стопкой в центре области и переключаются прозрачностью
+// Три стабильных кадра: текущий в центре, соседние выглядывают по краям.
+// Размер рамки один для всех пропорций, поэтому при смене ничего не прыгает.
 .frame {
   position: absolute;
   top: 50%;
   left: 50%;
-  // Ширину считаем сами: либо во всю область, либо сколько даёт высота при
-  // своей пропорции. Задать height и ждать, что max-width пересчитает высоту,
-  // нельзя: aspect-ratio достраивает только ту сторону, что осталась auto.
-  width: min(100%, calc(var(--stage-h) * var(--r)));
+  width: min(82%, calc(var(--stage-h) * 1.55));
   height: auto;
-  aspect-ratio: var(--r);
+  padding: 0;
+  border: 1px solid rgba(228, 204, 174, 0.24);
+  aspect-ratio: 1.55;
   border-radius: t.$radius-gallery;
   overflow: hidden;
+  background: #070708;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
-  // translate и scale отдельными свойствами: центровка не мешает анимации
-  translate: -50% -50%;
-  scale: 0.99;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.4s ease, scale 0.4s cubic-bezier(0.33, 0, 0.2, 1);
+  transition:
+    left 0.3s cubic-bezier(0.22, 0.72, 0.2, 1),
+    translate 0.3s cubic-bezier(0.22, 0.72, 0.2, 1),
+    scale 0.3s cubic-bezier(0.22, 0.72, 0.2, 1),
+    opacity 0.22s ease,
+    filter 0.26s ease;
 
-  &[data-active] {
+  &[data-slot='current'] {
+    z-index: 2;
+    translate: -50% -50%;
     scale: 1;
     opacity: 1;
+    filter: brightness(1) saturate(1);
+    pointer-events: auto;
+    cursor: default;
+  }
+
+  &[data-slot='previous'],
+  &[data-slot='next'] {
+    z-index: 1;
+    opacity: 0.46;
+    scale: 0.78;
+    filter: brightness(0.62) saturate(0.78);
+    pointer-events: auto;
+    cursor: pointer;
+  }
+
+  &[data-slot='previous'] {
+    left: 0;
+    translate: -74% -50%;
+  }
+
+  &[data-slot='next'] {
+    left: 100%;
+    translate: -26% -50%;
+  }
+
+  &:focus-visible {
+    outline: 2px solid t.$gold-light;
+    outline-offset: 3px;
   }
 }
 
-// кадр уже нужной пропорции, поэтому cover ничего не обрезает
 .frameImg {
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .lightArrow {
@@ -441,7 +510,7 @@
   height: 50px;
   padding: 0;
   transform: translateY(-50%);
-  border: 1.5px solid t.$accent;
+  border: 1.5px solid t.$gold;
   border-radius: 50%;
   background: rgba(10, 9, 10, 0.82);
   cursor: pointer;
@@ -456,8 +525,8 @@
   }
 
   &:hover {
-    background: t.$accent;
-    box-shadow: 0 0 22px rgba(216, 47, 47, 0.5);
+    background: t.$gold;
+    box-shadow: 0 0 22px rgba(228, 204, 174, 0.3);
   }
 
   // на телефоне листают свайпом, кнопки только мешали бы кадру
@@ -529,6 +598,9 @@
     animation: none;
   }
   .card {
+    transition: none;
+  }
+  .slide {
     transition: none;
   }
   .lightInner,
