@@ -1,0 +1,70 @@
+@use 'shared/config/tokens' as t;
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  width: 100%;
+}
+
+.label {
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  text-align: center;
+  color: t.$text-light;
+}
+
+.input {
+  width: 100%;
+  height: 39px;
+  padding: 0 14px;
+  border: 1px solid t.$input-border;
+  border-radius: t.$radius-input;
+  background: t.$white;
+  color: t.$input-text;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+
+  &::placeholder {
+    color: t.$placeholder;
+    font-weight: 500;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: t.$accent;
+  }
+}
+
+.invalid {
+  border-color: t.$accent;
+  animation: field-shake 0.3s ease;
+}
+
+.error {
+  font-size: 12px;
+  text-align: center;
+  color: t.$accent;
+}
+
+@keyframes field-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .invalid {
+    animation: none;
+  }
+}

@@ -1,0 +1,66 @@
+@use 'shared/config/tokens' as t;
+
+.page {
+  min-height: 100dvh;
+  display: flex;
+  justify-content: center;
+  padding: 48px 24px 64px;
+  background: t.$black;
+
+  @include t.mobile {
+    padding: 32px 18px 48px;
+  }
+}
+
+.doc {
+  width: 100%;
+  max-width: 760px;
+  color: t.$text-light;
+  line-height: 1.6;
+
+  p {
+    margin-bottom: 14px;
+  }
+}
+
+.back {
+  display: inline-block;
+  margin-bottom: 24px;
+  font-size: 14px;
+  color: t.$text-muted;
+
+  &:hover {
+    color: t.$white;
+  }
+}
+
+.h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: t.$white;
+  margin-bottom: 20px;
+
+  @include t.mobile {
+    font-size: 22px;
+  }
+}
+
+.h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: t.$white;
+  margin: 24px 0 10px;
+}
+
+.list {
+  margin: 0 0 14px 20px;
+
+  li {
+    margin-bottom: 6px;
+  }
+}
+
+.muted {
+  color: t.$text-muted;
+  font-size: 14px;
+}

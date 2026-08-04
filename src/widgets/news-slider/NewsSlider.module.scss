@@ -1,0 +1,542 @@
+@use 'shared/config/tokens' as t;
+
+.wrap {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  background: t.$card-bg;
+  border-radius: t.$radius-card t.$radius-card 0 0;
+  box-shadow: t.$glow-accent;
+}
+
+.panel {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: clamp(18px, 2.6vh, 30px) 0 clamp(18px, 2.6vh, 30px);
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 1.4vw, 18px);
+  margin: 0 clamp(16px, 2vw, 28px) clamp(14px, 2vh, 22px);
+}
+
+.title {
+  font-size: clamp(12px, 1.15vw, 16px);
+  font-weight: 600;
+  letter-spacing: clamp(1.2px, 0.16vw, 2.2px);
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: t.$white;
+}
+
+.line {
+  height: 1px;
+  flex: 1;
+  max-width: 260px;
+
+  &:first-child {
+    background: linear-gradient(90deg, rgba(211, 39, 40, 0) 0%, t.$accent-line 100%);
+  }
+  &:last-child {
+    background: linear-gradient(90deg, t.$accent-line 0%, rgba(211, 39, 40, 0) 100%);
+  }
+}
+
+// ── лента карточек ─────────────────────────────────────────────────────────
+.viewport {
+  position: relative;
+}
+
+// стрелки: мышью горизонтальную ленту не прокрутить, поэтому на десктопе
+// управление кнопками, а на тач-экранах их прячем: там работает свайп
+.arrow {
+  position: absolute;
+  // центрируем по фотографии, а не по всей ленте: снизу у карточек ещё подпись
+  top: calc(50% - 36px);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: 1.5px solid t.$accent;
+  border-radius: 50%;
+  background: rgba(10, 9, 10, 0.94);
+  cursor: pointer;
+  // внешнее кольцо тем же цветом отделяет кнопку от фотографии под ней -
+  // без него круг сливался с карточкой
+  box-shadow: 0 0 0 7px rgba(10, 9, 10, 0.55), 0 10px 26px rgba(0, 0, 0, 0.7);
+  transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+
+  // шеврон рисуем углом рамки: иконка в проекте чёрная и на тёмном круге
+  // пропадала совсем
+  &::after {
+    content: '';
+    width: 11px;
+    height: 11px;
+    border-top: 2px solid t.$white;
+    border-right: 2px solid t.$white;
+  }
+
+  &:hover:not(:disabled) {
+    background: t.$accent;
+    box-shadow: 0 0 0 7px rgba(216, 47, 47, 0.22), 0 0 26px rgba(216, 47, 47, 0.5);
+    transform: scale(1.06);
+  }
+
+  &:disabled {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  @include t.mobile {
+    display: none;
+  }
+}
+
+.arrowPrev {
+  left: 10px;
+
+  &::after {
+    margin-left: 4px;
+    transform: rotate(-135deg);
+  }
+}
+
+.arrowNext {
+  right: 10px;
+
+  &::after {
+    margin-right: 4px;
+    transform: rotate(45deg);
+  }
+}
+
+.rail {
+  list-style: none;
+  display: flex;
+  gap: clamp(10px, 1.1vw, 16px);
+  // на десктопе отводим поля под стрелки, чтобы они не лежали на фотографиях
+  --gutter: 76px;
+  padding: 0 var(--gutter) 4px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  // иначе mandatory-снап при загрузке съедает левый отступ
+  scroll-padding-inline: var(--gutter);
+
+  // на мобиле лента встаёт по одной линии с полем и кнопкой в карточке выше,
+  // а не по её рамке: иначе нижний блок выглядит съехавшим к краю
+  @include t.mobile {
+    --gutter: 16px;
+  }
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.slide {
+  flex: 0 0 clamp(196px, 21.8vw, 314px);
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  @include t.mobile {
+    flex-basis: min(78%, 320px);
+    scroll-snap-align: center;
+  }
+}
+
+.card {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  border-radius: t.$radius-gallery;
+  overflow: hidden;
+  aspect-ratio: 314 / 178;
+  background: #16181a;
+  cursor: zoom-in;
+
+  // лёгкое оживление при наведении
+  transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.35s ease;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.5);
+  }
+
+  &:focus-visible {
+    outline: 2px solid t.$accent;
+    outline-offset: 2px;
+  }
+
+  &:active {
+    transform: scale(0.985);
+  }
+}
+
+// значок «развернуть»: без него не видно, что карточка нажимается
+.zoom {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(10, 9, 10, 0.62);
+  color: t.$white;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+
+  svg {
+    width: 15px;
+    height: 15px;
+  }
+}
+
+.card:hover .zoom,
+.card:focus-visible .zoom {
+  opacity: 1;
+}
+
+// на тач-экранах наводить нечем: показываем сразу
+@media (hover: none) {
+  .zoom {
+    opacity: 0.85;
+  }
+}
+
+.img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+// адрес поверх первой карточки
+.address {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background:
+    linear-gradient(0deg, rgba(154, 124, 98, 0.6), rgba(154, 124, 98, 0.6)),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2));
+  color: t.$white;
+  font-size: clamp(13px, 1.25vw, 18px);
+  font-weight: 500;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+
+  img {
+    width: clamp(20px, 2vw, 30px);
+    height: auto;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6));
+    animation: pin-bounce 3.6s ease-in-out infinite;
+  }
+}
+
+.caption {
+  font-size: clamp(9px, 0.82vw, 11px);
+  line-height: 1.35;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: t.$text-gallery;
+  text-align: center;
+}
+
+// ── точки (мобильная карусель) ─────────────────────────────────────────────
+.dots {
+  display: none;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 14px;
+
+  @include t.mobile {
+    display: flex;
+  }
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.28);
+  cursor: pointer;
+  transition: background 0.2s ease, width 0.2s ease;
+}
+
+.dotActive {
+  width: 18px;
+  border-radius: 4px;
+  background: t.$accent;
+}
+
+// ── развёрнутый кадр ───────────────────────────────────────────────────────
+.lightbox {
+  // высота области кадра: ниже из неё же считается ширина каждого кадра
+  --stage-h: min(72vh, 720px);
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  overflow: hidden;
+
+  &::backdrop {
+    background: rgba(6, 6, 7, 0.9);
+    backdrop-filter: blur(6px);
+    animation: fade 0.22s ease;
+  }
+
+  &[open] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+.lightInner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(10px, 1.6vh, 18px);
+  width: 100%;
+  max-width: 1180px;
+  padding: clamp(12px, 2vh, 22px) clamp(12px, 2.4vw, 28px);
+  animation: pop 0.24s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.lightBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.counter {
+  font-family: t.$font-main;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  color: t.$text-gallery;
+}
+
+.close {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 50%;
+  background: rgba(20, 20, 22, 0.7);
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 15px;
+    height: 1.6px;
+    background: t.$white;
+  }
+  &::before {
+    transform: translate(-50%, -50%) rotate(45deg);
+  }
+  &::after {
+    transform: translate(-50%, -50%) rotate(-45deg);
+  }
+
+  &:hover {
+    background: t.$accent;
+    border-color: t.$accent;
+    transform: scale(1.06);
+  }
+}
+
+.stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  // Высота задана жёстко, а не по фотографии. У кадров разные пропорции, и
+  // раньше при переключении блок менял высоту, из-за чего подпись прыгала,
+  // а сам переход читался как рывок.
+  height: var(--stage-h);
+  // отпустили палец, кадр возвращается на место сам
+  transition: transform 0.26s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.26s ease;
+  // палец тянет кадр, а не скроллит страницу под ним
+  touch-action: none;
+
+  // пока тянут, никаких переходов: transform идёт инлайном за пальцем
+  &[data-drag] {
+    transition: none;
+  }
+}
+
+// кадры лежат стопкой в центре области и переключаются прозрачностью
+.frame {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  // Ширину считаем сами: либо во всю область, либо сколько даёт высота при
+  // своей пропорции. Задать height и ждать, что max-width пересчитает высоту,
+  // нельзя: aspect-ratio достраивает только ту сторону, что осталась auto.
+  width: min(100%, calc(var(--stage-h) * var(--r)));
+  height: auto;
+  aspect-ratio: var(--r);
+  border-radius: t.$radius-gallery;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
+  // translate и scale отдельными свойствами: центровка не мешает анимации
+  translate: -50% -50%;
+  scale: 0.99;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease, scale 0.4s cubic-bezier(0.33, 0, 0.2, 1);
+
+  &[data-active] {
+    scale: 1;
+    opacity: 1;
+  }
+}
+
+// кадр уже нужной пропорции, поэтому cover ничего не обрезает
+.frameImg {
+  object-fit: cover;
+}
+
+.lightArrow {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  padding: 0;
+  transform: translateY(-50%);
+  border: 1.5px solid t.$accent;
+  border-radius: 50%;
+  background: rgba(10, 9, 10, 0.82);
+  cursor: pointer;
+  transition: background 0.18s ease, box-shadow 0.18s ease;
+
+  &::after {
+    content: '';
+    width: 11px;
+    height: 11px;
+    border-top: 2px solid t.$white;
+    border-right: 2px solid t.$white;
+  }
+
+  &:hover {
+    background: t.$accent;
+    box-shadow: 0 0 22px rgba(216, 47, 47, 0.5);
+  }
+
+  // на телефоне листают свайпом, кнопки только мешали бы кадру
+  @include t.mobile {
+    display: none;
+  }
+}
+
+.lightPrev {
+  left: clamp(-6px, -1vw, 0px);
+
+  &::after {
+    margin-left: 4px;
+    transform: rotate(-135deg);
+  }
+}
+
+.lightNext {
+  right: clamp(-6px, -1vw, 0px);
+
+  &::after {
+    margin-right: 4px;
+    transform: rotate(45deg);
+  }
+}
+
+.lightCaption {
+  font-family: t.$font-main;
+  font-size: clamp(13px, 1.3vw, 17px);
+  font-weight: 500;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  text-align: center;
+  color: t.$white;
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.93);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pin-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .address img {
+    animation: none;
+  }
+  .card {
+    transition: none;
+  }
+  .lightInner,
+  .lightbox::backdrop {
+    animation: none;
+  }
+  .stage,
+  .frame {
+    transition: none;
+  }
+}

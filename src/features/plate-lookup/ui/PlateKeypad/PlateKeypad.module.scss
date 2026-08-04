@@ -1,0 +1,146 @@
+@use 'shared/config/tokens' as t;
+
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+  background: rgba(19, 21, 23, 0.985);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px 14px 0 0;
+  box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.6);
+  animation: rise 0.18s ease;
+  // тап по клавише не должен ни скроллить страницу, ни выделять текст
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+}
+
+.hint {
+  font-family: t.$font-main;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: t.$text-muted;
+}
+
+.done {
+  padding: 5px 6px;
+  border: none;
+  background: none;
+  color: t.$accent;
+  font-family: t.$font-main;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.zone {
+  display: grid;
+  gap: 6px;
+  transition: opacity 0.18s ease;
+
+  // половина, которая на этой позиции не подходит: видно, но нажать нельзя
+  &[data-off] {
+    opacity: 0.3;
+  }
+}
+
+.digits {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.letters {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+// на планшете и в ландшафте влезает по одному ряду на каждый набор
+@media (min-width: 560px) {
+  .digits {
+    grid-template-columns: repeat(10, 1fr);
+  }
+  .letters {
+    grid-template-columns: repeat(12, 1fr);
+  }
+}
+
+.key {
+  min-height: 46px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: #23262a;
+  color: t.$white;
+  font-family: t.$font-plate;
+  font-size: 21px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s ease, transform 0.08s ease;
+
+  &:active:not(:disabled) {
+    background: t.$accent;
+    transform: scale(0.94);
+  }
+
+  &:disabled {
+    background: #191b1d;
+    border-color: rgba(255, 255, 255, 0.06);
+    color: t.$text-disclaimer;
+    cursor: default;
+  }
+}
+
+.erase {
+  min-height: 42px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: #1c1f22;
+  color: t.$text-light;
+  font-family: t.$font-main;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+
+  &:active:not(:disabled) {
+    background: #2b2f33;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+}
+
+@keyframes rise {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet {
+    animation: none;
+  }
+  .key {
+    transition: none;
+  }
+}

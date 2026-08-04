@@ -1,0 +1,13 @@
+@use 'shared/config/tokens' as t;
+
+.block {
+  width: 100%;
+}
+
+.solid {
+  @include t.btn-solid;
+}
+
+.outline {
+  @include t.btn-outline;
+}

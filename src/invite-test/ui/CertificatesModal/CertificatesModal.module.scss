@@ -1,0 +1,109 @@
+@use 'invite-test/styles/tokens' as t;
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(2px);
+  animation: fade 0.2s ease both;
+}
+
+.panel {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  padding: 26px 20px 24px;
+  border-radius: t.$radius-modal;
+  background: t.$surface-modal;
+  text-align: center;
+  animation: rise 0.24s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.close {
+  position: absolute;
+  top: -12px;
+  right: -6px;
+  padding: 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+
+  @include t.mobile {
+    top: 10px;
+    right: 10px;
+  }
+}
+
+.title {
+  font-size: clamp(17px, 4.6vw, 20px);
+  font-weight: 700;
+  line-height: 1.25;
+  color: t.$text;
+}
+
+.subtitle {
+  margin-top: 6px;
+  font-size: 13px;
+  color: t.$text-dim;
+}
+
+.cards {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 18px 24px;
+  margin-top: 24px;
+}
+
+.note {
+  margin-top: 16px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: t.$text-dim;
+}
+
+.error {
+  margin-top: 16px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #e2726b;
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .panel {
+    animation: none;
+  }
+}

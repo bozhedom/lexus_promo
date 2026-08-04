@@ -1,0 +1,1 @@
+export { AnimatedCar } from './AnimatedCar'

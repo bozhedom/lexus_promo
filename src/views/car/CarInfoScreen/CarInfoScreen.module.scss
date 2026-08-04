@@ -1,0 +1,131 @@
+@use 'shared/config/tokens' as t;
+
+.center {
+  width: min(333px, 100%);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(12px, 1.8vh, 18px);
+}
+
+.form {
+  width: min(333px, 100%);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(12px, 1.8vh, 18px);
+}
+
+.lookup {
+  padding: 14px 0 6px;
+}
+
+.caption {
+  font-size: clamp(13px, 1.2vw, 16px);
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+// ── найденный автомобиль ───────────────────────────────────────────────────
+.foundCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  min-height: 64px;
+  padding: 8px 12px;
+  background: t.$white;
+  border-radius: t.$radius-plate;
+  color: t.$input-text;
+  animation: found-in 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+// длинные названия вроде «Land Rover Range Rover Evoque» не должны рвать
+// карточку: даём переносить и ужимаем кегль
+.foundCar {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0 8px;
+  max-width: 100%;
+  font-size: clamp(15px, 1.9vw, 24px);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0.4px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.sep {
+  font-style: normal;
+  font-weight: 400;
+  color: #9a9a9a;
+}
+
+.foundPlate {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b6b6b;
+  letter-spacing: 0.8px;
+}
+
+.link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: t.$text-light;
+  font-family: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: color 0.15s ease;
+
+  &:hover {
+    color: t.$white;
+  }
+}
+
+.plateField {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  align-items: center;
+}
+
+.plateLabel {
+  text-align: center;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: t.$text-light;
+}
+
+.error {
+  font-size: 12px;
+  color: t.$accent;
+}
+
+@keyframes found-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .foundCard {
+    animation: none;
+  }
+}

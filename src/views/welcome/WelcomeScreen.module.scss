@@ -1,0 +1,185 @@
+@use 'shared/config/tokens' as t;
+
+.screen {
+  position: relative;
+  min-height: 100dvh;
+  display: flex;
+  overflow: hidden;
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  gap: clamp(10px, 1.6vh, 20px);
+  padding: clamp(16px, 2.4vh, 30px) 20px clamp(18px, 2.6vh, 34px);
+}
+
+.top,
+.bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+}
+
+.top {
+  gap: clamp(8px, 1.6vh, 16px);
+  max-width: 640px;
+  animation: rise 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) 0.1s both;
+}
+
+.bottom {
+  gap: clamp(10px, 1.7vh, 20px);
+  max-width: 700px;
+  animation: rise 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) 0.35s both;
+}
+
+.logo {
+  width: clamp(96px, 9vw, 150px);
+  height: auto;
+}
+
+.wordmark {
+  width: min(488px, 82%);
+  height: auto;
+}
+
+.spec {
+  font-size: clamp(10px, 0.95vw, 12.5px);
+  letter-spacing: clamp(1.4px, 0.19vw, 2.5px);
+  text-transform: uppercase;
+  color: t.$text-light;
+}
+
+.script {
+  font-family: t.$font-script;
+  font-size: clamp(26px, 3vw, 42px);
+  line-height: 1.18;
+  color: t.$white;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.8);
+}
+
+.invite {
+  font-size: clamp(11px, 1.15vw, 16px);
+  line-height: 1.75;
+  letter-spacing: clamp(1.2px, 0.17vw, 2.4px);
+  text-transform: uppercase;
+  color: t.$text-light;
+}
+
+.cta {
+  width: min(394px, 100%);
+  height: clamp(48px, 5.4vh, 54px);
+  font-size: clamp(15px, 1.45vw, 20px);
+  letter-spacing: 0.2px;
+}
+
+.tagline {
+  font-size: clamp(11px, 1vw, 14px);
+  line-height: 1.6;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: t.$text-muted;
+}
+
+@media (min-width: 1800px) {
+  .wordmark {
+    width: 610px;
+  }
+  .spec {
+    font-size: 15.5px;
+    letter-spacing: 3.1px;
+  }
+  .script {
+    font-size: 52px;
+  }
+  .invite {
+    font-size: 20px;
+    letter-spacing: 3px;
+  }
+  .cta {
+    width: 492px;
+    height: 66px;
+    font-size: 25px;
+  }
+  .tagline {
+    font-size: 17px;
+  }
+  .logo {
+    width: 186px;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// на узких экранах фото портретное: контент прижимаем плотнее
+@include t.mobile {
+  // блоки прижаты к краям симметрично, поля те же, что на остальных экранах
+  .content {
+    gap: 12px;
+    padding: 16px t.$gutter-mobile 20px;
+  }
+
+  .top {
+    gap: 8px;
+  }
+
+  .bottom {
+    gap: 14px;
+  }
+}
+
+// совсем маленькие экраны: освобождаем середину кадра под автомобиль
+@media (max-width: 360px), (max-height: 620px) {
+  .content {
+    gap: 10px;
+    padding: 14px 14px 16px;
+  }
+
+  .top,
+  .bottom {
+    gap: 7px;
+  }
+
+  .script {
+    font-size: 23px;
+  }
+
+  .invite {
+    font-size: 10px;
+    line-height: 1.55;
+    letter-spacing: 1px;
+  }
+
+  .cta {
+    height: 44px;
+    font-size: 14px;
+  }
+
+  .tagline {
+    font-size: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .top,
+  .bottom {
+    animation: none;
+  }
+}

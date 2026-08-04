@@ -1,0 +1,32 @@
+@use 'shared/config/tokens' as t;
+
+.divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 420px;
+}
+
+.line {
+  height: 1px;
+  flex: 1;
+
+  &:first-child {
+    background: linear-gradient(90deg, transparent, t.$accent-line);
+  }
+  &:last-child {
+    background: linear-gradient(90deg, t.$accent-line, transparent);
+  }
+}
+
+.rhombus {
+  width: 9px;
+  height: 9px;
+  flex-shrink: 0;
+  // в макете ромб не закрашен: только контур
+  background: transparent;
+  border: 1px solid t.$accent-rhombus;
+  transform: rotate(45deg);
+}

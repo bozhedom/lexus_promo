@@ -1,0 +1,56 @@
+@use 'shared/config/tokens' as t;
+
+.wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+// input лежит поверх нарисованного квадрата: доступен и мышке, и скринридеру
+.input {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  transform: translateY(-50%);
+  opacity: 0;
+  cursor: pointer;
+  z-index: 2;
+}
+
+// Рамку рисует сам checkbox-checked.svg (белый квадрат + серый контур +
+// красная галочка во всю ширину), поэтому своей обводки здесь нет.
+.box {
+  position: relative;
+  z-index: 1;
+  display: block;
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  border: 1px solid t.$input-border;
+  border-radius: 5px;
+  background: t.$white;
+  transition: box-shadow 0.15s ease;
+}
+
+.input:checked + .box {
+  border: none;
+  border-radius: 0;
+  background: url('/images/checkbox-checked.svg') no-repeat center / 22px 22px;
+}
+
+.input:focus-visible + .box {
+  box-shadow: 0 0 0 3px rgba(216, 47, 47, 0.4);
+}
+
+.text {
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: left;
+  color: t.$text-muted;
+}

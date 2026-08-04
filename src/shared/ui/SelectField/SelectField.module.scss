@@ -1,0 +1,224 @@
+@use 'shared/config/tokens' as t;
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  width: 100%;
+}
+
+.label {
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  text-align: center;
+  color: t.$text-light;
+}
+
+.control {
+  position: relative;
+  display: block;
+  // список рисуем поверх соседних полей и кнопки
+  z-index: 3;
+}
+
+// ── поле ───────────────────────────────────────────────────────────────────
+.trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 39px;
+  // справа место под шеврон, слева столько же: значение стоит ровно по центру
+  padding: 0 32px;
+  border: 1px solid t.$input-border;
+  border-radius: t.$radius-input;
+  background: t.$white;
+  color: t.$input-text;
+  font-family: t.$font-main;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.2s ease;
+
+  &:hover:not(:disabled) {
+    border-color: #9b9b9b;
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: t.$accent;
+    box-shadow: 0 0 0 3px rgba(216, 47, 47, 0.18);
+  }
+
+  &[aria-expanded='true'] {
+    border-color: t.$accent;
+    box-shadow: 0 0 0 3px rgba(216, 47, 47, 0.18);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.value {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.empty {
+  color: t.$placeholder;
+  font-weight: 500;
+}
+
+.chevron {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  width: 7px;
+  height: 11px;
+  // исходная иконка смотрит вправо: доворачиваем вниз
+  transform: translateY(-50%) rotate(90deg);
+  background: url('/images/icon-chevron.svg') no-repeat center / contain;
+  transition: transform 0.2s ease;
+  pointer-events: none;
+}
+
+.trigger[aria-expanded='true'] .chevron {
+  transform: translateY(-50%) rotate(-90deg);
+}
+
+// ── список ─────────────────────────────────────────────────────────────────
+// список живёт в портале у body: координаты приходят из JS
+.popup {
+  position: fixed;
+  z-index: 60;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  // список длинный: прокрутка пальцем по вертикали, без горизонтальных жестов
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid rgba(216, 47, 47, 0.55);
+  border-radius: 12px;
+  background: #131416;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.65), 0 0 22px rgba(216, 47, 47, 0.22);
+  animation: pop-in 0.16s cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  // тонкий скролл в цвет акцента
+  scrollbar-width: thin;
+  scrollbar-color: rgba(216, 47, 47, 0.65) transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    border-radius: 3px;
+    background: rgba(216, 47, 47, 0.65);
+  }
+}
+
+// если снизу не помещается: раскрываем вверх
+.popupUp {
+  animation-name: pop-in-up;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 8px 30px;
+  border-radius: 7px;
+  color: t.$text-light;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.25;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.optionActive {
+  background: rgba(216, 47, 47, 0.18);
+  color: t.$white;
+}
+
+.optionSelected {
+  position: relative;
+  color: t.$white;
+  font-weight: 600;
+
+  // галочка у выбранного пункта
+  &::after {
+    content: '';
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    width: 11px;
+    height: 6px;
+    margin-top: -4px;
+    border-left: 2px solid t.$accent;
+    border-bottom: 2px solid t.$accent;
+    transform: rotate(-45deg);
+  }
+}
+
+.invalid {
+  border-color: t.$accent;
+  animation: field-shake 0.3s ease;
+}
+
+.error {
+  font-size: 12px;
+  text-align: center;
+  color: t.$accent;
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pop-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes field-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .invalid,
+  .popup {
+    animation: none;
+  }
+}

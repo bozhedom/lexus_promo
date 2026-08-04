@@ -1,0 +1,28 @@
+@use 'invite-test/styles/tokens' as t;
+
+.rail {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.slide {
+  flex: 0 0 88%;
+  scroll-snap-align: start;
+  border-radius: t.$radius-block;
+  overflow: hidden;
+  @include t.gold-border(t.$surface);
+
+  img {
+    width: 100%;
+    height: auto;
+    border-radius: inherit;
+  }
+}

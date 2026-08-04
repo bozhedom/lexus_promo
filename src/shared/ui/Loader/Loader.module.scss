@@ -1,0 +1,119 @@
+@use 'shared/config/tokens' as t;
+
+.wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ring {
+  display: block;
+  flex-shrink: 0;
+  overflow: visible;
+  // круг вращается целиком, длина дуги дышит отдельно: вместе это читается
+  // как луч, который разгоняется и тормозит
+  animation: loader-turn 1.9s linear infinite;
+}
+
+.track {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.13);
+  stroke-width: 3;
+}
+
+.arc {
+  fill: none;
+  stroke: t.$accent;
+  stroke-width: 3;
+  stroke-linecap: round;
+  // 2 * pi * 19 = 119.4: полная длина окружности
+  stroke-dasharray: 1 119.4;
+  transform-origin: center;
+  filter: drop-shadow(0 0 4px rgba(216, 47, 47, 0.85));
+  animation: loader-dash 1.5s ease-in-out infinite;
+}
+
+.label {
+  font-size: 14px;
+  letter-spacing: 0.4px;
+  color: t.$text-light;
+}
+
+// ── размеры ────────────────────────────────────────────────────────────────
+.beam .ring {
+  width: 20px;
+  height: 20px;
+}
+
+// на мелком круге тонкая линия выглядит рваной
+.beam .track,
+.beam .arc {
+  stroke-width: 4.5;
+}
+
+.beam .label {
+  font-size: 15px;
+}
+
+.stage {
+  flex-direction: column;
+  gap: 18px;
+  text-align: center;
+}
+
+.stage .ring {
+  width: 54px;
+  height: 54px;
+}
+
+.stage .label {
+  font-size: 15px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: t.$text-light-2;
+  animation: loader-fade 1.8s ease-in-out infinite;
+}
+
+@keyframes loader-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes loader-dash {
+  0% {
+    stroke-dasharray: 1 119.4;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 76 119.4;
+    stroke-dashoffset: -16;
+  }
+  100% {
+    stroke-dasharray: 76 119.4;
+    stroke-dashoffset: -111;
+  }
+}
+
+@keyframes loader-fade {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring {
+    animation-duration: 4s;
+  }
+  .arc {
+    animation: none;
+    stroke-dasharray: 76 119.4;
+  }
+  .label {
+    animation: none;
+  }
+}

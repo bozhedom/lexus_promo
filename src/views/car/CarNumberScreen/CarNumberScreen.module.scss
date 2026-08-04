@@ -1,0 +1,31 @@
+@use 'shared/config/tokens' as t;
+
+.body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(14px, 2.2vh, 20px);
+}
+
+// в макете поле и кнопка уже карточки: 333px по центру
+.stack {
+  width: min(333px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(12px, 1.8vh, 18px);
+}
+
+.caption {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.error {
+  font-size: 13px;
+  color: t.$accent;
+  text-align: center;
+}

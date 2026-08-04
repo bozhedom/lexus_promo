@@ -1,0 +1,114 @@
+@use 'shared/config/tokens' as t;
+
+// синхронизировано с CLOSE_MS / OPEN_MS в CurtainTransition.tsx
+$close-ms: 620;
+$open-ms: 950;
+
+.curtain {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  overflow: hidden;
+  pointer-events: none;
+  visibility: hidden;
+
+  &[data-phase='closing'],
+  &[data-phase='closed'],
+  &[data-phase='opening'] {
+    visibility: visible;
+  }
+
+  // пока занавес закрыт: не даём кликать по тому, что под ним
+  &[data-phase='closing'],
+  &[data-phase='closed'] {
+    pointer-events: auto;
+  }
+}
+
+.panel {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  // с запасом, чтобы половинки заходили друг за друга и не оставляли щели
+  width: 53%;
+  background-repeat: no-repeat;
+  background-size: cover;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.left {
+  left: 0;
+  transform: translate3d(-101%, 0, 0);
+  background-image: url('/images/curtain-left.webp');
+  background-position: right top;
+  // мягкая тень на стыке: половинки читаются как две шторы, а не как одна плоскость
+  box-shadow: 14px 0 46px rgba(0, 0, 0, 0.75);
+}
+
+.right {
+  right: 0;
+  transform: translate3d(101%, 0, 0);
+  background-image: url('/images/curtain-right.webp');
+  background-position: left top;
+  box-shadow: -14px 0 46px rgba(0, 0, 0, 0.75);
+}
+
+// тёплый блик по центру в момент смыкания/раскрытия
+.glow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 70vmin;
+  height: 70vmin;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  opacity: 0;
+  background: radial-gradient(
+    circle,
+    rgba(216, 47, 47, 0.35) 0%,
+    rgba(216, 47, 47, 0.12) 42%,
+    rgba(0, 0, 0, 0) 70%
+  );
+  transition: opacity 0.4s ease;
+}
+
+.curtain[data-phase='closing'] {
+  .panel {
+    transform: translate3d(0, 0, 0);
+    transition: transform #{$close-ms}ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .glow {
+    opacity: 1;
+  }
+}
+
+.curtain[data-phase='closed'] {
+  .panel {
+    transform: translate3d(0, 0, 0);
+  }
+  .glow {
+    opacity: 1;
+  }
+}
+
+.curtain[data-phase='opening'] {
+  .panel {
+    transition: transform #{$open-ms}ms cubic-bezier(0.16, 0.84, 0.24, 1);
+  }
+  .left {
+    transform: translate3d(-101%, 0, 0);
+  }
+  .right {
+    transform: translate3d(101%, 0, 0);
+  }
+  .glow {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .curtain {
+    display: none;
+  }
+}

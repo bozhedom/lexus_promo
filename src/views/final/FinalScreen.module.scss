@@ -1,0 +1,303 @@
+@use 'shared/config/tokens' as t;
+
+.screen {
+  position: relative;
+  min-height: 100dvh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: clamp(22px, 4vh, 56px) 20px clamp(22px, 4vh, 52px);
+  background: t.$black;
+  overflow: hidden;
+}
+
+// та же сцена, что и на шагах 2-4
+.scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.sceneBox {
+  position: absolute;
+  inset: 0;
+  background: url('/images/stage-plate.webp') no-repeat center top / cover;
+
+  // мобильный кадр: без штор и рук, только тёмная сцена и один софит
+  @media (max-width: 900px) and (orientation: portrait) {
+    background-image: url('/images/bg-final-portrait.webp');
+  }
+
+  // широкий кадр: только для по-настоящему вытянутых экранов, см. StageLayout
+  @media (min-aspect-ratio: 12 / 5) {
+    background-image: url('/images/stage-plate-wide.webp');
+  }
+}
+
+
+// в макете итоговый экран заметно притемнён
+.dim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      62% 66% at 50% 46%,
+      rgba(0, 0, 0, 0.56) 0%,
+      rgba(0, 0, 0, 0.32) 58%,
+      rgba(0, 0, 0, 0.14) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.38) 0%,
+      rgba(0, 0, 0, 0.1) 24%,
+      rgba(0, 0, 0, 0.46) 80%,
+      rgba(0, 0, 0, 0.82) 100%
+    );
+
+  // Десктопная вуаль на телефоне съедала пол целиком. Гасим только верх под
+  // заголовок и низ, середину оставляем видимой.
+  @media (max-width: 900px) and (orientation: portrait) {
+    background: linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.62) 0%,
+      rgba(0, 0, 0, 0.28) 18%,
+      rgba(0, 0, 0, 0.08) 46%,
+      rgba(0, 0, 0, 0.16) 78%,
+      rgba(0, 0, 0, 0.55) 100%
+    );
+  }
+}
+
+.inner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 1040px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 720px;
+  animation: rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.saved {
+  font-size: clamp(17px, 2.25vw, 32px);
+  line-height: 1.35;
+  font-weight: 500;
+}
+
+.accent {
+  color: t.$accent;
+}
+
+.divider {
+  margin: clamp(12px, 2vh, 22px) auto;
+  max-width: 360px;
+}
+
+.invite {
+  font-size: clamp(22px, 2.95vw, 42px);
+  font-weight: 700;
+}
+
+.body {
+  display: grid;
+  grid-template-columns: 1fr clamp(180px, 17vw, 236px);
+  gap: clamp(12px, 1.6vw, 22px);
+  width: 100%;
+  margin-top: clamp(18px, 3.2vh, 40px);
+  align-items: stretch;
+  animation: rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) 0.12s both;
+}
+
+.links {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-auto-rows: 1fr;
+  gap: clamp(9px, 1.1vw, 16px);
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  gap: clamp(10px, 1vw, 15px);
+  height: 100%;
+  min-height: clamp(48px, 6.2vh, 70px);
+  padding: 10px clamp(12px, 1.3vw, 20px);
+  border-radius: t.$radius-final-card;
+  font-size: clamp(10.5px, 1vw, 15px);
+  line-height: 1.3;
+  text-transform: uppercase;
+  color: t.$white;
+  transition: box-shadow 0.18s ease, transform 0.18s ease;
+  @include t.border-gradient(#d7d7d7, #0d0b0c, #2e1112, #d7d7d7);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.55);
+  }
+}
+
+.linkAccent {
+  @include t.border-gradient(#d82f2f, #3a1113, #7d1c1e, #d82f2f);
+
+  &:hover {
+    box-shadow: 0 0 22px rgba(216, 47, 47, 0.4);
+  }
+}
+
+.icon {
+  width: clamp(20px, 1.7vw, 26px);
+  height: auto;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.label {
+  min-width: 0;
+}
+
+// ── карточка автосекретаря ─────────────────────────────────────────────────
+.person {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  padding: clamp(14px, 1.8vh, 20px) 12px 0;
+  border-radius: t.$radius-final-card;
+  text-align: center;
+  overflow: hidden;
+  @include t.border-gradient(#d82f2f, #3a1113, #7d1c1e, #d82f2f);
+}
+
+.personText {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.role {
+  position: relative;
+  display: inline-block;
+  font-size: clamp(12px, 1.05vw, 16px);
+  color: t.$text-light;
+}
+
+// сердечко наезжает на подпись, как в макете
+.heart {
+  position: absolute;
+  left: 4%;
+  top: 62%;
+  width: clamp(28px, 2.7vw, 42px);
+  height: auto;
+  opacity: 0.95;
+  pointer-events: none;
+}
+
+.personName {
+  position: relative;
+  z-index: 2;
+  font-size: clamp(17px, 1.65vw, 24px);
+  font-weight: 700;
+}
+
+// только голова и плечи, без серой подложки
+.photo {
+  position: relative;
+  z-index: 0;
+  width: 100%;
+  max-width: 190px;
+  height: auto;
+  margin-top: -2px;
+  object-fit: contain;
+  object-position: bottom;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// ── планшет / мобила ───────────────────────────────────────────────────────
+@media (max-width: 900px) {
+  .body {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .person {
+    order: -1;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 0 0 18px;
+    min-height: 74px;
+  }
+
+  .personText {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .heart {
+    left: auto;
+    right: -34px;
+    top: 46%;
+    width: 34px;
+    transform: translateY(-30%);
+  }
+
+  .photo {
+    width: auto;
+    max-width: none;
+    height: 74px;
+    margin: 0;
+    align-self: flex-end;
+  }
+}
+
+@include t.mobile {
+  .links {
+    grid-template-columns: 1fr;
+  }
+
+  .link {
+    min-height: 46px;
+    font-size: 11.5px;
+  }
+
+  .saved {
+    font-size: 17px;
+  }
+
+  .invite {
+    font-size: 23px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .head,
+  .body {
+    animation: none;
+  }
+}

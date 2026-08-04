@@ -1,0 +1,37 @@
+@use 'invite-test/styles/tokens' as t;
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  max-width: 140px;
+  text-align: center;
+}
+
+.btn {
+  min-height: 0;
+  padding: 0;
+  border: none;
+  border-radius: 14px;
+  background: transparent;
+  overflow: hidden;
+  transition: transform 0.18s ease;
+
+  &:hover:not(:disabled) {
+    background: transparent;
+    transform: translateY(-2px);
+  }
+}
+
+.icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+}
+
+.label {
+  font-size: 12px;
+  line-height: 1.25;
+  color: t.$text-dim;
+}

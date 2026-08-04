@@ -1,0 +1,35 @@
+// Палитра этого макета: тёмный фон и золотой градиент вместо красного
+// основной воронки. Брейкпоинты и общие миксины берём из проекта.
+@forward 'shared/config/tokens';
+
+$gold-from: #ebc66d;
+$gold-to: #e28849;
+$gold-line: rgba(235, 198, 109, 0.35);
+
+$surface: #0b0b0c;
+$surface-modal: #17181a;
+$surface-tile: #101113;
+
+$text: #f2efe8;
+$text-dim: #b9b3a6;
+
+$green-fill: rgba(38, 62, 44, 0.55);
+
+$radius-block: 12px;
+$radius-modal: 20px;
+
+@mixin gold-text {
+  background: linear-gradient(180deg, $gold-from 0%, $gold-to 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+@mixin gold-border($fill: transparent) {
+  border: 1px solid transparent;
+  background-image:
+    linear-gradient($fill, $fill),
+    linear-gradient(180deg, $gold-from 0%, $gold-to 100%);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}

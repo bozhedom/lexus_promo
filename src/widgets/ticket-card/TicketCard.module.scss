@@ -1,0 +1,379 @@
+@use 'shared/config/tokens' as t;
+
+// Пригласительный во весь экран. Надписи LEXUS вшиты в фотографию.
+// Этот блок уходит в PNG.
+.card {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: t.$black;
+  color: t.$white;
+  text-align: center;
+}
+
+// Геометрия cover посчитана явно, чтобы фото не плющилось и госномер попадал
+// на бампер. Карточка занимает вьюпорт, отсюда vw/dvh.
+$ar-cert: 1.77683; // 1672 / 941
+$ar-cert-mobile: 0.5625; // 360 / 640
+
+.scene {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  // ширина кадра доступна детям как --sw: от неё считаются размеры знака
+  --sw: max(100vw, calc(100dvh * #{$ar-cert}));
+  width: var(--sw);
+  height: max(100dvh, calc(100vw / #{$ar-cert}));
+  background: url('/images/bg-cert-lexus.webp') no-repeat center / 100% 100%;
+
+  @media (min-width: 1500px) {
+    background-image: url('/images/bg-cert-lexus@2x.webp');
+  }
+
+  // Вертикальный кадр на всех портретных экранах, включая планшет: от
+  // горизонтального там остаётся один капот. Показываем в своих пропорциях,
+  // лишнюю ширину срезаем. Достраивать по высоте нельзя, штора вытягивается
+  // полосой до низа.
+  @media (orientation: portrait) and (max-width: 1024px) {
+    background-image: url('/images/bg-cert-portrait.webp');
+    --sw: max(100vw, calc(100dvh * #{$ar-cert-mobile}));
+    width: var(--sw);
+    height: max(100dvh, calc(100vw / #{$ar-cert-mobile}));
+  }
+}
+
+// лёгкое затемнение только по краям: середина остаётся яркой, как в макете
+.card::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0) 26%),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0) 28%);
+  pointer-events: none;
+}
+
+.card > *:not(.scene) {
+  position: absolute;
+  z-index: 2;
+}
+
+// ── шапка ──────────────────────────────────────────────────────────────────
+.frame {
+  left: 50%;
+  top: 5%;
+  transform: translateX(-50%);
+  width: min(688px, 74%);
+  padding: clamp(6px, 0.9vh, 11px) 10px;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  font-size: clamp(8px, 1.11vw, 16px);
+  font-weight: 500;
+  letter-spacing: clamp(0.8px, 0.17vw, 2.4px);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.brand {
+  left: 50%;
+  top: 12.5%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 1.5vw, 22px);
+  font-size: clamp(34px, 5.7vw, 82px);
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  text-shadow: 0 4px 30px rgba(0, 0, 0, 0.75);
+}
+
+.brandAccent {
+  color: t.$accent;
+}
+
+.brandSep {
+  font-weight: 200;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.brandLight {
+  font-weight: 400;
+}
+
+.spec {
+  left: 50%;
+  top: 25%;
+  transform: translateX(-50%);
+  font-size: clamp(8px, 1.18vw, 17px);
+  letter-spacing: clamp(1px, 0.24vw, 3.4px);
+  text-transform: uppercase;
+  color: t.$text-cert;
+  white-space: nowrap;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.85);
+}
+
+// ── имя | автомобиль ───────────────────────────────────────────────────────
+.data {
+  left: 50%;
+  top: 30.5%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: clamp(10px, 1.5vw, 22px);
+  color: t.$text-cert;
+  text-transform: uppercase;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
+}
+
+.name {
+  max-width: clamp(90px, 12vw, 170px);
+  text-align: right;
+  font-size: clamp(8px, 0.97vw, 14px);
+  letter-spacing: clamp(0.6px, 0.11vw, 1.6px);
+  line-height: 1.35;
+}
+
+.vline {
+  width: 1px;
+  height: clamp(26px, 3.4vw, 46px);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.car {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  // длинная марка с моделью переносится, а не выезжает за кадр
+  max-width: clamp(120px, 22vw, 320px);
+  text-align: left;
+
+  b {
+    font-size: clamp(10px, 1.25vw, 18px);
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: clamp(1px, 0.15vw, 2.2px);
+    overflow-wrap: anywhere;
+  }
+}
+
+.year {
+  font-size: clamp(8px, 0.97vw, 14px);
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: clamp(0.8px, 0.14vw, 2px);
+}
+
+// ── госномер на автомобиле (внутри кадра фотографии) ───────────────────────
+.carPlate {
+  position: absolute;
+  left: 49.4%;
+  top: 63.2%;
+  // доля от кадра: знак всегда попадает в нишу бампера и не «уезжает»
+  width: 7.6%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: stretch;
+  // 520 x 112 мм, пропорции настоящего знака. Было 3.6:1 и выглядело вдвое выше
+  aspect-ratio: 4.64 / 1;
+  border-radius: 2px;
+  background: #f6f6f6;
+  color: #16181a;
+  font-family: t.$font-plate;
+  font-weight: 700;
+  line-height: 1;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.carPlateMain {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  // поля по краям знака: без них номер упирался в рамку
+  padding: 0 calc(var(--sw) * 0.0035);
+  font-size: calc(var(--sw) * 0.0105);
+  letter-spacing: 0.2px;
+}
+
+.carPlateRegion {
+  display: flex;
+  flex: 0 0 27%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--sw) * 0.0004);
+  padding: calc(var(--sw) * 0.0012) 0;
+  border-left: 1px solid #b9bcc4;
+}
+
+.carPlateDigits {
+  font-size: calc(var(--sw) * 0.0068);
+  line-height: 1;
+}
+
+.carPlateFlag {
+  width: 64%;
+  height: auto;
+}
+
+// ── подарок ────────────────────────────────────────────────────────────────
+.gift {
+  left: 50%;
+  bottom: 12.5%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(560px, 84%);
+  text-shadow: 0 3px 22px rgba(0, 0, 0, 0.9);
+}
+
+.giftTitle {
+  font-size: clamp(8px, 1.11vw, 16px);
+  letter-spacing: clamp(0.8px, 0.14vw, 2px);
+  text-transform: uppercase;
+}
+
+.amount {
+  font-size: clamp(34px, 4.45vw, 64px);
+  font-weight: 700;
+  line-height: 1.1;
+  color: t.$accent;
+}
+
+.giftSub {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 1vw, 14px);
+  width: 100%;
+  font-size: clamp(8px, 1.11vw, 16px);
+  letter-spacing: clamp(0.8px, 0.14vw, 2px);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.giftLine {
+  flex: 1;
+  height: 1px;
+
+  &:first-child {
+    background: linear-gradient(90deg, rgba(211, 39, 40, 0) 0%, t.$accent-line 100%);
+  }
+  &:last-child {
+    background: linear-gradient(90deg, t.$accent-line 0%, rgba(211, 39, 40, 0) 100%);
+  }
+}
+
+// ── раскладка поверх вертикального кадра ───────────────────────────────────
+// Границы должны совпадать с медиазапросом самого кадра. Разъедутся хотя бы на
+// пиксель, и знак считает проценты от другой фотографии.
+@media (orientation: portrait) and (max-width: 1024px) {
+  .frame {
+    top: 3%;
+    width: 90%;
+  }
+
+  .brand {
+    top: 8%;
+  }
+
+  .spec {
+    top: 15.4%;
+    width: 84%;
+    white-space: normal;
+  }
+
+  .data {
+    top: 22%;
+  }
+
+  .gift {
+    bottom: 20%;
+    width: 84%;
+  }
+
+  // ниша номера на вертикальном кадре: бампер стоит ниже и крупнее, чем на
+  // горизонтальном, поэтому свои проценты
+  .carPlate {
+    left: 50.3%;
+    top: 57%;
+    width: 16.1%;
+  }
+
+  .carPlateMain {
+    padding: 0 calc(var(--sw) * 0.008);
+    font-size: calc(var(--sw) * 0.021);
+  }
+
+  .carPlateRegion {
+    flex-basis: 26%;
+    gap: calc(var(--sw) * 0.001);
+    padding: calc(var(--sw) * 0.0025) 0;
+  }
+
+  .carPlateDigits {
+    font-size: calc(var(--sw) * 0.014);
+  }
+
+  .carPlateFlag {
+    width: 76%;
+  }
+}
+
+// ── типографика на телефоне ────────────────────────────────────────────────
+@media (max-width: 767px) {
+  .frame {
+    font-size: 8.5px;
+    letter-spacing: 0.5px;
+    padding: 7px 6px;
+  }
+
+  .brand {
+    font-size: 40px;
+    gap: 10px;
+  }
+
+  .spec {
+    font-size: 9px;
+    letter-spacing: 1.2px;
+    line-height: 1.5;
+  }
+
+  .data {
+    gap: 14px;
+  }
+
+  .name {
+    max-width: 118px;
+    font-size: 9.5px;
+    letter-spacing: 1px;
+  }
+
+  .vline {
+    height: 32px;
+  }
+
+  .car b {
+    font-size: 13px;
+    letter-spacing: 1.4px;
+  }
+
+  .year {
+    font-size: 10px;
+  }
+
+  .amount {
+    font-size: 44px;
+  }
+
+  .giftTitle,
+  .giftSub {
+    font-size: 10px;
+    letter-spacing: 1.2px;
+  }
+}

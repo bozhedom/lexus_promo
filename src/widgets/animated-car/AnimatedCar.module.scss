@@ -1,0 +1,270 @@
+@use 'shared/config/tokens' as t;
+
+// Пропорции исходников: мобильный портрет и десктопный кадр
+$ar-mobile: 0.65256;   // 941 / 1442
+$ar-desktop: 1.79775;  // 1440 / 801
+
+.scene {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background: t.$black;
+}
+
+// Коробка ровно по геометрии `cover`: считаем обе стороны явно, чтобы проценты
+// внутри указывали на конкретные точки фотографии на любом экране.
+.box {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: max(100vw, calc(100dvh * #{$ar-mobile}));
+  height: max(100dvh, calc(100vw / #{$ar-mobile}));
+
+  // координаты фар и размеры световых слоёв: в процентах от кадра
+  --hl-left: 33.2%;
+  --hl-right: 67.9%;
+  --hl-top: 43%;
+  --beam-w: 24%;
+  --beam-h: 38%;
+  --halo-w: 15%;
+  --flare-w: 21%;
+  --flare-h: 1.3%;
+  --floor-top: 62%;
+
+  // горизонтальный кадр: только на альбомных экранах, иначе портретный
+  @media (min-width: 768px) and (orientation: landscape) {
+    width: max(100vw, calc(100dvh * #{$ar-desktop}));
+    height: max(100dvh, calc(100vw / #{$ar-desktop}));
+
+    --hl-left: 42.5%;
+    --hl-right: 58.1%;
+    --hl-top: 40.7%;
+    --beam-w: 12%;
+    --beam-h: 44%;
+    --halo-w: 7.5%;
+    --flare-w: 12%;
+    --flare-h: 1.4%;
+    --floor-top: 76%;
+  }
+}
+
+.photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  animation: scene-in 1.2s ease-out both;
+}
+
+// ── фары ───────────────────────────────────────────────────────────────────
+.lamp {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  animation:
+    lamp-on 1.7s cubic-bezier(0.4, 0, 0.2, 1) 0.45s forwards,
+    lamp-breathe 5.5s ease-in-out 2.4s infinite alternate,
+    // редкое подмигивание: сцена живая, но не мельтешит
+    lamp-blink 5s ease-in-out 4s infinite;
+}
+
+.lampLeft {
+  --x: var(--hl-left);
+  --tilt: -13deg;
+}
+
+.lampRight {
+  --x: var(--hl-right);
+  --tilt: 13deg;
+}
+
+// объёмный конус света в дыму: начинается ровно в линзе
+.beam {
+  position: absolute;
+  left: var(--x);
+  top: var(--hl-top);
+  width: var(--beam-w);
+  height: var(--beam-h);
+  transform-origin: 50% 0;
+  transform: translateX(-50%) rotate(var(--tilt));
+  clip-path: polygon(46.5% 0%, 53.5% 0%, 92% 100%, 8% 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.15) 0%,
+    rgba(255, 250, 235, 0.045) 32%,
+    rgba(255, 250, 235, 0.014) 58%,
+    rgba(255, 255, 255, 0) 84%
+  );
+  // размываем и гасим бока, чтобы конус читался как свет в дыму, а не как фигура
+  mask-image: linear-gradient(90deg, transparent 0%, #000 32%, #000 68%, transparent 100%);
+  filter: blur(30px);
+  mix-blend-mode: screen;
+}
+
+// мягкий ореол вокруг линзы
+.halo {
+  position: absolute;
+  left: var(--x);
+  top: var(--hl-top);
+  width: var(--halo-w);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(226, 238, 255, 0.16) 30%,
+    rgba(255, 255, 255, 0) 70%
+  );
+  mix-blend-mode: screen;
+}
+
+// горизонтальный блик: свет читается именно как фара, а не как пятно
+.flare {
+  position: absolute;
+  left: var(--x);
+  top: var(--hl-top);
+  width: var(--flare-w);
+  height: var(--flare-h);
+  min-height: 8px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.34) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  filter: blur(3px);
+  mix-blend-mode: screen;
+}
+
+// отсвет на полу перед автомобилем
+.floor {
+  position: absolute;
+  left: 50%;
+  top: var(--floor-top);
+  width: 26%;
+  height: 16%;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 255, 255, 0.055) 0%,
+    rgba(255, 255, 255, 0.018) 45%,
+    rgba(255, 255, 255, 0) 75%
+  );
+  filter: blur(20px);
+  mix-blend-mode: screen;
+  opacity: 0;
+  pointer-events: none;
+  animation: lamp-on 2.2s ease-out 0.7s forwards;
+}
+
+// ── атмосфера ──────────────────────────────────────────────────────────────
+.haze {
+  position: absolute;
+  inset: -12%;
+  pointer-events: none;
+  background:
+    radial-gradient(38% 30% at 30% 62%, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0) 70%),
+    radial-gradient(42% 34% at 72% 55%, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0) 72%);
+  animation: haze-drift 24s ease-in-out infinite alternate;
+}
+
+.vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0) 24%),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.88) 0%, rgba(0, 0, 0, 0) 30%),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0) 16%),
+    linear-gradient(270deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0) 16%);
+}
+
+@keyframes scene-in {
+  from {
+    opacity: 0;
+    transform: scale(1.06);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+// «включение» фар с характерным подмигиванием
+@keyframes lamp-on {
+  0% {
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.45;
+  }
+  26% {
+    opacity: 0.1;
+  }
+  46% {
+    opacity: 0.85;
+  }
+  56% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes lamp-breathe {
+  from {
+    opacity: 0.82;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes lamp-blink {
+  0%,
+  70%,
+  100% {
+    opacity: 1;
+  }
+  72% {
+    opacity: 0.35;
+  }
+  74% {
+    opacity: 0.95;
+  }
+  76% {
+    opacity: 0.2;
+  }
+  80% {
+    opacity: 1;
+  }
+}
+
+@keyframes haze-drift {
+  from {
+    transform: translate3d(-2%, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(2%, -1.5%, 0) scale(1.06);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .photo,
+  .haze {
+    animation: none;
+  }
+
+  .lamp,
+  .floor {
+    animation: none;
+    opacity: 1;
+  }
+}

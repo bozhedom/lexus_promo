@@ -1,0 +1,149 @@
+// Дизайн-токены из Figma (s8n0Gw8g35hPvQia8L2Ajo).
+// Подключение в модулях: @use 'shared/config/tokens' as t;
+
+// Цвета
+$black: #000;
+$card-bg: #0d0b0c;
+$panel-bg: #151719;
+
+$accent: #d82f2f; // основной красный
+$accent-line: #d32728; // градиент-линии
+$accent-rhombus: #d12728; // ромб-разделитель
+$accent-start-btn: #ef002a; // рамка кнопки на стартовом
+
+$white: #fff;
+$text-light: #e2e2e2;
+$text-light-2: #e3e3e3;
+$text-muted: #a1a1a1;
+$text-gallery: #bab3b3;
+$text-disclaimer: #696565;
+$text-cert: #d3d3d3;
+
+$input-border: #c7c7c7;
+$input-placeholder: #cfcfcf;
+// #cfcfcf из макета на белом почти не читается: для подсказок берём контрастнее,
+// но заметно светлее введённого текста, чтобы поле не выглядело заполненным
+$placeholder: #b0b0b0;
+$input-text: #2e2e2e;
+$card-outline: #d7d7d7;
+
+// Радиусы
+$radius-card: 25px;
+$radius-input: 5px;
+$radius-plate: 9px;
+$radius-gallery: 14px;
+$radius-final-card: 9px;
+
+// Тени
+$card-shadow: 0 0 20px rgba(216, 47, 47, 0.3);
+
+// Брейкпоинты
+$bp-mobile: 480px;
+$bp-tablet: 768px;
+$bp-desktop: 1200px;
+
+// Шрифты (переменные приходят из next/font в layout)
+$font-main: var(--font-manrope), system-ui, sans-serif;
+$font-script: var(--font-marck), cursive;
+$font-plate: var(--font-opensans), system-ui, sans-serif;
+
+// Максимальная ширина контента
+$content-max: 1200px;
+
+// Боковое поле на мобиле. Одно на всю воронку, чтобы карточка формы и
+// карточки слайдера стояли по одной линии.
+$gutter-mobile: 16px;
+
+// Боковой отступ внутри карточки формы. Вынесен из StageLayout, потому что по
+// этой же линии выравнивается лента слайдера ниже: см. $rail-gutter-mobile.
+$card-pad-x: clamp(18px, 2vw, 30px);
+
+// Куда встаёт лента слайдера на мобиле: ровно под содержимым карточки формы.
+// Слагаемые: поле страницы, рамка карточки в 1px, её внутренний отступ.
+$rail-gutter-mobile: calc(#{$gutter-mobile} + 1px + #{$card-pad-x});
+
+@mixin mobile {
+  @media (max-width: $bp-tablet) {
+    @content;
+  }
+}
+
+@mixin small {
+  @media (max-width: $bp-mobile) {
+    @content;
+  }
+}
+
+// Свечение карточек и панелей из макета
+$glow-accent: 0 0 20px 0 rgba(216, 47, 47, 0.3);
+
+// Рамка-градиент кнопок итогового экрана
+@mixin border-gradient($from: #d7d7d7, $mid: #0d0b0c, $mid2: #2e1112, $to: #d7d7d7) {
+  border: 1px solid transparent;
+  background-image:
+    linear-gradient($panel-bg, $panel-bg),
+    linear-gradient(107.5deg, $from 2.32%, $mid 39.63%, $mid2 72.22%, $to 100.55%);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
+// Красная сплошная кнопка (Определить, Это мой автомобиль, Далее...)
+@mixin btn-solid {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 12px 22px;
+  border: none;
+  border-radius: $radius-input;
+  background: $accent;
+  color: $white;
+  font-family: $font-main;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 1.15;
+  cursor: pointer;
+  transition: opacity 0.15s ease, background 0.15s ease, box-shadow 0.2s ease;
+
+  &:hover:not(:disabled) {
+    box-shadow: 0 0 18px rgba(216, 47, 47, 0.5);
+  }
+
+  &:hover:not(:disabled) {
+    background: #c02828;
+  }
+  &:active:not(:disabled) {
+    opacity: 0.85;
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// Прозрачная кнопка с красной рамкой (стартовая, сохранить)
+@mixin btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 12px 22px;
+  background: transparent;
+  border: 2px solid $accent-start-btn;
+  color: $white;
+  font-family: $font-main;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, opacity 0.15s ease;
+
+  &:hover:not(:disabled) {
+    background: rgba(239, 0, 42, 0.12);
+  }
+  &:active:not(:disabled) {
+    opacity: 0.85;
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
