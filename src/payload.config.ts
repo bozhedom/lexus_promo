@@ -12,6 +12,8 @@ import { Media } from "./collections/Media";
 import { Applications } from "./collections/Applications";
 import { Certificates } from "./collections/Certificates";
 import { Events } from "./collections/Events";
+import { PromoSlides } from "./collections/PromoSlides";
+import { CertificateRules } from "./collections/CertificateRules";
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
@@ -33,7 +35,15 @@ export default buildConfig({
       ],
     },
   },
-  collections: [Applications, Certificates, Events, Users, Media],
+  collections: [
+    Applications,
+    Certificates,
+    PromoSlides,
+    CertificateRules,
+    Events,
+    Users,
+    Media,
+  ],
   i18n: {
     supportedLanguages: { en, ru },
     fallbackLanguage: "ru",

@@ -1,0 +1,112 @@
+@use 'shared/config/tokens' as t;
+
+.screen {
+  position: relative;
+  min-height: 100dvh;
+  padding: max(32px, env(safe-area-inset-top)) 16px max(32px, env(safe-area-inset-bottom));
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #000;
+  color: rgba(255, 255, 255, 0.82);
+  font-family: t.$font-condensed;
+  text-align: center;
+}
+
+.stage {
+  position: absolute;
+  inset: 0;
+  left: 50%;
+  width: min(100%, 480px);
+  transform: translateX(-50%);
+  background: url('/images/redesign/form-stage.webp') no-repeat center / cover;
+  opacity: 0.62;
+}
+
+.card {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 380px);
+  padding: 30px 24px 24px;
+  border: 1px solid t.$gold;
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.72);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.72), 0 0 28px rgba(228, 204, 174, 0.12);
+  backdrop-filter: blur(14px);
+
+  > button:first-of-type {
+    @include t.gold-button;
+    min-height: 50px;
+    margin-top: 22px;
+    font-size: 16px;
+  }
+
+  h1 {
+    @include t.gold-text;
+    margin-top: 4px;
+    font-family: t.$font-display;
+    font-size: 32px;
+    font-weight: 400;
+    line-height: 1.05;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+  }
+}
+
+.eyebrow {
+  font-size: 12px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+}
+
+.divider {
+  display: block;
+  width: 132px;
+  height: 1px;
+  margin: 17px auto;
+  background: linear-gradient(90deg, transparent, t.$gold-light, transparent);
+}
+
+.lead,
+.note { font-size: 13px; line-height: 1.4; }
+
+.vehicle {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-transform: uppercase;
+
+  strong { font-size: 22px; letter-spacing: 2px; color: #fff; }
+  span { font-size: 12px; letter-spacing: 0.8px; }
+}
+
+.certificate {
+  margin-top: 18px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid rgba(228, 204, 174, 0.62);
+  background: radial-gradient(circle at 50% 0, rgba(228, 204, 174, 0.14), transparent 62%);
+
+  small { text-transform: uppercase; letter-spacing: 1.4px; }
+  strong { @include t.gold-text; margin-top: 3px; font-family: t.$font-display; font-size: 36px; font-weight: 400; }
+  code { margin-top: 9px; color: #fff; font-family: t.$font-main; font-size: 18px; letter-spacing: 2px; }
+  span { margin-top: 8px; font-size: 11px; }
+}
+
+.note { margin-top: 18px; color: rgba(255, 255, 255, 0.66); }
+
+.newButton {
+  margin-top: 15px;
+  border: 0;
+  background: none;
+  color: rgba(255, 255, 255, 0.72);
+  font: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-transform: uppercase;
+  cursor: pointer;
+}

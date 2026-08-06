@@ -19,7 +19,9 @@ export interface FunnelData {
   phoneVerificationToken?: string
   status?: ApplicationStatus
   certificateCode?: string
+  certificateId?: string
   certificateAmount?: number
+  certificateExpiresAt?: string | null
 }
 
 export type CarInfo =

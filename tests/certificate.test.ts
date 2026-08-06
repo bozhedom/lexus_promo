@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { computeCertificateAmount, generateCertificateCode } from '@/lib/certificate'
 import type { Application } from '@/payload-types'
 
-const app = {} as Application
+const app = { carBrand: 'Toyota', carModel: 'Camry' } as Application
 
 describe('generateCertificateCode', () => {
   it('генерирует код формата GIFT-XXXXX без неоднозначных символов', () => {
@@ -36,5 +36,19 @@ describe('computeCertificateAmount', () => {
   it('игнорирует некорректный CERT_AMOUNT', () => {
     process.env.CERT_AMOUNT = '-5'
     expect(computeCertificateAmount(app)).toBe(1500)
+  })
+
+  it('берёт сумму первого подходящего правила из админки', () => {
+    expect(computeCertificateAmount(app, [
+      { brand: 'Lexus', models: [{ model: 'RX' }], amount: 1500 },
+      { brand: ' toyota ', models: [{ model: 'CAMRY' }], amount: 1000 },
+    ])).toBe(1000)
+  })
+
+  it('не применяет правило другой модели', () => {
+    process.env.CERT_AMOUNT = '1750'
+    expect(computeCertificateAmount(app, [
+      { brand: 'Toyota', models: [{ model: 'RAV4' }], amount: 1000 },
+    ])).toBe(1750)
   })
 })

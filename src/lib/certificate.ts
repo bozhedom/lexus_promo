@@ -14,11 +14,33 @@ export function generateCertificateCode(): string {
   return `GIFT-${code}`
 }
 
+export interface CertificateAmountRuleLike {
+  brand?: string | null
+  models?: { model: string }[] | null
+  amount: number
+}
+
+const normalizeCarName = (value: string | null | undefined) =>
+  (value ?? '').trim().toLocaleLowerCase('ru-RU').replace(/\s+/g, ' ')
+
 /**
- * Сумму подарка считает только сервер. Сейчас фиксированная (в макете 1500₽),
- * env CERT_AMOUNT позволяет поменять без деплоя кода.
+ * Сумму подарка считает только сервер. Сначала проверяются правила из админки,
+ * затем CERT_AMOUNT и, наконец, безопасное значение по умолчанию.
  */
-export function computeCertificateAmount(_app: Application): number {
+export function computeCertificateAmount(
+  app: Application,
+  rules: CertificateAmountRuleLike[] = [],
+): number {
+  const brand = normalizeCarName(app.carBrand)
+  const model = normalizeCarName(app.carModel)
+  const matched = rules.find((rule) => {
+    if (!Number.isFinite(rule.amount) || rule.amount <= 0) return false
+    const ruleBrand = normalizeCarName(rule.brand)
+    if (ruleBrand && ruleBrand !== brand) return false
+    return (rule.models ?? []).some((item) => normalizeCarName(item.model) === model)
+  })
+  if (matched) return matched.amount
+
   const fromEnv = Number(process.env.CERT_AMOUNT)
   return Number.isFinite(fromEnv) && fromEnv > 0 ? fromEnv : 1500
 }

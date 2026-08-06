@@ -69,6 +69,8 @@ export interface Config {
   collections: {
     applications: Application;
     certificates: Certificate;
+    'promo-slides': PromoSlide;
+    'certificate-rules': CertificateRule;
     events: Event;
     users: User;
     media: Media;
@@ -81,6 +83,8 @@ export interface Config {
   collectionsSelect: {
     applications: ApplicationsSelect<false> | ApplicationsSelect<true>;
     certificates: CertificatesSelect<false> | CertificatesSelect<true>;
+    'promo-slides': PromoSlidesSelect<false> | PromoSlidesSelect<true>;
+    'certificate-rules': CertificateRulesSelect<false> | CertificateRulesSelect<true>;
     events: EventsSelect<false> | EventsSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
@@ -200,6 +204,57 @@ export interface Media {
   };
 }
 /**
+ * Photos below the form. The portrait image is used in the mobile fullscreen viewer.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "promo-slides".
+ */
+export interface PromoSlide {
+  id: string;
+  caption: string;
+  desktopImage?: (string | null) | Media;
+  /**
+   * 9:16 is recommended. Falls back to the landscape image when empty.
+   */
+  mobileImage?: (string | null) | Media;
+  /**
+   * Seed image path
+   */
+  desktopPath?: string | null;
+  /**
+   * Seed portrait path
+   */
+  mobilePath?: string | null;
+  address?: string | null;
+  order: number;
+  active: boolean;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * The first active matching rule determines the certificate amount. Higher priority is evaluated first.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "certificate-rules".
+ */
+export interface CertificateRule {
+  id: string;
+  title: string;
+  /**
+   * Optional, for example Toyota or Lexus. Case-insensitive.
+   */
+  brand?: string | null;
+  models: {
+    model: string;
+    id?: string | null;
+  }[];
+  amount: number;
+  priority: number;
+  active: boolean;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "events".
  */
@@ -276,6 +331,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'certificates';
         value: string | Certificate;
+      } | null)
+    | ({
+        relationTo: 'promo-slides';
+        value: string | PromoSlide;
+      } | null)
+    | ({
+        relationTo: 'certificate-rules';
+        value: string | CertificateRule;
       } | null)
     | ({
         relationTo: 'events';
@@ -364,6 +427,41 @@ export interface CertificatesSelect<T extends boolean = true> {
   image?: T;
   redeemedAt?: T;
   expiresAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "promo-slides_select".
+ */
+export interface PromoSlidesSelect<T extends boolean = true> {
+  caption?: T;
+  desktopImage?: T;
+  mobileImage?: T;
+  desktopPath?: T;
+  mobilePath?: T;
+  address?: T;
+  order?: T;
+  active?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "certificate-rules_select".
+ */
+export interface CertificateRulesSelect<T extends boolean = true> {
+  title?: T;
+  brand?: T;
+  models?:
+    | T
+    | {
+        model?: T;
+        id?: T;
+      };
+  amount?: T;
+  priority?: T;
+  active?: T;
   updatedAt?: T;
   createdAt?: T;
 }

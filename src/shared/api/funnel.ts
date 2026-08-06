@@ -116,3 +116,23 @@ export function completeApplication(
 export function lookupCar(plate: string): Promise<CarInfo> {
   return request(`/api/car-info?plate=${encodeURIComponent(plate)}`)
 }
+
+export type ExistingCertificateResult =
+  | { existing: false }
+  | {
+      existing: true
+      certificate: { id: string; code: string; amount: number; expiresAt: string | null }
+      vehicle: {
+        plateNumber: string
+        brand: string | null
+        model: string | null
+        year: number | null
+      }
+    }
+
+export function findExistingCertificate(
+  plateNumber: string,
+  sessionId: string,
+): Promise<ExistingCertificateResult> {
+  return request('/api/certificates/by-plate', jsonInit({ plateNumber, sessionId }))
+}

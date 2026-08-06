@@ -9,7 +9,12 @@ import {
   isPlateComplete,
   splitPlate,
 } from '@/features/plate-lookup'
-import { createApplication, isApiError, patchApplication } from '@/shared/api/funnel'
+import {
+  createApplication,
+  findExistingCertificate,
+  isApiError,
+  patchApplication,
+} from '@/shared/api/funnel'
 import { useScreenView } from '@/shared/analytics'
 import { useFunnel } from '@/shared/lib/funnel'
 import { Button, Loader, StageLayout } from '@/shared/ui'
@@ -52,6 +57,25 @@ function ReadyCarNumberScreen() {
     // прошлый прогон уже completed) начинаем новый прогон с чистого листа.
     const canContinue = Boolean(data.applicationId) && data.status !== 'completed'
     try {
+      const previous = await findExistingCertificate(canonical, sessionId)
+      if (previous.existing) {
+        reset()
+        update({
+          plateNumber: previous.vehicle.plateNumber,
+          carBrand: previous.vehicle.brand ?? undefined,
+          carModel: previous.vehicle.model ?? undefined,
+          carYear: previous.vehicle.year,
+          status: 'completed',
+          certificateId: previous.certificate.id,
+          certificateCode: previous.certificate.code,
+          certificateAmount: previous.certificate.amount,
+          certificateExpiresAt: previous.certificate.expiresAt,
+        })
+        track('plate_submitted', { plate: canonical, existingCertificate: true })
+        router.push('/existing-certificate')
+        return
+      }
+
       if (canContinue) {
         await patchApplication(data.applicationId!, { sessionId, plateNumber: canonical })
         update({ plateNumber: canonical, status: 'draft_plate' })

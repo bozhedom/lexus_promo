@@ -61,6 +61,10 @@ export function StageLayout({ subtitle, children, cardClassName, secureInside = 
 
           {!secureInside && secure}
         </div>
+
+        {/* Руки повторяют тот же кадр, но отдельным верхним слоем. Так они
+            визуально лежат поверх карточки формы, а не уходят за интерфейс. */}
+        <div className={styles.hands} aria-hidden />
       </section>
 
       <NewsSlider />

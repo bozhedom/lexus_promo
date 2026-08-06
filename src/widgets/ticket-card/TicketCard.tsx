@@ -24,7 +24,7 @@ const capitalize = (value: string) =>
 // Персональный экран команды. Ref остаётся на всём макете, чтобы существующий
 // механизм сохранения PNG продолжал работать без изменений.
 export const TicketCard = forwardRef<HTMLDivElement, TicketCardProps>(function TicketCard(
-  { fullName, onMeet },
+  { fullName, amount, onMeet },
   ref,
 ) {
   const displayName = fullName
@@ -33,6 +33,7 @@ export const TicketCard = forwardRef<HTMLDivElement, TicketCardProps>(function T
     .slice(0, 2)
     .map(capitalize)
     .join(' ')
+  const certificateAmount = new Intl.NumberFormat('ru-RU').format(amount)
 
   return (
     <div className={styles.card} ref={ref}>
@@ -42,6 +43,9 @@ export const TicketCard = forwardRef<HTMLDivElement, TicketCardProps>(function T
         <header className={styles.heading}>
           <h1>{displayName}</h1>
           <p>Ваши персональные пригласительные готовы</p>
+          <p className={styles.certificateAmount}>
+            Сертификат <strong>{certificateAmount} ₽</strong>
+          </p>
         </header>
 
         <section className={styles.teamCard}>

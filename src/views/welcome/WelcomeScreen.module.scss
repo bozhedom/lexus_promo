@@ -63,7 +63,7 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: url('/images/redesign/intro-stage.webp') no-repeat;
+    background: var(--welcome-stage-image) no-repeat;
     background-size: 200% 100%;
     mix-blend-mode: screen;
     filter: grayscale(1) contrast(1.55) brightness(0.92);
@@ -144,7 +144,7 @@
   min-width: 360px;
   transform: translateX(-50%);
   transform-origin: 50% 26%;
-  background: url('/images/redesign/intro-stage.webp') no-repeat center top / cover;
+  background: var(--welcome-stage-image) no-repeat center top / cover;
   pointer-events: none;
   animation: welcome-breathe 15s ease-in-out infinite alternate;
 
@@ -191,13 +191,29 @@
   animation: welcome-logo 5s ease-in-out infinite;
 }
 
-.lexus {
+.carBrand {
   @include t.gold-text;
   margin-top: 17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
   font-family: t.$font-display;
   font-size: 40px;
   line-height: 1;
   letter-spacing: 2px;
+
+  i {
+    width: 1px;
+    height: 34px;
+    background: linear-gradient(transparent, t.$gold-light, transparent);
+  }
+}
+
+.screen[data-brand='both'] .carBrand {
+  gap: 16px;
+  font-size: 35px;
+  letter-spacing: 1px;
 }
 
 .spec {

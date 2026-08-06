@@ -5,17 +5,8 @@ import type { TouchEvent as ReactTouchEvent } from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import styles from './NewsSlider.module.scss'
+import { fetchPromoSlides, type PromoSlideDto } from '@/shared/api/promo'
 import { useSceneAssets } from '@/shared/lib/useSceneAssets'
-
-interface Slide {
-  src: string
-  caption: string
-  /** свои размеры кадра: в развороте показываем фото целиком, без обрезки */
-  w: number
-  h: number
-  /** первая карточка: адрес с маркером поверх фото */
-  address?: string
-}
 
 interface LightboxDrag {
   dx: number
@@ -26,25 +17,28 @@ interface LightboxDrag {
 
 const IDLE_DRAG: LightboxDrag = { dx: 0, dy: 0, live: false, animating: false }
 
-const SLIDES: Slide[] = [
+const DEFAULT_SLIDES: PromoSlideDto[] = [
   {
+    id: 'service-center',
     src: '/images/redesign/service-center.webp',
+    mobileSrc: '/images/redesign/service-center-mobile-test.webp',
     caption: 'Современный сервисный центр',
     address: 'Снеговая, 1 · «Таксопарк»',
-    w: 1264,
-    h: 823,
   },
-  { src: '/images/gallery-2.webp', caption: 'Премиальный уровень обслуживания', w: 1024, h: 769 },
-  { src: '/images/gallery-3.webp', caption: 'Комфорт для каждого гостя', w: 1024, h: 1024 },
-  { src: '/images/gallery-1.webp', caption: 'Технологии и инновации', w: 1024, h: 576 },
-  { src: '/images/gallery-map.jpg', caption: 'Собственная территория и парковка', w: 1280, h: 963 },
+  { id: 'gallery-2', src: '/images/gallery-2.webp', mobileSrc: '/images/gallery-2-mobile-test.webp', caption: 'Премиальный уровень обслуживания' },
+  { id: 'gallery-3', src: '/images/gallery-3.webp', mobileSrc: '/images/gallery-3-mobile-test.webp', caption: 'Комфорт для каждого гостя' },
+  { id: 'gallery-1', src: '/images/gallery-1.webp', mobileSrc: '/images/gallery-1-mobile-test.webp', caption: 'Технологии и инновации' },
+  { id: 'gallery-map', src: '/images/gallery-map.jpg', mobileSrc: '/images/gallery-map-mobile-test.webp', caption: 'Собственная территория и парковка' },
 ]
 
 // Галерея автоцентра в футере экранов 2-4. На мобиле свайп с точками,
 // на десктопе стрелки: мышью горизонтальную ленту не прокрутить.
 // Тап по карточке разворачивает кадр на весь экран.
 export function NewsSlider() {
-  const assetsReady = useSceneAssets(SLIDES.map((slide) => slide.src))
+  const [slides, setSlides] = useState<PromoSlideDto[]>(DEFAULT_SLIDES)
+  const assetsReady = useSceneAssets(
+    [...new Set(slides.flatMap((slide) => [slide.src, slide.mobileSrc]))],
+  )
   const railRef = useRef<HTMLUListElement>(null)
   const motionRef = useRef<number | null>(null)
   const [active, setActive] = useState(0)
@@ -58,9 +52,22 @@ export function NewsSlider() {
     if (!first) return
     const step = first.offsetWidth + parseFloat(getComputedStyle(rail).columnGap || '0')
     const i = Math.round(rail.scrollLeft / (step || 1))
-    setActive(Math.max(0, Math.min(SLIDES.length - 1, i)))
+    setActive(Math.max(0, Math.min(slides.length - 1, i)))
     setAtStart(rail.scrollLeft <= 2)
     setAtEnd(rail.scrollLeft >= rail.scrollWidth - rail.clientWidth - 2)
+  }, [slides.length])
+
+  useEffect(() => {
+    let active = true
+    fetchPromoSlides()
+      .then((configured) => {
+        if (active && configured.length > 0) setSlides(configured)
+      })
+      .catch(() => {
+        // До первого заполнения админки и при временной недоступности БД
+        // остаются встроенные стартовые слайды.
+      })
+    return () => { active = false }
   }, [])
 
   // ширина карточек тянется от вьюпорта: после ресайза стрелки надо пересчитать
@@ -137,7 +144,7 @@ export function NewsSlider() {
       ? first.offsetWidth + parseFloat(getComputedStyle(rail).columnGap || '0')
       : rail.clientWidth
     const page = Math.max(1, Math.floor(rail.clientWidth / step))
-    goTo(Math.max(0, Math.min(SLIDES.length - 1, active + dir * page)))
+    goTo(Math.max(0, Math.min(slides.length - 1, active + dir * page)))
   }
 
   // ── разворот кадра ────────────────────────────────────────────────────────
@@ -210,7 +217,7 @@ export function NewsSlider() {
   }
 
   const step = (to: 1 | -1) =>
-    setOpened((i) => (i === null ? i : (i + to + SLIDES.length) % SLIDES.length))
+    setOpened((i) => (i === null ? i : (i + to + slides.length) % slides.length))
 
   const settleGesture = () => {
     if (gestureTimer.current) clearTimeout(gestureTimer.current)
@@ -263,12 +270,12 @@ export function NewsSlider() {
       }
     : undefined
 
-  const shown = opened === null ? null : SLIDES[opened]
+  const shown = opened === null ? null : slides[opened] ?? null
   const frameSlot = (index: number): 'previous' | 'current' | 'next' | null => {
     if (opened === null) return null
     if (index === opened) return 'current'
-    if (index === (opened - 1 + SLIDES.length) % SLIDES.length) return 'previous'
-    if (index === (opened + 1) % SLIDES.length) return 'next'
+    if (index === (opened - 1 + slides.length) % slides.length) return 'previous'
+    if (index === (opened + 1) % slides.length) return 'next'
     return null
   }
 
@@ -297,11 +304,11 @@ export function NewsSlider() {
             onPointerDown={stopRailMotion}
             onWheel={stopRailMotion}
           >
-            {SLIDES.map((s, i) => (
+            {slides.map((s, i) => (
               <li
                 className={styles.slide}
                 data-active={i === active || undefined}
-                key={`${s.src}-${i}`}
+                key={s.id}
               >
                 <button
                   type="button"
@@ -346,9 +353,9 @@ export function NewsSlider() {
         </div>
 
         <div className={styles.dots} role="tablist" aria-label="Фотографии автоцентра">
-          {SLIDES.map((s, i) => (
+          {slides.map((s, i) => (
             <button
-              key={`${s.src}-dot-${i}`}
+              key={`${s.id}-dot`}
               type="button"
               role="tab"
               aria-selected={i === active}
@@ -414,7 +421,7 @@ export function NewsSlider() {
           >
             <div className={styles.lightBar}>
               <span className={styles.counter}>
-                {(opened ?? 0) + 1} / {SLIDES.length}
+                {(opened ?? 0) + 1} / {slides.length}
               </span>
               <button
                 type="button"
@@ -431,13 +438,13 @@ export function NewsSlider() {
                 onClick={() => step(-1)}
                 aria-label="Предыдущее фото"
               />
-              {SLIDES.map((s, i) => {
+              {slides.map((s, i) => {
                 const slot = frameSlot(i)
                 if (!slot) return null
                 return (
                   <button
                     type="button"
-                    key={`${s.src}-${i}`}
+                    key={`${s.id}-frame`}
                     className={styles.frame}
                     data-slot={slot}
                     aria-label={
@@ -452,11 +459,19 @@ export function NewsSlider() {
                     }}
                   >
                     <Image
-                      className={styles.frameImg}
+                      className={`${styles.frameImg} ${styles.frameImgDesktop}`}
                       src={s.src}
                       alt=""
                       fill
                       sizes="(max-width: 767px) 82vw, 72vw"
+                      loading="eager"
+                    />
+                    <Image
+                      className={`${styles.frameImg} ${styles.frameImgMobile}`}
+                      src={s.mobileSrc}
+                      alt=""
+                      fill
+                      sizes="100vw"
                       loading="eager"
                     />
                   </button>

@@ -78,7 +78,14 @@ export async function POST(
     return jsonError(403, 'Подтвердите номер телефона кодом из СМС')
   }
 
-  const amount = computeCertificateAmount(app)
+  const configuredRules = await payload.find({
+    collection: 'certificate-rules',
+    where: { active: { equals: true } },
+    sort: '-priority',
+    limit: 100,
+    depth: 0,
+  })
+  const amount = computeCertificateAmount(app, configuredRules.docs)
 
   // транзакция: сертификат + статус заявки создаются атомарно
   const transactionID = await payload.db.beginTransaction()

@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import type { CSSProperties } from 'react'
 
 import { useScreenView } from '@/shared/analytics'
 import { OUTBOUND_LINKS } from '@/shared/config/links'
@@ -11,8 +12,17 @@ import { Button } from '@/shared/ui'
 import styles from './WelcomeScreen.module.scss'
 
 const booking = OUTBOUND_LINKS.find((link) => link.id === 'booking')!
-const WELCOME_ASSETS = ['/images/redesign/intro-stage.webp', '/images/logo-agc.svg'] as const
 const introCurtainEnabled = process.env.NEXT_PUBLIC_INTRO_CURTAIN_ENABLED === 'true'
+
+type BrandVariant = 'toyota' | 'lexus' | 'both'
+
+const STAGE_IMAGE: Record<BrandVariant, string> = {
+  toyota: '/images/redesign/intro-stage-toyota.webp',
+  lexus: '/images/redesign/intro-stage.webp',
+  // Для общего QR оставляем премиальный Lexus-кадр, а заголовок сообщает,
+  // что приглашение действует для владельцев обеих марок.
+  both: '/images/redesign/intro-stage.webp',
+}
 
 function BenefitIcon({ kind }: { kind: 'gift' | 'plane' | 'diamond' }) {
   if (kind === 'gift') {
@@ -37,10 +47,11 @@ function BenefitIcon({ kind }: { kind: 'gift' | 'plane' | 'diamond' }) {
 }
 
 // Экран 1: приглашение. Клик по CTA закрывает занавес и открывает его уже на шаге 2.
-export function WelcomeScreen() {
+export function WelcomeScreen({ brand = 'both' }: { brand?: BrandVariant }) {
   const { track } = useFunnel()
   const { go, busy } = useStageTransition()
-  const assetsReady = useSceneAssets(WELCOME_ASSETS)
+  const stageImage = STAGE_IMAGE[brand]
+  const assetsReady = useSceneAssets([stageImage, '/images/logo-agc.svg'])
   useScreenView('welcome')
 
   const start = () => {
@@ -49,7 +60,12 @@ export function WelcomeScreen() {
   }
 
   return (
-    <main className={styles.screen} data-ready={assetsReady}>
+    <main
+      className={styles.screen}
+      data-ready={assetsReady}
+      data-brand={brand}
+      style={{ '--welcome-stage-image': `url(${stageImage})` } as CSSProperties}
+    >
       {introCurtainEnabled && (
         <div className={styles.introCurtain} data-active={assetsReady || undefined} aria-hidden>
           <span className={`${styles.introPanel} ${styles.introLeft}`} />
@@ -70,7 +86,11 @@ export function WelcomeScreen() {
             height={72}
             priority
           />
-          <p className={styles.lexus}>Lexus</p>
+          <p className={styles.carBrand}>
+            {brand === 'both' ? (
+              <><span>Toyota</span><i aria-hidden /><span>Lexus</span></>
+            ) : brand === 'toyota' ? 'Toyota' : 'Lexus'}
+          </p>
           <p className={styles.spec}>
             Специализированный
             <br />

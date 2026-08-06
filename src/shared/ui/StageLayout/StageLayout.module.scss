@@ -70,13 +70,36 @@
 
 .inner {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   width: min(100%, 480px);
   min-height: 500px;
   padding: 48px 16px 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+.hands {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  left: 50%;
+  right: auto;
+  width: min(100%, calc(100dvh * 0.462));
+  min-width: 360px;
+  transform: translateX(-50%);
+  transform-origin: 50% 22%;
+  background: url('/images/redesign/form-stage.webp') no-repeat center top / cover;
+  pointer-events: none;
+  animation: scene-breathe 14s ease-in-out infinite alternate;
+  mask-image:
+    radial-gradient(ellipse 23% 12% at 8% 28%, #000 34%, transparent 76%),
+    radial-gradient(ellipse 23% 12% at 92% 28%, #000 34%, transparent 76%);
+  mask-repeat: no-repeat;
+  -webkit-mask-image:
+    radial-gradient(ellipse 23% 12% at 8% 28%, #000 34%, transparent 76%),
+    radial-gradient(ellipse 23% 12% at 92% 28%, #000 34%, transparent 76%);
+  -webkit-mask-repeat: no-repeat;
 }
 
 .logo {
@@ -235,13 +258,15 @@
 
 @media (max-width: 359px) {
   .inner { padding-inline: 10px; }
-  .sceneBox { min-width: 100%; }
+  .sceneBox,
+  .hands { min-width: 100%; }
   .card { padding-inline: 18px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .sceneBox,
   .sceneBox::after,
+  .hands,
   .logo,
   .title,
   .divider::after,
