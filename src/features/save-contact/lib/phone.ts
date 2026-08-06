@@ -24,3 +24,28 @@ export function maskPhone(input: string): string {
 export function isPhoneComplete(value: string): boolean {
   return value.replace(/\D/g, '').length === 11
 }
+
+/**
+ * Возвращает позицию каретки после повторного применения маски. Ориентируемся
+ * на количество цифр слева от каретки, поэтому вставка и удаление в середине
+ * номера не отправляют курсор в начало или конец поля.
+ */
+export function phoneCaretPosition(raw: string, rawCaret: number, masked: string): number {
+  const rawDigits = raw.replace(/\D/g, '')
+  let digitsBeforeCaret = raw.slice(0, rawCaret).replace(/\D/g, '').length
+
+  // Для номера, введённого с 9 (или другой цифры кроме 7/8), maskPhone
+  // автоматически добавляет код страны. Учитываем эту дополнительную цифру.
+  if (rawDigits && rawDigits[0] !== '7' && rawDigits[0] !== '8') {
+    digitsBeforeCaret += 1
+  }
+
+  if (digitsBeforeCaret === 0) return 0
+
+  let seen = 0
+  for (let i = 0; i < masked.length; i += 1) {
+    if (/\d/.test(masked[i])) seen += 1
+    if (seen === digitsBeforeCaret) return i + 1
+  }
+  return masked.length
+}

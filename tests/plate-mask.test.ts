@@ -34,6 +34,10 @@ describe('splitPlate / isPlateComplete', () => {
     expect(splitPlate('А555АА125')).toEqual({ main: 'А555АА', region: '125' })
   })
 
+  it('считает значение из одних цифр регионом до ввода основной части', () => {
+    expect(splitPlate('125')).toEqual({ main: '', region: '125' })
+  })
+
   it('полнота номера', () => {
     expect(isPlateComplete('А555АА', '125')).toBe(true)
     expect(isPlateComplete('А555АА', '77')).toBe(true)

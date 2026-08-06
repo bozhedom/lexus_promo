@@ -1,5 +1,10 @@
 import { CarInfoScreen } from '@/views/car'
 
-export default function CarInfoPage() {
-  return <CarInfoScreen />
+interface CarInfoPageProps {
+  searchParams: Promise<{ manual?: string }>
+}
+
+export default async function CarInfoPage({ searchParams }: CarInfoPageProps) {
+  const { manual } = await searchParams
+  return <CarInfoScreen manualRequested={manual === '1'} />
 }

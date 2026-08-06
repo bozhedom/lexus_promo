@@ -1,6 +1,15 @@
 @use 'shared/config/tokens' as t;
 
+.lookupCard {
+  padding: 16px 24px 12px;
+
+  > :last-child {
+    margin-top: 8px;
+  }
+}
+
 .body {
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -26,12 +35,42 @@
   }
 }
 
-.caption {
-  font-size: 12px;
-  font-weight: 400;
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
+.tabs {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 16px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.7px;
+  line-height: 1.4;
   text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+
+  button,
+  span {
+    min-height: 32px;
+    padding: 6px 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+  }
+
+  button {
+    cursor: pointer;
+
+    &:disabled { cursor: default; }
+  }
+
+  .tabActive {
+    border-bottom: 2px solid rgba(255, 255, 255, 0.8);
+    color: rgba(255, 255, 255, 0.8);
+  }
 }
 
 .error {

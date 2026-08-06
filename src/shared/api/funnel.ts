@@ -68,6 +68,27 @@ export function patchApplication(
   return request(`/api/applications/${id}`, { ...jsonInit(input), method: 'PATCH' })
 }
 
+export interface PhoneChallengeResult {
+  challengeToken: string
+  expiresIn: number
+  retryAfter: number
+  devCode?: string
+}
+
+export function requestPhoneVerification(
+  id: string,
+  sessionId: string,
+): Promise<PhoneChallengeResult> {
+  return request(`/api/applications/${id}/phone/request`, jsonInit({ sessionId }))
+}
+
+export function verifyPhoneCode(
+  id: string,
+  input: { sessionId: string; challengeToken: string; code: string },
+): Promise<{ verificationToken: string }> {
+  return request(`/api/applications/${id}/phone/verify`, jsonInit(input))
+}
+
 export interface CompleteResult {
   certificate: { id: string; code: string; amount: number; expiresAt: string | null }
   application: {
@@ -81,8 +102,15 @@ export interface CompleteResult {
   }
 }
 
-export function completeApplication(id: string, sessionId: string): Promise<CompleteResult> {
-  return request(`/api/applications/${id}/complete`, jsonInit({ sessionId }))
+export function completeApplication(
+  id: string,
+  sessionId: string,
+  phoneVerificationToken: string,
+): Promise<CompleteResult> {
+  return request(
+    `/api/applications/${id}/complete`,
+    jsonInit({ sessionId, phoneVerificationToken }),
+  )
 }
 
 export function lookupCar(plate: string): Promise<CarInfo> {

@@ -3,20 +3,32 @@
 import Image from 'next/image'
 import { useState } from 'react'
 
-import { isPhoneComplete, maskPhone } from '@/features/save-contact'
-import { isApiError, patchApplication } from '@/shared/api/funnel'
+import { isPhoneComplete, maskPhone, phoneCaretPosition } from '@/features/save-contact'
+import {
+  isApiError,
+  patchApplication,
+  requestPhoneVerification,
+  verifyPhoneCode,
+  type PhoneChallengeResult,
+} from '@/shared/api/funnel'
 import { useScreenView } from '@/shared/analytics'
 import { useFunnel, useFunnelGuard } from '@/shared/lib/funnel'
 import { useSceneAssets } from '@/shared/lib/useSceneAssets'
 import { useStageTransition } from '@/widgets/curtain-transition'
 import { Button, Checkbox, Loader } from '@/shared/ui'
 import { validateFullName, validatePhone } from '@/lib/validation'
+import { PhoneVerificationModal } from './PhoneVerificationModal'
 import styles from './ContactScreen.module.scss'
 
 const CONTACT_ASSETS = [
   '/images/redesign/reception.webp',
   '/images/redesign/gold-dust.webp',
 ] as const
+
+interface ActiveChallenge extends PhoneChallengeResult {
+  phone: string
+  expiresAt: number
+}
 
 // Экран 4: личные данные
 export function ContactScreen() {
@@ -32,9 +44,25 @@ export function ContactScreen() {
   const [consent, setConsent] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
+  const [challenge, setChallenge] = useState<ActiveChallenge | null>(null)
+  const [verifyOpen, setVerifyOpen] = useState(false)
+  const [verifying, setVerifying] = useState(false)
+  const [verifyError, setVerifyError] = useState('')
   const assetsReady = useSceneAssets(CONTACT_ASSETS)
 
   if (!show) return null
+
+  const sendCode = async (normalizedPhone: string) => {
+    if (!data.applicationId) return
+    const result = await requestPhoneVerification(data.applicationId, sessionId)
+    setChallenge({
+      ...result,
+      phone: normalizedPhone,
+      expiresAt: Date.now() + result.expiresIn * 1000,
+    })
+    setVerifyError('')
+    setVerifyOpen(true)
+  }
 
   const submit = async () => {
     const next: Record<string, string> = {}
@@ -58,13 +86,56 @@ export function ContactScreen() {
       update({
         fullName: name!,
         phone: normPhone!,
+        phoneVerificationToken: undefined,
         status: 'draft_personal',
       })
       track('personal_submitted')
-      go('/certificate')
+      if (
+        challenge &&
+        challenge.phone === normPhone &&
+        challenge.expiresAt > Date.now()
+      ) {
+        setVerifyError('')
+        setVerifyOpen(true)
+      } else {
+        await sendCode(normPhone!)
+      }
     } catch (e) {
       setErrors({ form: isApiError(e) ? e.message : 'Не удалось сохранить' })
+    } finally {
       setSubmitting(false)
+    }
+  }
+
+  const verify = async (code: string) => {
+    if (!challenge || !data.applicationId || verifying) return
+    setVerifying(true)
+    setVerifyError('')
+    try {
+      const result = await verifyPhoneCode(data.applicationId, {
+        sessionId,
+        challengeToken: challenge.challengeToken,
+        code,
+      })
+      update({ phoneVerificationToken: result.verificationToken })
+      go('/certificate')
+    } catch (e) {
+      setVerifyError(isApiError(e) ? e.message : 'Не удалось проверить код')
+    } finally {
+      setVerifying(false)
+    }
+  }
+
+  const resend = async () => {
+    if (!challenge || submitting) return
+    setVerifying(true)
+    setVerifyError('')
+    try {
+      await sendCode(challenge.phone)
+    } catch (e) {
+      setVerifyError(isApiError(e) ? e.message : 'Не удалось отправить СМС')
+    } finally {
+      setVerifying(false)
     }
   }
 
@@ -115,7 +186,22 @@ export function ContactScreen() {
               maxLength={18}
               value={phone}
               aria-invalid={Boolean(errors.phone)}
-              onChange={(e) => setPhone(maskPhone(e.target.value))}
+              onChange={(e) => {
+                const input = e.currentTarget
+                const raw = input.value
+                const next = maskPhone(raw)
+                const caret = phoneCaretPosition(
+                  raw,
+                  input.selectionStart ?? raw.length,
+                  next,
+                )
+                setPhone(next)
+                requestAnimationFrame(() => {
+                  if (document.activeElement === input) {
+                    input.setSelectionRange(caret, caret)
+                  }
+                })
+              }}
             />
           </label>
           {errors.phone && <span className={styles.error}>{errors.phone}</span>}
@@ -152,6 +238,20 @@ export function ContactScreen() {
           </p>
         </div>
       </div>
+
+      {verifyOpen && challenge && (
+        <PhoneVerificationModal
+          key={challenge.challengeToken}
+          phone={challenge.phone}
+          retryAfter={challenge.retryAfter}
+          devCode={challenge.devCode}
+          busy={verifying}
+          error={verifyError}
+          onVerify={verify}
+          onResend={resend}
+          onClose={() => setVerifyOpen(false)}
+        />
+      )}
     </main>
   )
 }

@@ -28,6 +28,11 @@
       color: #080808;
     }
 
+    .flag {
+      opacity: 0.48;
+      filter: grayscale(0.55) brightness(0.62);
+    }
+
     .field { cursor: default; }
   }
 }

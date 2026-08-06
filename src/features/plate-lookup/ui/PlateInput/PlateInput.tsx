@@ -6,7 +6,7 @@ import { createPortal } from 'react-dom'
 
 import { useMediaQuery } from '@/shared/lib/useMediaQuery'
 
-import { maskPlateMain, maskRegion, splitPlate } from '../../lib/mask'
+import { DEFAULT_PLATE_REGION, maskPlateMain, maskRegion, splitPlate } from '../../lib/mask'
 import { PlateKeypad } from '../PlateKeypad'
 import styles from './PlateInput.module.scss'
 
@@ -35,7 +35,7 @@ const REGION_PLACEHOLDER = '000'
  * ходу iOS игнорирует, пока поле не потеряет фокус.
  */
 export function PlateInput({
-  defaultValue = '',
+  defaultValue = DEFAULT_PLATE_REGION,
   onChange,
   invalid,
   autoFocus,

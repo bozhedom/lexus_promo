@@ -16,6 +16,7 @@ export interface FunnelData {
   carDataSource?: CarDataSource
   fullName?: string
   phone?: string
+  phoneVerificationToken?: string
   status?: ApplicationStatus
   certificateCode?: string
   certificateAmount?: number

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { isPhoneComplete, maskPhone } from '@/features/save-contact/lib/phone'
+import {
+  isPhoneComplete,
+  maskPhone,
+  phoneCaretPosition,
+} from '@/features/save-contact/lib/phone'
 
 describe('maskPhone', () => {
   it('форматирует разные варианты ввода к единому виду', () => {
@@ -19,6 +23,23 @@ describe('maskPhone', () => {
 
   it('отбрасывает лишние цифры сверх 11', () => {
     expect(maskPhone('799966600121234')).toBe('+7 (999) 666-00-12')
+  })
+})
+
+describe('phoneCaretPosition', () => {
+  it('ставит каретку после введённой цифры при добавлении кода страны', () => {
+    expect(phoneCaretPosition('9', 1, maskPhone('9'))).toBe(5)
+  })
+
+  it('сохраняет логическую позицию при редактировании цифры в середине', () => {
+    const raw = '+7 (99) 666-00-12'
+    const masked = maskPhone(raw)
+    expect(phoneCaretPosition(raw, 6, masked)).toBe(6)
+  })
+
+  it('оставляет каретку в конце при наборе полного номера', () => {
+    const raw = '+7 (999) 666-00-12'
+    expect(phoneCaretPosition(raw, raw.length, maskPhone(raw))).toBe(raw.length)
   })
 })
 

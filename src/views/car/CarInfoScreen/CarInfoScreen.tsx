@@ -2,13 +2,19 @@
 
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
-import { PlateInput, formatPlate, isPlateComplete, splitPlate } from '@/features/plate-lookup'
-import { isApiError, lookupCar, patchApplication } from '@/shared/api/funnel'
+import {
+  DEFAULT_PLATE_REGION,
+  PlateInput,
+  formatPlate,
+  isPlateComplete,
+  splitPlate,
+} from '@/features/plate-lookup'
+import { createApplication, isApiError, lookupCar, patchApplication } from '@/shared/api/funnel'
 import { useScreenView } from '@/shared/analytics'
 import { CAR_BRANDS, OTHER_OPTION, carModels, carYears } from '@/shared/config/car-data'
-import { useFunnel, useFunnelGuard } from '@/shared/lib/funnel'
+import { useFunnel } from '@/shared/lib/funnel'
 import { Button, Loader, SelectField, StageLayout, TextField } from '@/shared/ui'
 import { validatePlate, validateShortText } from '@/lib/validation'
 import styles from './CarInfoScreen.module.scss'
@@ -22,13 +28,17 @@ interface FoundCar {
 }
 
 // Экран 3, данные авто: найдено (3a) / марка и модель вручную (3b) / год и номер (3c)
-export function CarInfoScreen() {
+interface CarInfoScreenProps {
+  manualRequested?: boolean
+}
+
+export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
   const router = useRouter()
-  const show = useFunnelGuard((d) => Boolean(d.applicationId && d.plateNumber), '/car-number')
-  const { data, sessionId, update, track } = useFunnel()
+  const { data, ready, sessionId, utm, update, reset, track } = useFunnel()
+  const show = ready && (manualRequested || Boolean(data.applicationId && data.plateNumber))
   useScreenView('car_info')
 
-  const [ui, setUi] = useState<UiState>('loading')
+  const [ui, setUi] = useState<UiState>(manualRequested ? 'manual' : 'loading')
   const [car, setCar] = useState<FoundCar | null>(null)
   const [brand, setBrand] = useState(data.carBrand ?? '')
   const [model, setModel] = useState(data.carModel ?? '')
@@ -40,20 +50,25 @@ export function CarInfoScreen() {
   const [manualNotice, setManualNotice] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
+  const lookupGeneration = useRef(0)
 
   const models = carModels(brand)
   const needsCustomModel = brand === OTHER_OPTION || model === OTHER_OPTION || models.length === 0
   const finalModel = needsCustomModel ? customModel.trim() : model
-  const plateValue = plate ?? data.plateNumber ?? ''
+  const plateValue = plate ?? data.plateNumber ?? DEFAULT_PLATE_REGION
+
+  useEffect(() => {
+    if (ready && !show) router.replace('/car-number')
+  }, [ready, router, show])
 
   // определение авто по номеру
   useEffect(() => {
-    if (!show || !data.plateNumber) return
+    if (!show || manualRequested || !data.plateNumber) return
     // стартовое состояние и так 'loading': лишний сброс только плодит рендеры
-    let active = true
+    const generation = ++lookupGeneration.current
     lookupCar(data.plateNumber)
       .then((info) => {
-        if (!active) return
+        if (lookupGeneration.current !== generation) return
         if (!info.found) {
           setManualNotice(true)
           setUi('manual')
@@ -75,16 +90,16 @@ export function CarInfoScreen() {
         track('car_found', { brand: info.brand, model: info.model })
       })
       .catch(() => {
-        if (!active) return
+        if (lookupGeneration.current !== generation) return
         setManualNotice(true)
         setUi('manual')
         track('car_not_found')
       })
     return () => {
-      active = false
+      if (lookupGeneration.current === generation) lookupGeneration.current += 1
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [show, data.plateNumber])
+  }, [show, manualRequested, data.plateNumber])
 
   if (!show) return null
 
@@ -131,11 +146,27 @@ export function CarInfoScreen() {
     if (!isPlateComplete(main, region) || !canonical) next.plate = 'Введите номер полностью'
     setErrors(next)
     if (Object.keys(next).length > 0) return
-    if (!data.applicationId) return
-
     setSubmitting(true)
     try {
-      await patchApplication(data.applicationId, {
+      const canContinue = Boolean(data.applicationId) && data.status !== 'completed'
+      let applicationId = data.applicationId
+
+      if (!canContinue) {
+        const created = await createApplication({
+          plateNumber: canonical!,
+          sessionId,
+          ...utm,
+        })
+        applicationId = created.id
+        reset()
+        update({
+          applicationId,
+          plateNumber: canonical!,
+          status: 'draft_plate',
+        })
+      }
+
+      await patchApplication(applicationId!, {
         sessionId,
         plateNumber: canonical!,
         carBrand: brand,
@@ -260,7 +291,17 @@ export function CarInfoScreen() {
         <div className={styles.lookupPanel}>
           <div className={styles.tabs} aria-label="Способ ввода автомобиля">
             <span className={styles.tabActive}>По номеру авто</span>
-            <span>Указать вручную</span>
+            <button
+              type="button"
+              onClick={() => {
+                lookupGeneration.current += 1
+                setManualNotice(false)
+                setUi('manual')
+                track('car_manual', { from: 'lookup' })
+              }}
+            >
+              Указать вручную
+            </button>
           </div>
           <PlateInput
             defaultValue={data.plateNumber}

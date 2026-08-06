@@ -34,7 +34,10 @@ export const preloadSceneAssets = (sources: readonly string[]): Promise<void> =>
   Promise.all(sources.map(loadOne)).then(() => undefined)
 
 export function useSceneAssets(sources: readonly string[]): boolean {
-  const [ready, setReady] = useState(false)
+  // При переходе между экранами сцены эти ассеты уже находятся в нашем кэше.
+  // Не начинаем новый экран с `false`, иначе StageLayout на один кадр скрывается
+  // целиком и пользователь видит неприятный рывок перед загрузкой автомобиля.
+  const [ready, setReady] = useState(() => sources.every((src) => loaded.has(src)))
   const key = sources.join('|')
 
   useEffect(() => {

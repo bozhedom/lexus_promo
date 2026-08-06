@@ -26,8 +26,8 @@ export function TicketScreen() {
   const router = useRouter()
   const { go } = useStageTransition()
   const show = useFunnelGuard(
-    (d) => Boolean(d.applicationId && d.fullName && d.phone),
-    '/car-number',
+    (d) => Boolean(d.applicationId && d.fullName && d.phone && d.phoneVerificationToken),
+    '/personal',
   )
   const { data, sessionId, update, track } = useFunnel()
   useScreenView('certificate')
@@ -44,7 +44,7 @@ export function TicketScreen() {
     if (!show || !data.applicationId) return
     // стартовое состояние и так 'loading': лишний сброс только плодит рендеры
     let active = true
-    completeApplication(data.applicationId, sessionId)
+    completeApplication(data.applicationId, sessionId, data.phoneVerificationToken ?? '')
       .then((res) => {
         if (!active) return
         setResult(res)
@@ -127,10 +127,10 @@ export function TicketScreen() {
                 <Loader label="Сохраняем" />
               ) : (
                 <>
+                  Скачать пригласительный
                   <svg viewBox="0 0 24 24" aria-hidden>
                     <path d="M12 3v12m0 0 5-5m-5 5-5-5M5 20h14" />
                   </svg>
-                  Скачать пригласительный
                 </>
               )}
             </Button>

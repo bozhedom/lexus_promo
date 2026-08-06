@@ -2,8 +2,8 @@
 
 .screen {
   position: relative;
-  min-height: 100dvh;
-  overflow: visible;
+  min-height: max(100svh, 800px);
+  overflow: hidden;
   background: #000;
   color: rgba(255, 255, 255, 0.8);
   font-family: t.$font-condensed;
@@ -30,9 +30,9 @@
   z-index: 8;
   top: 0;
   left: 50%;
-  width: min(100%, calc(100dvh * 0.462));
+  width: min(100%, 480px);
   min-width: min(360px, 100%);
-  height: max(100dvh, 800px);
+  height: 100%;
   transform: translateX(-50%);
   overflow: hidden;
   opacity: 0;
@@ -140,7 +140,7 @@
   inset: 0;
   left: 50%;
   right: auto;
-  width: min(100%, calc(100dvh * 0.462));
+  width: min(100%, 480px);
   min-width: 360px;
   transform: translateX(-50%);
   transform-origin: 50% 26%;
@@ -168,7 +168,7 @@
   position: relative;
   z-index: 1;
   width: min(100%, 480px);
-  min-height: max(100dvh, 800px);
+  min-height: max(100svh, 800px);
   margin: 0 auto;
   padding: 48px 24px 22px;
   display: flex;
@@ -433,6 +433,14 @@
   .benefits,
   .actions,
   .invitation { left: 16px; right: 16px; }
+}
+
+// В мобильном Safari анимированный transform фонового слоя компонуется заново
+// при скрытии адресной строки и визуально «плавает» вслед за скроллом.
+// На телефонах держим сцену неподвижной; анимации интерфейса остаются.
+@media (max-width: 768px) {
+  .stage,
+  .stage::before { animation: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

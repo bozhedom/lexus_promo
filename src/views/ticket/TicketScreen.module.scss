@@ -3,7 +3,7 @@
 .screen {
   position: relative;
   width: 100%;
-  min-height: 100dvh;
+  min-height: 100svh;
   background: #000;
   color: rgba(255, 255, 255, 0.8);
   overflow: visible;
@@ -12,7 +12,7 @@
 .reveal {
   position: relative;
   width: 100%;
-  min-height: max(100dvh, 800px);
+  min-height: calc(min(222.222vw, 1066.67px) - 44px);
   animation: reveal 0.75s cubic-bezier(0.16, 0.84, 0.24, 1) both;
 }
 
@@ -24,7 +24,7 @@
 .pending {
   position: absolute;
   inset: 0;
-  min-height: 100dvh;
+  min-height: 100svh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -69,8 +69,9 @@
   position: absolute;
   z-index: 4;
   left: 50%;
-  bottom: 119px;
-  width: min(312px, calc(100% - 48px));
+  top: calc(min(186.25vw, 894px) - 44px);
+  bottom: auto;
+  width: min(464px, calc(100% - 16px));
   transform: translateX(-50%);
 }
 
@@ -102,7 +103,7 @@
 }
 
 .errorBox {
-  min-height: 100dvh;
+  min-height: 100svh;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -115,13 +116,12 @@
 }
 
 @media (min-width: 769px) {
-  .bar { width: 360px; }
+  .bar { top: 751px; bottom: auto; width: 410px; }
 }
 
 @media (max-width: 359px) {
   .bar {
-    width: calc(100% - 32px);
-    bottom: 117px;
+    width: calc(100% - 28px);
   }
 
   .bar .saveBtn { font-size: 14px; }

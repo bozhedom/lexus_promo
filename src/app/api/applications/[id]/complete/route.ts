@@ -5,8 +5,9 @@ import config from '@payload-config'
 import type { Application, Certificate } from '@/payload-types'
 import { computeCertificateAmount, generateCertificateCode } from '@/lib/certificate'
 import { getClientIp, jsonError, readJsonBody } from '@/lib/http'
+import { isPhoneVerificationValid } from '@/lib/phoneVerification'
 import { rateLimit } from '@/lib/rateLimit'
-import { validateSessionId } from '@/lib/validation'
+import { validatePhone, validateSessionId } from '@/lib/validation'
 
 function certResponse(cert: Certificate, app: Application, created: boolean) {
   return NextResponse.json(
@@ -71,6 +72,10 @@ export async function POST(
   }
   if (!app.consentGiven) {
     return jsonError(422, 'Нет согласия на обработку персональных данных')
+  }
+  const phone = validatePhone(app.phone)
+  if (!phone || !isPhoneVerificationValid(body?.phoneVerificationToken, app.id, phone)) {
+    return jsonError(403, 'Подтвердите номер телефона кодом из СМС')
   }
 
   const amount = computeCertificateAmount(app)

@@ -3,6 +3,8 @@
 
 const ALLOWED_LETTERS = 'АВЕКМНОРСТУХ'
 
+export const DEFAULT_PLATE_REGION = '125'
+
 // латиница-двойник → кириллица
 const LAT_TO_CYR: Record<string, string> = {
   A: 'А',
@@ -47,6 +49,8 @@ export function maskRegion(input: string): string {
 
 export function splitPlate(full: string): { main: string; region: string } {
   const value = full ?? ''
+  // До ввода основной части значение состоит только из региона.
+  if (/^\d{1,3}$/.test(value)) return { main: '', region: maskRegion(value) }
   return { main: maskPlateMain(value.slice(0, 6)), region: maskRegion(value.slice(6)) }
 }
 

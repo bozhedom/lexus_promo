@@ -3,7 +3,12 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
-import { PlateInput, isPlateComplete, splitPlate } from '@/features/plate-lookup'
+import {
+  DEFAULT_PLATE_REGION,
+  PlateInput,
+  isPlateComplete,
+  splitPlate,
+} from '@/features/plate-lookup'
 import { createApplication, isApiError, patchApplication } from '@/shared/api/funnel'
 import { useScreenView } from '@/shared/analytics'
 import { useFunnel } from '@/shared/lib/funnel'
@@ -13,12 +18,25 @@ import styles from './CarNumberScreen.module.scss'
 
 // Экран 2: ввод госномера
 export function CarNumberScreen() {
+  const { ready } = useFunnel()
+  useScreenView('plate')
+  if (!ready) return null
+  return <ReadyCarNumberScreen />
+}
+
+function ReadyCarNumberScreen() {
   const router = useRouter()
   const { data, sessionId, utm, update, reset, track } = useFunnel()
-  useScreenView('plate')
-  const [plate, setPlate] = useState(data.plateNumber ?? '')
+  const [plate, setPlate] = useState(data.plateNumber ?? DEFAULT_PLATE_REGION)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+
+  const openManual = () => {
+    // Ручная форма живёт на следующем экране, но номер (даже частично
+    // заполненный) не должен пропадать при переключении вкладки.
+    update({ plateNumber: plate })
+    router.push('/car-info?manual=1')
+  }
 
   const submit = async () => {
     const { main, region } = splitPlate(plate)
@@ -53,19 +71,25 @@ export function CarNumberScreen() {
 
   return (
     <StageLayout
+      cardClassName={styles.lookupCard}
+      secureInside
       subtitle={
         <>
-          Внесите номер, чтобы получить <b>персональное приглашение</b> на тех. открытие
-          автоцентра
+          Внесите номер, чтобы получить <b>персональное приглашение</b>
         </>
       }
     >
       <div className={styles.body}>
-        <p className={styles.caption}>НОМЕР ВАШЕГО АВТОМОБИЛЯ</p>
+        <div className={styles.tabs} aria-label="Способ ввода автомобиля">
+          <span className={styles.tabActive}>По номеру авто</span>
+          <button type="button" onClick={openManual} disabled={submitting}>
+            Указать вручную
+          </button>
+        </div>
 
         <div className={styles.stack}>
           <PlateInput
-            defaultValue={data.plateNumber}
+            defaultValue={data.plateNumber ?? DEFAULT_PLATE_REGION}
             invalid={Boolean(error)}
             onChange={(v) => {
               setPlate(v)
@@ -76,8 +100,13 @@ export function CarNumberScreen() {
 
           {error && <p className={styles.error}>{error}</p>}
 
-          <Button block onClick={submit} disabled={submitting}>
-            {submitting ? <Loader label="Определяем" /> : 'Определить автомобиль'}
+          <Button
+            block
+            onClick={submit}
+            disabled={submitting}
+            aria-label={submitting ? 'Определяем автомобиль' : undefined}
+          >
+            {submitting ? <Loader /> : 'Определить автомобиль'}
           </Button>
         </div>
       </div>

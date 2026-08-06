@@ -32,18 +32,24 @@ const FunnelContext = createContext<FunnelContextValue | null>(null)
 export function FunnelProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<FunnelData>({})
   const [ready, setReady] = useState(false)
-  const sessionIdRef = useRef('')
-  const utmRef = useRef<Utm>({})
+  const [sessionId, setSessionId] = useState('')
+  const [utm, setUtm] = useState<Utm>({})
   const appIdRef = useRef<string | undefined>(undefined)
 
   // клиентская инициализация: восстановление прогресса + session id + utm
   useEffect(() => {
-    sessionIdRef.current = getSessionId()
-    utmRef.current = captureUtm()
+    const restoredSessionId = getSessionId()
+    const restoredUtm = captureUtm()
     const restored = loadFunnel()
     appIdRef.current = restored.applicationId
+    // Это именно гидратация внешнего sessionStorage. Откладывать её через
+    // microtask нельзя: dev-проверка React может успеть очистить эффект, и
+    // ready навсегда останется false после перехода с первого экрана.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSessionId(restoredSessionId)
+    setUtm(restoredUtm)
     setData(restored)
-    initAnalytics(sessionIdRef.current)
+    initAnalytics(restoredSessionId)
     setReady(true)
   }, [])
 
@@ -75,13 +81,13 @@ export function FunnelProvider({ children }: { children: ReactNode }) {
     () => ({
       data,
       ready,
-      sessionId: sessionIdRef.current,
-      utm: utmRef.current,
+      sessionId,
+      utm,
       update,
       reset,
       track,
     }),
-    [data, ready, update, reset, track],
+    [data, ready, sessionId, utm, update, reset, track],
   )
 
   return <FunnelContext.Provider value={value}>{children}</FunnelContext.Provider>

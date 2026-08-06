@@ -3,7 +3,9 @@
 .card {
   position: relative;
   width: 100%;
-  min-height: max(100dvh, 800px);
+  // Макет из референса имеет пропорцию 360×800. Высота следует за шириной:
+  // на обычном телефоне всё помещается, на более коротком доступен скролл.
+  min-height: calc(min(222.222vw, 1066.67px) - 44px);
   overflow: hidden;
   background: #000;
   color: rgba(255, 255, 255, 0.8);
@@ -26,8 +28,8 @@
     position: absolute;
     inset: 0;
     background:
-      linear-gradient(180deg, #000 6.9%, rgba(69, 34, 6, 0) 41.4%),
-      linear-gradient(0deg, #000 6.1%, rgba(69, 34, 6, 0) 46%);
+      linear-gradient(180deg, rgba(0, 0, 0, 0.78), transparent 23%),
+      linear-gradient(0deg, rgba(0, 0, 0, 0.74), transparent 27%);
   }
 }
 
@@ -35,13 +37,13 @@
   position: relative;
   z-index: 1;
   width: min(100%, 480px);
-  min-height: max(100dvh, 800px);
+  min-height: calc(min(222.222vw, 1066.67px) - 44px);
   margin: 0 auto;
 }
 
 .heading {
   position: absolute;
-  top: 60px;
+  top: 44px;
   left: 50%;
   width: min(326px, calc(100% - 32px));
   transform: translateX(-50%);
@@ -55,11 +57,12 @@
     @include t.gold-text;
     padding-bottom: 4px;
     font-family: t.$font-display;
-    font-size: 26px;
+    max-width: 100%;
+    font-size: clamp(21px, 7vw, 26px);
     font-weight: 400;
     line-height: 1;
     letter-spacing: 1.3px;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
   }
 
   p {
@@ -68,13 +71,6 @@
     letter-spacing: 0.6px;
   }
 
-  h2 {
-    margin-top: 5px;
-    font-size: 24px;
-    font-weight: 400;
-    line-height: 1.4;
-    letter-spacing: 1.2px;
-  }
 }
 
 .ornament {
@@ -105,16 +101,16 @@
 
 .teamCard {
   position: absolute;
-  top: 194px;
+  top: calc(min(42.92vw, 206px) - 44px);
   left: 50%;
-  width: min(344px, calc(100% - 16px));
-  height: 407px;
+  width: min(464px, calc(100% - 16px));
+  height: min(109.44vw, 525.33px);
   transform: translateX(-50%);
   overflow: hidden;
   border: 1px solid #f3d7af;
   border-radius: 12px;
-  background: rgba(13, 11, 12, 0.62);
-  backdrop-filter: blur(2px);
+  background: rgba(13, 11, 12, 0.3);
+  backdrop-filter: blur(1px);
   animation: team-glow 5.8s ease-in-out infinite;
 }
 
@@ -156,9 +152,9 @@
 
 .car {
   position: absolute;
-  top: -50px;
+  top: -10px;
   left: 50%;
-  width: 330px;
+  width: min(91.67vw, 440px);
   height: auto;
   transform: translateX(-50%);
 }
@@ -169,7 +165,7 @@
   right: 0;
   bottom: 79px;
   width: 100%;
-  height: 236px;
+  height: min(65.56vw, 314.67px);
   object-fit: cover;
   animation: team-float 6s ease-in-out infinite;
 }
@@ -194,8 +190,8 @@
   left: 0;
   right: 0;
   bottom: -1px;
-  height: 199px;
-  background: linear-gradient(180deg, transparent, #170f08);
+  height: 180px;
+  background: linear-gradient(180deg, transparent, rgba(23, 15, 8, 0.94));
 }
 
 .teamNames {
@@ -275,9 +271,42 @@
   cursor: pointer;
 }
 
+.guest {
+  position: absolute;
+  top: calc(min(157.08vw, 754px) - 44px);
+  bottom: auto;
+  left: 50%;
+  width: min(464px, calc(100% - 16px));
+  height: 85px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  border: 1px solid rgba(243, 215, 175, 0.9);
+  border-radius: 12px;
+  background: rgba(13, 11, 12, 0.22);
+  backdrop-filter: blur(1px);
+  text-transform: uppercase;
+
+  img {
+    width: 40px;
+    height: 40px;
+  }
+
+  p {
+    font-family: t.$font-display;
+    font-size: 18px;
+    line-height: 1;
+    letter-spacing: 0.9px;
+  }
+}
+
 .trust {
   position: absolute;
-  bottom: 45px;
+  top: calc(min(207.08vw, 994px) - 44px);
+  bottom: auto;
   left: 50%;
   width: calc(100% - 48px);
   transform: translateX(-50%);
@@ -286,35 +315,30 @@
   p {
     @include t.gold-text;
     font-family: t.$font-display;
-    font-size: 20px;
+    font-size: 15px;
     line-height: 1.15;
     letter-spacing: 1px;
   }
 
-  small {
-    display: block;
-    margin-top: 2px;
-    font-size: 12px;
-    line-height: 1.4;
-    letter-spacing: 0.6px;
-  }
 }
 
 @media (min-width: 769px) {
   .card,
-  .content { min-height: max(100dvh, 900px); }
+  .content { min-height: max(100svh, 900px); }
 
-  .heading { top: 64px; width: 380px; }
+  .heading { top: 88px; width: 380px; }
 
   .teamCard {
-    top: 200px;
+    top: 164px;
     width: 410px;
     height: 470px;
   }
 
-  .car { top: -34px; width: 394px; }
+  .car { top: -20px; width: 394px; }
   .people { height: 282px; }
   .teamNames { bottom: 82px; }
+  .guest { top: 650px; bottom: auto; width: 410px; }
+  .trust { top: 824px; bottom: auto; }
 }
 
 @media (prefers-reduced-motion: reduce) {

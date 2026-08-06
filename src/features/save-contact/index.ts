@@ -1,1 +1,1 @@
-export { maskPhone, isPhoneComplete } from './lib/phone'
+export { maskPhone, isPhoneComplete, phoneCaretPosition } from './lib/phone'
