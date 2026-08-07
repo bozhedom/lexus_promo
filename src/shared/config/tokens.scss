@@ -75,6 +75,16 @@ $font-condensed: var(--font-roboto-condensed), Arial Narrow, sans-serif;
   font-weight: 400;
   letter-spacing: 1.28px;
   text-transform: uppercase;
+
+  // Красный вариант <Button> объявляет свой :hover, и по весу селектора он
+  // перебивал бы золотой фон. На тач-экранах :hover после тапа залипает, и
+  // кнопка так и оставалась красной, поэтому фон закрепляем и для состояний.
+  &:hover:not(:disabled),
+  &:active:not(:disabled),
+  &:focus-visible {
+    background: linear-gradient(90deg, $gold-button 0%, #ebb664 50%, $gold-button-end 100%);
+    color: #050505;
+  }
 }
 
 // Максимальная ширина контента

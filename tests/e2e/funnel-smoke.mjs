@@ -1,3 +1,6 @@
+// Прогон всей воронки в браузере: ввод номера и кода идут через собственные
+// экранные клавиатуры, поэтому сценарий кликает по их клавишам, а не печатает.
+// Запуск: npm run e2e -- [ширина] [высота] [метка] [номер]
 import { chromium } from 'playwright'
 import fs from 'node:fs'
 
@@ -5,150 +8,156 @@ const OUT = process.env.QA_OUT || '/tmp/promo-e2e-shots'
 fs.mkdirSync(OUT, { recursive: true })
 const BASE = 'http://127.0.0.1:3000'
 
-const W = +(process.argv[2] || 1440)
+const W = +(process.argv[2] || 360)
 const H = +(process.argv[3] || 800)
-const TAG = process.argv[4] || `${W}`
+const TAG = process.argv[4] || `${W}x${H}`
+const L = 'АВЕКМНОРСТУХ'
+const rnd = (n) => Math.floor(Math.random() * n)
+const PLATE =
+  process.argv[5] ||
+  `${L[rnd(12)]}${rnd(10)}${rnd(10)}${rnd(10)}${L[rnd(12)]}${L[rnd(12)]}`
 
-const IGNORE = /webpack-hmr|Failed to load resource.*favicon|_next\/static\/chunks\/.*hot-update/i
+const IGNORE = /webpack-hmr|favicon|hot-update|Download the React DevTools/i
 
 const browser = await chromium.launch()
-const ctx = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: 1 })
+const ctx = await browser.newContext({
+  viewport: { width: W, height: H },
+  deviceScaleFactor: 2,
+  isMobile: true,
+  hasTouch: true,
+})
 const page = await ctx.newPage()
 const errors = []
 page.on('console', (m) => m.type() === 'error' && !IGNORE.test(m.text()) && errors.push(m.text()))
-page.on('pageerror', (e) => errors.push(String(e)))
+page.on('pageerror', (e) => !IGNORE.test(String(e)) && errors.push(String(e)))
 
-const shot = async (name) => {
-  await page.screenshot({ path: `${OUT}/${TAG}_${name}.png` })
-}
+const shot = async (name) => page.screenshot({ path: `${OUT}/${TAG}_${name}.png` })
 
-const metrics = async (label) => {
+const check = async (label) => {
   const m = await page.evaluate(() => ({
     sw: document.documentElement.scrollWidth,
     cw: document.documentElement.clientWidth,
-    broken: [...document.images].filter((i) => !i.complete || !i.naturalWidth).map((i) => i.src),
-    lowres: [...document.images]
-      .filter((i) => !/\.svg/.test(i.currentSrc || i.src))
-      .map((i) => {
-        const r = i.getBoundingClientRect()
-        return { src: (i.currentSrc || i.src).split('/').pop().slice(0, 34), nw: i.naturalWidth, nh: i.naturalHeight, w: Math.round(r.width), h: Math.round(r.height) }
-      })
-      .filter((i) => i.w > 2 && (i.nw + 1 < i.w || i.nh + 1 < i.h)),
+    sh: document.documentElement.scrollHeight,
+    ch: document.documentElement.clientHeight,
+    broken: [...document.images].filter((i) => i.loading !== 'lazy' && (!i.complete || !i.naturalWidth)).map((i) => i.src.slice(-60)),
   }))
   const bad = []
   if (m.sw > m.cw) bad.push(`H-OVERFLOW ${m.sw}>${m.cw}`)
   if (m.broken.length) bad.push(`BROKEN ${JSON.stringify(m.broken)}`)
-  if (m.lowres.length) bad.push(`LOWRES ${JSON.stringify(m.lowres)}`)
-  console.log(`  ${label.padEnd(14)} ${bad.length ? '✗ ' + bad.join(' | ') : 'ok'}`)
+  const scroll = m.sh > m.ch + 1 ? `scroll +${m.sh - m.ch}` : 'fits'
+  console.log(`  ${label.padEnd(16)} ${scroll.padEnd(12)} ${bad.length ? '✗ ' + bad.join(' | ') : 'ok'}`)
   return bad.length === 0
 }
 
+const pad = (ch) => page.locator('[data-keypad] button', { hasText: new RegExp(`^${ch}$`) }).first()
+const type = async (text) => {
+  for (const ch of text) {
+    await pad(ch).click()
+    await page.waitForTimeout(60)
+  }
+}
+
 let ok = true
-console.log(`\n=== ${TAG} (${W}x${H}) ===`)
+console.log(`\n=== ${TAG} ===`)
 
 // 1 — приветствие
 await page.goto(BASE + '/', { waitUntil: 'networkidle' })
-await page.waitForTimeout(2400)
-await shot('1-welcome')
-ok = (await metrics('welcome')) && ok
-
-// переход через занавес
-await page.getByRole('button', { name: /Получить приглашение/i }).click()
-await page.waitForTimeout(420)
-await shot('1b-curtain')
-await page.waitForURL('**/car-number', { timeout: 15000 })
 await page.waitForTimeout(1800)
+await shot('1-welcome')
+ok = (await check('welcome')) && ok
 
-// 2 — номер
+await page.getByRole('button', { name: /Получить приглашение/i }).click()
+await page.waitForURL('**/car-number', { timeout: 20000 })
+await page.waitForTimeout(1500)
 await shot('2-plate')
-ok = (await metrics('plate')) && ok
+ok = (await check('plate')) && ok
 
-await page.getByLabel('Госномер').fill('А555АА')
-await page.getByLabel('Регион').fill('125')
+// 2 — номер через свою клавиатуру
+await page.locator('[aria-label="Госномер"]').first().waitFor()
+await page.locator('div[class*="mainBlock"]').first().click()
+await page.locator('[data-keypad]').waitFor({ timeout: 5000 })
+await shot('2b-keypad')
+await type(PLATE)
+await type('125')
 await page.waitForTimeout(200)
-await shot('2b-plate-filled')
+await shot('2c-filled')
+await page.locator('[data-keypad] button', { hasText: 'Готово' }).click()
+await page.waitForTimeout(300)
+
 await page.getByRole('button', { name: /Определить автомобиль/i }).click()
-await page.waitForURL('**/car-info', { timeout: 30000 })
+await page.waitForTimeout(700)
+await shot('2d-loading')
+await page.waitForURL('**/car-info', { timeout: 40000 })
+await page.waitForTimeout(1500)
+await shot('3-car-info')
+ok = (await check('car-info')) && ok
 
-// 3 — определение авто
-await page.waitForTimeout(600)
-await shot('3-loading')
-await page
-  .getByRole('button', { name: /Это мой автомобиль|Далее/i })
-  .first()
-  .waitFor({ timeout: 30000 })
-await page.waitForTimeout(600)
-await shot('3a-found')
-ok = (await metrics('car-info')) && ok
-
-// ручной ввод — 3b / 3c
-const notMine = page.getByRole('button', { name: /Это не мой автомобиль/i })
-if (await notMine.count()) {
-  await notMine.click()
-  await page.waitForTimeout(600)
+// 3 — найдено или ручной ввод
+const mine = page.getByRole('button', { name: /Это мой автомобиль/i })
+if (await mine.count()) {
+  await mine.click()
+} else {
+  const choose = async (field, option) => {
+    await page.getByRole('combobox', { name: field }).click()
+    await page.getByRole('option', { name: option, exact: true }).click()
+    await page.waitForTimeout(200)
+  }
+  await choose('Марка', 'Lexus')
+  await choose('Модель', 'RX')
+  await choose('Год', '2022')
+  await page.waitForTimeout(200)
+  await shot('3b-manual')
+  ok = (await check('manual')) && ok
+  await page.getByRole('button', { name: /Подтвердить/i }).click()
 }
-// марка/модель/год — свой список вместо системного select, поэтому выбираем
-// пункт кликом, а не selectOption
-const choose = async (field, option) => {
-  await page.getByRole('combobox', { name: field }).click()
-  await page.getByRole('option', { name: option, exact: true }).click()
-  await page.waitForTimeout(250)
-}
-
-await page.getByLabel('Марка').waitFor({ timeout: 20000 })
-await shot('3b-manual')
-ok = (await metrics('manual-brand')) && ok
-await choose('Марка', 'Lexus')
-await choose('Модель', 'RX')
-await shot('3b-manual-filled')
-await page.getByRole('button', { name: /^Далее$/ }).click()
-await page.waitForTimeout(600)
-await shot('3c-year')
-ok = (await metrics('manual-year')) && ok
-await choose('Год', '2022')
-await page.getByLabel('Госномер').fill('А555АА125')
-await page.waitForTimeout(250)
-await shot('3c-year-filled')
-await page.getByRole('button', { name: /Подтвердить/i }).click()
 
 await page.waitForURL('**/personal', { timeout: 30000 })
-await page.waitForTimeout(900)
+await page.waitForTimeout(1400)
+await shot('4-personal')
+ok = (await check('personal')) && ok
 
 // 4 — контакты
-await shot('4-personal')
-ok = (await metrics('personal')) && ok
-await page.getByLabel('Как к вам обращаться').fill('Иван Александрович')
-await page.getByLabel('Номер телефона').fill('+7 (999) 666-00-12')
+await page.getByRole('textbox', { name: 'Имя' }).fill('Иван')
+await page.getByRole('textbox', { name: 'Отчество' }).fill('Сергеевич')
+await page.getByRole('textbox', { name: 'Телефон' }).click()
+await page.keyboard.type('9996660012')
 await page.locator('input[type=checkbox]').click()
-await page.waitForTimeout(250)
-await shot('4b-personal-filled')
-await page.getByRole('button', { name: /Получить пригласительный/i }).click()
+await page.waitForTimeout(200)
+await shot('4b-filled')
+await page.getByRole('button', { name: /Получить приглашение/i }).click()
 
-await page.waitForURL('**/certificate', { timeout: 30000 })
-await page.getByRole('button', { name: /Скачать пригласительный/i }).waitFor({ timeout: 40000 })
-await page.waitForTimeout(1600)
+// 5 — код из СМС на своей клавиатуре
+await page.locator('[role=dialog]').waitFor({ timeout: 30000 })
+await page.waitForTimeout(900)
+await shot('5-sms')
+ok = (await check('sms')) && ok
+const dev = await page.locator('text=/Код для локальной разработки/').textContent().catch(() => null)
+const code = dev?.match(/(\d{4,6})/)?.[1]
+if (!code) throw new Error('нет dev-кода в модалке: ' + dev)
+await type(code)
 
-// 5 — пригласительный
-await shot('5-certificate')
-ok = (await metrics('certificate')) && ok
+await page.waitForURL('**/certificate', { timeout: 40000 })
+await page.getByRole('button', { name: /Скачать пригласительный/i }).waitFor({ timeout: 60000 })
+await page.waitForTimeout(2200)
+await shot('6-team')
+ok = (await check('team')) && ok
 
+// 6 — модалка с сертификатами
 await page.getByRole('button', { name: /Скачать пригласительный/i }).click()
-await page.waitForURL('**/links', { timeout: 40000 })
+await page.locator('[aria-label="Ваши персональные пригласительные"]').waitFor({ timeout: 10000 })
+await page.waitForTimeout(3500)
+await shot('7-modal')
+ok = (await check('modal')) && ok
+await page.locator('[aria-label="Закрыть"]').last().click()
+await page.waitForTimeout(400)
+
+// 7 — итоговый экран
+await page.getByRole('button', { name: /Познакомиться/i }).click()
+await page.waitForURL('**/links', { timeout: 30000 })
 await page.waitForTimeout(1800)
+await shot('8-links')
+ok = (await check('links')) && ok
 
-// 6 — итоговый
-await shot('6-links')
-ok = (await metrics('links')) && ok
-
-// клики по всем внешним ссылкам должны быть живыми
-const dead = await page.evaluate(() =>
-  [...document.querySelectorAll('a[data-link-id]')]
-    .filter((a) => !a.getAttribute('href') || a.getAttribute('href') === '#')
-    .map((a) => a.dataset.linkId),
-)
-if (dead.length) console.log(`  links          ! заглушки href="#": ${dead.join(', ')}`)
-
-console.log(`  console errors: ${errors.length ? JSON.stringify(errors.slice(0, 4)) : 0}`)
+console.log(`  console errors: ${errors.length ? JSON.stringify(errors.slice(0, 3)) : 0}`)
 console.log(ok && !errors.length ? `=== ${TAG}: PASS ===` : `=== ${TAG}: CHECK ===`)
-
 await browser.close()

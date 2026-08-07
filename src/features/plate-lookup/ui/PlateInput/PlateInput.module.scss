@@ -2,6 +2,7 @@
 
 // ── крупный номерной знак (экран 2) ────────────────────────────────────────
 .plate {
+  position: relative;
   display: flex;
   align-items: stretch;
   gap: 2px;
@@ -11,6 +12,11 @@
   padding: 4px;
   border: 1px solid t.$gold;
   border-radius: 10px;
+  cursor: text;
+  // тап по знаку не должен ни выделять символы, ни давать двойным нажатием зум
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
 
   &[data-invalid] {
     animation: shake 0.3s ease;
@@ -73,7 +79,8 @@
   border-color: #ef8f79;
 }
 
-// невидимое поле поверх: вся клавиатурная работа идёт через него
+// Невидимое поле держит фокус и принимает вставку. Клики оно не перехватывает:
+// тап должен доходить до конкретной ячейки, чтобы каретка вставала туда.
 .field {
   position: absolute;
   inset: 0;
@@ -84,8 +91,9 @@
   background: transparent;
   color: transparent;
   caret-color: transparent;
+  // 16px обязательны: при меньшем размере iOS зумит страницу на фокусе
   font-size: 16px;
-  cursor: text;
+  pointer-events: none;
 
   &:focus {
     outline: none;

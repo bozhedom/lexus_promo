@@ -1,9 +1,15 @@
 @use 'shared/config/tokens' as t;
+@use 'shared/config/fluid' as f;
 
+// Кадр 360×800 масштабируется целиком. Если экран для него слишком узкий,
+// остаток высоты делим поровну сверху и снизу, а не сваливаем всё под низ.
 .screen {
   position: relative;
   width: 100%;
   min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   background: #000;
   color: rgba(255, 255, 255, 0.8);
   overflow: visible;
@@ -12,7 +18,7 @@
 .reveal {
   position: relative;
   width: 100%;
-  min-height: calc(min(222.222vw, 1066.67px) - 44px);
+  min-height: f.frame(800);
   animation: reveal 0.75s cubic-bezier(0.16, 0.84, 0.24, 1) both;
 }
 
@@ -69,27 +75,27 @@
   position: absolute;
   z-index: 4;
   left: 50%;
-  top: calc(min(186.25vw, 894px) - 44px);
+  top: f.frame(670);
   bottom: auto;
-  width: min(464px, calc(100% - 16px));
+  width: f.column(344, 300);
   transform: translateX(-50%);
 }
 
 .bar .saveBtn {
   @include t.gold-button;
   width: 100%;
-  min-height: 48px;
+  min-height: f.frame(48, 40);
   padding: 10px 18px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  font-size: 16px;
+  font-size: f.frame(16, 13);
   line-height: 1;
 
   svg {
-    width: 24px;
-    height: 24px;
+    width: f.frame(24, 18);
+    height: f.frame(24, 18);
     fill: none;
     stroke: currentColor;
     stroke-width: 1.5;
@@ -99,6 +105,38 @@
 
   &:hover:not(:disabled) {
     box-shadow: 0 0 22px rgba(228, 204, 174, 0.28);
+  }
+}
+
+// «Рекомендовать друзьям» из макета: подчёркнутая ссылка со значком шеринга
+.recommend {
+  width: 100%;
+  min-height: f.frame(36, 30);
+  margin-top: f.frame(12, 8);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 0;
+  background: none;
+  color: rgba(255, 255, 255, 0.82);
+  font-family: t.$font-condensed;
+  font-size: 13px;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  cursor: pointer;
+
+  span {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+
+  svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.4;
   }
 }
 
@@ -113,18 +151,6 @@
   text-align: center;
 
   button { @include t.gold-button; }
-}
-
-@media (min-width: 769px) {
-  .bar { top: 751px; bottom: auto; width: 410px; }
-}
-
-@media (max-width: 359px) {
-  .bar {
-    width: calc(100% - 28px);
-  }
-
-  .bar .saveBtn { font-size: 14px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,0 +1,92 @@
+@use 'tokens' as t;
+
+// Переключатель «по номеру авто / указать вручную». Один и тот же на экранах 2
+// и 3, поэтому вынесен в миксин.
+//
+// Подчёркивание не появляется скачком: активная вкладка растягивает его от
+// центра, а панель под вкладками проявляется коротким сдвигом вверх. Между
+// экранами 2 и 3 переключение — это смена маршрута, поэтому анимация заводится
+// на монтировании, а не на общем ползунке.
+@mixin tabs {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 16px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.7px;
+  line-height: 1.4;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+
+  button,
+  span {
+    position: relative;
+    min-height: 32px;
+    padding: 6px 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    transition: color 0.24s ease;
+
+    &::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.8);
+      transform: scaleX(0);
+      transition: transform 0.28s cubic-bezier(0.2, 0.7, 0.2, 1);
+    }
+  }
+
+  button {
+    cursor: pointer;
+
+    &:hover:not(:disabled) { color: rgba(255, 255, 255, 0.82); }
+    &:disabled { cursor: default; }
+  }
+
+  :global(.tab-active),
+  .tabActive {
+    color: rgba(255, 255, 255, 0.8);
+
+    &::after {
+      transform: scaleX(1);
+      animation: tab-underline 0.34s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    }
+  }
+}
+
+@keyframes tab-underline {
+  from { transform: scaleX(0); opacity: 0.4; }
+  to { transform: scaleX(1); opacity: 1; }
+}
+
+// Содержимое вкладки въезжает коротким сдвигом, а не появляется рывком.
+@mixin tab-panel {
+  animation: tab-panel-in 0.3s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes tab-panel-in {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes tab-underline {
+    from { transform: scaleX(1); }
+    to { transform: scaleX(1); }
+  }
+  @keyframes tab-panel-in {
+    from { opacity: 1; transform: none; }
+    to { opacity: 1; transform: none; }
+  }
+}

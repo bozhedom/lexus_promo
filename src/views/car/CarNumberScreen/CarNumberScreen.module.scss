@@ -1,4 +1,5 @@
 @use 'shared/config/tokens' as t;
+@use 'shared/config/tabs' as tabs;
 
 .lookupCard {
   padding: 16px 24px 12px;
@@ -14,6 +15,7 @@
   flex-direction: column;
   align-items: center;
   gap: 16px;
+  @include tabs.tab-panel;
 }
 
 // в макете поле и кнопка уже карточки: 333px по центру
@@ -36,41 +38,7 @@
 }
 
 .tabs {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 16px;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 14px;
-  font-weight: 500;
-  letter-spacing: 0.7px;
-  line-height: 1.4;
-  text-align: center;
-  text-transform: uppercase;
-  white-space: nowrap;
-
-  button,
-  span {
-    min-height: 32px;
-    padding: 6px 0;
-    border: 0;
-    background: none;
-    color: inherit;
-    font: inherit;
-    letter-spacing: inherit;
-    text-transform: inherit;
-  }
-
-  button {
-    cursor: pointer;
-
-    &:disabled { cursor: default; }
-  }
-
-  .tabActive {
-    border-bottom: 2px solid rgba(255, 255, 255, 0.8);
-    color: rgba(255, 255, 255, 0.8);
-  }
+  @include tabs.tabs;
 }
 
 .error {

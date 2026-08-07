@@ -1,9 +1,8 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
-import { saveTicket } from '@/features/download-ticket'
 import { completeApplication, isApiError, type CompleteResult } from '@/shared/api/funnel'
 import { useScreenView } from '@/shared/analytics'
 import { useFunnel, useFunnelGuard } from '@/shared/lib/funnel'
@@ -11,6 +10,9 @@ import { useSceneAssets } from '@/shared/lib/useSceneAssets'
 import { useStageTransition } from '@/widgets/curtain-transition'
 import { Button, Loader } from '@/shared/ui'
 import { TicketCard } from '@/widgets/ticket-card'
+import { CertificatesModal } from '@/invite-test/ui/CertificatesModal'
+import { useInviteSession } from '@/invite-test/model/useInviteSession'
+import type { PersonalInviteDetails } from '@/invite-test/model/types'
 import styles from './TicketScreen.module.scss'
 
 const TICKET_ASSETS = [
@@ -21,7 +23,7 @@ const TICKET_ASSETS = [
 
 type Phase = 'loading' | 'ready' | 'error'
 
-// Экран 5: пригласительный (сертификат) + сохранение PNG
+// Экран 5: команда автомобиля и выдача пригласительных
 export function TicketScreen() {
   const router = useRouter()
   const { go } = useStageTransition()
@@ -35,8 +37,7 @@ export function TicketScreen() {
   const [phase, setPhase] = useState<Phase>('loading')
   const [result, setResult] = useState<CompleteResult | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
-  const [saving, setSaving] = useState(false)
-  const cardRef = useRef<HTMLDivElement>(null)
+  const [modalOpen, setModalOpen] = useState(false)
   const assetsReady = useSceneAssets(TICKET_ASSETS)
 
   // идемпотентно создаём сертификат
@@ -67,22 +68,50 @@ export function TicketScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [show, data.applicationId])
 
+  // Данные для персональных сертификатов. Сессию заводим заранее, пока человек
+  // рассматривает экран: к моменту открытия модалки картинки уже готовы.
+  const details = useMemo<PersonalInviteDetails | null>(() => {
+    const fullName = (result?.application.fullName ?? data.fullName ?? '').trim()
+    if (phase !== 'ready' || !fullName) return null
+    return {
+      fullName,
+      brand: (result?.application.carBrand ?? data.carBrand ?? 'Lexus').trim(),
+      model: (result?.application.carModel ?? data.carModel ?? '').trim(),
+      year: result?.application.carYear ?? data.carYear ?? null,
+      plate: (result?.application.plateNumber ?? data.plateNumber ?? '').trim().toUpperCase(),
+      amount: result?.certificate.amount ?? data.certificateAmount ?? 1500,
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, result, data.fullName, data.carBrand, data.carModel, data.carYear, data.plateNumber])
+
+  const delivery = useInviteSession(details)
+
   if (!show) return null
 
-  const save = async () => {
-    if (!cardRef.current || saving) return
-    setSaving(true)
+  const openCertificates = () => {
     track('certificate_saved', { code: result?.certificate.code })
-    try {
-      await saveTicket(
-        cardRef.current,
-        `priglasitelnyj-${result?.certificate.code ?? 'gift'}.png`,
-        result?.certificate.id,
-      )
-    } catch {
-      // если рендер/шеринг сорвался: не блокируем воронку
+    setModalOpen(true)
+  }
+
+  // Нативный «Поделиться» ведёт на соцсети и мессенджеры телефона; без него
+  // (десктоп) кладём ссылку в буфер обмена.
+  const recommend = async () => {
+    track('outbound_click', { id: 'recommend' })
+    const url = window.location.origin
+    const share = { title: 'Персональное приглашение', text: 'Приглашение в новый техцентр «АвтоГарантСити»', url }
+    if (typeof navigator.share === 'function') {
+      try {
+        await navigator.share(share)
+        return
+      } catch {
+        // отмена шеринга — молча выходим
+      }
     }
-    go('/links')
+    try {
+      await navigator.clipboard.writeText(url)
+    } catch {
+      // буфер недоступен: показывать нечего, кнопка просто не сработала
+    }
   }
 
   return (
@@ -107,7 +136,6 @@ export function TicketScreen() {
       {phase === 'ready' && result && assetsReady && (
         <div className={styles.reveal}>
           <TicketCard
-            ref={cardRef}
             fullName={result.application.fullName ?? data.fullName ?? ''}
             brand={result.application.carBrand ?? data.carBrand ?? ''}
             model={result.application.carModel ?? data.carModel ?? ''}
@@ -120,22 +148,36 @@ export function TicketScreen() {
             }}
           />
 
-          {/* Кнопка находится за пределами карточки и в сохраняемое изображение не попадает. */}
           <div className={styles.bar}>
-            <Button className={styles.saveBtn} onClick={save} disabled={saving}>
-              {saving ? (
-                <Loader label="Сохраняем" />
-              ) : (
-                <>
-                  Скачать пригласительный
-                  <svg viewBox="0 0 24 24" aria-hidden>
-                    <path d="M12 3v12m0 0 5-5m-5 5-5-5M5 20h14" />
-                  </svg>
-                </>
-              )}
+            <Button className={styles.saveBtn} onClick={openCertificates}>
+              Скачать пригласительный
+              <svg viewBox="0 0 24 24" aria-hidden>
+                <path d="M12 3v12m0 0 5-5m-5 5-5-5M5 20h14" />
+              </svg>
             </Button>
+
+            {/* Кнопка на соцсети из макета: системный шеринг открывает список
+                мессенджеров и соцсетей телефона. */}
+            <button type="button" className={styles.recommend} onClick={recommend}>
+              <span>Рекомендовать друзьям</span>
+              <svg viewBox="0 0 24 24" aria-hidden>
+                <circle cx="18" cy="5" r="3" />
+                <circle cx="6" cy="12" r="3" />
+                <circle cx="18" cy="19" r="3" />
+                <path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4" />
+              </svg>
+            </button>
           </div>
         </div>
+      )}
+
+      {modalOpen && details && (
+        <CertificatesModal
+          delivery={delivery}
+          details={details}
+          certificateId={result?.certificate.id}
+          onClose={() => setModalOpen(false)}
+        />
       )}
     </main>
   )

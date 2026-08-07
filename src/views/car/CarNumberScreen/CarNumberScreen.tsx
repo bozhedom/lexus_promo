@@ -13,10 +13,12 @@ import {
   createApplication,
   findExistingCertificate,
   isApiError,
+  lookupCar,
   patchApplication,
 } from '@/shared/api/funnel'
 import { useScreenView } from '@/shared/analytics'
 import { useFunnel } from '@/shared/lib/funnel'
+import type { CarInfo } from '@/shared/lib/types'
 import { Button, Loader, StageLayout } from '@/shared/ui'
 import { validatePlate } from '@/lib/validation'
 import styles from './CarNumberScreen.module.scss'
@@ -39,7 +41,7 @@ function ReadyCarNumberScreen() {
   const openManual = () => {
     // Ручная форма живёт на следующем экране, но номер (даже частично
     // заполненный) не должен пропадать при переключении вкладки.
-    update({ plateNumber: plate })
+    update({ plateNumber: plate, carLookup: undefined })
     router.push('/car-info?manual=1')
   }
 
@@ -76,6 +78,11 @@ function ReadyCarNumberScreen() {
         return
       }
 
+      // Определение авто идёт здесь же, параллельно сохранению номера: экран
+      // не перерисовывается, человек видит один загрузчик на месте кнопки, а
+      // следующий шаг открывается уже с ответом — найдено или нет.
+      const lookup = lookupCar(canonical).catch<CarInfo>(() => ({ found: false }))
+
       if (canContinue) {
         await patchApplication(data.applicationId!, { sessionId, plateNumber: canonical })
         update({ plateNumber: canonical, status: 'draft_plate' })
@@ -84,6 +91,8 @@ function ReadyCarNumberScreen() {
         reset()
         update({ applicationId: res.id, plateNumber: canonical, status: 'draft_plate' })
       }
+
+      update({ carLookup: await lookup })
       track('plate_submitted', { plate: canonical })
       router.push('/car-info')
     } catch (e) {
@@ -99,7 +108,7 @@ function ReadyCarNumberScreen() {
       secureInside
       subtitle={
         <>
-          Внесите номер, чтобы получить <b>персональное приглашение</b>
+          Внесите номер, чтобы получить <br /><b>персональное приглашение</b>
         </>
       }
     >
@@ -112,9 +121,12 @@ function ReadyCarNumberScreen() {
         </div>
 
         <div className={styles.stack}>
+          {/* На время определения знак гаснет, как в макете: экран тот же,
+              меняется только состояние поля и кнопки. */}
           <PlateInput
             defaultValue={data.plateNumber ?? DEFAULT_PLATE_REGION}
             invalid={Boolean(error)}
+            disabled={submitting}
             onChange={(v) => {
               setPlate(v)
               if (error) setError(null)

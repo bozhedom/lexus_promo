@@ -1,5 +1,8 @@
 @use 'shared/config/tokens' as t;
 
+// Итоговый экран переведён на золотую палитру редизайна: он завершает ту же
+// воронку, что и остальные шаги, и красная тема прежнего макета выбивалась.
+
 .screen {
   position: relative;
   min-height: 100dvh;
@@ -9,6 +12,8 @@
   padding: clamp(22px, 4vh, 56px) 20px clamp(22px, 4vh, 52px);
   background: t.$black;
   overflow: hidden;
+  color: rgba(255, 255, 255, 0.86);
+  font-family: t.$font-condensed;
 }
 
 // та же сцена, что и на шагах 2-4
@@ -22,16 +27,10 @@
 .sceneBox {
   position: absolute;
   inset: 0;
-  background: url('/images/stage-plate.webp') no-repeat center top / cover;
+  background: url('/images/redesign/service-center.webp') no-repeat center / cover;
 
-  // мобильный кадр: без штор и рук, только тёмная сцена и один софит
   @media (max-width: 900px) and (orientation: portrait) {
-    background-image: url('/images/bg-final-portrait.webp');
-  }
-
-  // широкий кадр: только для по-настоящему вытянутых экранов, см. StageLayout
-  @media (min-aspect-ratio: 12 / 5) {
-    background-image: url('/images/stage-plate-wide.webp');
+    background-image: url('/images/redesign/service-center-mobile-test.webp');
   }
 }
 
@@ -55,16 +54,15 @@
       rgba(0, 0, 0, 0.82) 100%
     );
 
-  // Десктопная вуаль на телефоне съедала пол целиком. Гасим только верх под
-  // заголовок и низ, середину оставляем видимой.
+  // На телефоне список ссылок занимает почти весь экран, и фотография под ним
+  // спорит с текстом: гасим сцену сильнее, оставляя её как атмосферу.
   @media (max-width: 900px) and (orientation: portrait) {
     background: linear-gradient(
       180deg,
-      rgba(0, 0, 0, 0.62) 0%,
-      rgba(0, 0, 0, 0.28) 18%,
-      rgba(0, 0, 0, 0.08) 46%,
-      rgba(0, 0, 0, 0.16) 78%,
-      rgba(0, 0, 0, 0.55) 100%
+      rgba(0, 0, 0, 0.82) 0%,
+      rgba(0, 0, 0, 0.66) 22%,
+      rgba(0, 0, 0, 0.7) 60%,
+      rgba(0, 0, 0, 0.86) 100%
     );
   }
 }
@@ -89,13 +87,14 @@
 }
 
 .saved {
-  font-size: clamp(17px, 2.25vw, 32px);
+  font-size: clamp(15px, 2.25vw, 26px);
   line-height: 1.35;
-  font-weight: 500;
+  font-weight: 400;
+  letter-spacing: 0.4px;
 }
 
 .accent {
-  color: t.$accent;
+  @include t.gold-text;
 }
 
 .divider {
@@ -104,8 +103,11 @@
 }
 
 .invite {
-  font-size: clamp(22px, 2.95vw, 42px);
-  font-weight: 700;
+  font-family: t.$font-display;
+  font-size: clamp(22px, 2.95vw, 40px);
+  font-weight: 400;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
 }
 
 .body {
@@ -137,21 +139,27 @@
   font-size: clamp(10.5px, 1vw, 15px);
   line-height: 1.3;
   text-transform: uppercase;
-  color: t.$white;
-  transition: box-shadow 0.18s ease, transform 0.18s ease;
-  @include t.border-gradient(#d7d7d7, #0d0b0c, #2e1112, #d7d7d7);
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(154, 123, 86, 0.75);
+  background: rgba(8, 7, 6, 0.62);
+  backdrop-filter: blur(6px);
+  transition: box-shadow 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.55);
+    border-color: t.$gold-light;
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.55), 0 0 18px rgba(228, 204, 174, 0.18);
   }
 }
 
+// Последняя ссылка в макете выделена: у неё золотая рамка в полную силу.
 .linkAccent {
-  @include t.border-gradient(#d82f2f, #3a1113, #7d1c1e, #d82f2f);
+  border-color: t.$gold-light;
+  background: rgba(228, 204, 174, 0.08);
 
   &:hover {
-    box-shadow: 0 0 22px rgba(216, 47, 47, 0.4);
+    box-shadow: 0 0 22px rgba(228, 204, 174, 0.3);
   }
 }
 
@@ -178,7 +186,9 @@
   border-radius: t.$radius-final-card;
   text-align: center;
   overflow: hidden;
-  @include t.border-gradient(#d82f2f, #3a1113, #7d1c1e, #d82f2f);
+  border: 1px solid t.$gold-light;
+  background: rgba(8, 7, 6, 0.62);
+  backdrop-filter: blur(6px);
 }
 
 .personText {
@@ -193,7 +203,7 @@
   position: relative;
   display: inline-block;
   font-size: clamp(12px, 1.05vw, 16px);
-  color: t.$text-light;
+  color: rgba(255, 255, 255, 0.78);
 }
 
 // сердечко наезжает на подпись, как в макете
@@ -208,10 +218,12 @@
 }
 
 .personName {
+  @include t.gold-text;
   position: relative;
   z-index: 2;
+  font-family: t.$font-display;
   font-size: clamp(17px, 1.65vw, 24px);
-  font-weight: 700;
+  font-weight: 400;
 }
 
 // только голова и плечи, без серой подложки
@@ -293,6 +305,20 @@
   .invite {
     font-size: 23px;
   }
+}
+
+// На низком экране список ссылок вместе с карточкой автосекретаря вылезал за
+// вьюпорт. Плотность строк и отступы привязываем к высоте, чтобы экран
+// помещался целиком и на 568px.
+@media (max-height: 700px) {
+  .screen { padding-block: 10px; }
+  .head { margin-bottom: clamp(8px, 1.6svh, 16px); }
+  .link { min-height: clamp(36px, 6.2svh, 46px); }
+  .links { gap: clamp(6px, 1.1svh, 10px); }
+  .person { min-height: clamp(58px, 11svh, 74px); }
+  .photo { height: clamp(58px, 11svh, 74px); }
+  .saved { font-size: 15px; }
+  .invite { font-size: 20px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

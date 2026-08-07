@@ -16,6 +16,10 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  // Safari сам увеличивает страницу при фокусе на поле и обратно уже не
+  // отъезжает — экран остаётся «уехавшим» до перезагрузки. maximumScale это
+  // выключает; ручной pinch-zoom с iOS 10 работает всё равно.
+  maximumScale: 1,
   themeColor: '#000000',
 }
 

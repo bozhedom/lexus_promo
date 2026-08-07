@@ -14,10 +14,10 @@
   flex: 1;
 
   &:first-child {
-    background: linear-gradient(90deg, transparent, t.$accent-line);
+    background: linear-gradient(90deg, transparent, t.$gold);
   }
   &:last-child {
-    background: linear-gradient(90deg, t.$accent-line, transparent);
+    background: linear-gradient(90deg, t.$gold, transparent);
   }
 }
 
@@ -27,6 +27,6 @@
   flex-shrink: 0;
   // в макете ромб не закрашен: только контур
   background: transparent;
-  border: 1px solid t.$accent-rhombus;
+  border: 1px solid t.$gold-light;
   transform: rotate(45deg);
 }

@@ -5,7 +5,9 @@
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 60;
+  // Выше модалок: клавиатура нужна и поверх окна ввода кода из СМС, иначе его
+  // затемнение перехватывает нажатия на клавиши.
+  z-index: 1100;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -39,7 +41,7 @@
   color: rgba(255, 255, 255, 0.62);
 }
 
-.done {
+.erase {
   padding: 5px 6px;
   border: none;
   background: none;
@@ -48,6 +50,11 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
 }
 
 .zone {
@@ -106,7 +113,7 @@
   }
 }
 
-.erase {
+.done {
   min-height: 42px;
   padding: 0;
   border: 1px solid rgba(154, 123, 86, 0.72);
@@ -124,10 +131,6 @@
     background: rgba(154, 123, 86, 0.3);
   }
 
-  &:disabled {
-    opacity: 0.4;
-    cursor: default;
-  }
 }
 
 @keyframes rise {

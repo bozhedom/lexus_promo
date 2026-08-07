@@ -15,6 +15,7 @@ import { createApplication, isApiError, lookupCar, patchApplication } from '@/sh
 import { useScreenView } from '@/shared/analytics'
 import { CAR_BRANDS, OTHER_OPTION, carModels, carYears } from '@/shared/config/car-data'
 import { useFunnel } from '@/shared/lib/funnel'
+import type { CarInfo } from '@/shared/lib/types'
 import { Button, Loader, SelectField, StageLayout, TextField } from '@/shared/ui'
 import { validatePlate, validateShortText } from '@/lib/validation'
 import styles from './CarInfoScreen.module.scss'
@@ -25,6 +26,84 @@ interface FoundCar {
   brand: string
   model: string
   year: number | null
+}
+
+interface InitialState {
+  ui: UiState
+  car: FoundCar | null
+  brand: string
+  year: string
+  notice: boolean
+}
+
+/**
+ * Экран открывается уже с ответом внешнего API: запрос делает предыдущий шаг,
+ * пока крутится загрузчик на кнопке «Определить автомобиль». Состояние
+ * `loading` остаётся только для прямого захода на адрес (например, F5).
+ */
+function initialFrom(lookup: CarInfo | undefined, manual: boolean): InitialState {
+  const empty = { car: null, brand: '', year: '', notice: false }
+  if (manual) return { ...empty, ui: 'manual' }
+  if (!lookup) return { ...empty, ui: 'loading' }
+  if (!lookup.found) return { ...empty, ui: 'manual', notice: true }
+  // Модель в базе есть не у всех. Подставляем известную марку и год, чтобы не
+  // сбрасывать человека на пустую форму.
+  if (!lookup.model) {
+    return {
+      ...empty,
+      ui: 'manual',
+      brand: lookup.brand,
+      year: lookup.year ? String(lookup.year) : '',
+    }
+  }
+  return {
+    ...empty,
+    ui: 'found',
+    car: { brand: lookup.brand, model: lookup.model, year: lookup.year },
+  }
+}
+
+// Иконки списка готовности обведены по кадру Figma. Раньше здесь стояли
+// типографские символы (♧, ✉, ∞): они брались из системного шрифта, поэтому
+// на разных телефонах отличались и размером, и начертанием.
+function StepIcon({ kind }: { kind: 'gift' | 'letter' | 'mask' }) {
+  if (kind === 'gift') {
+    return (
+      <svg className={styles.stepIcon} viewBox="0 0 26 28" aria-hidden>
+        <path d="M13 8c-2.4 0-5.2-.4-6.3-1.8-1.2-1.5.2-3.9 2.4-3.4C11.5 3.3 12.6 5.8 13 8Z" />
+        <path d="M13 8c2.4 0 5.2-.4 6.3-1.8 1.2-1.5-.2-3.9-2.4-3.4C14.5 3.3 13.4 5.8 13 8Z" />
+        <rect x="0.6" y="8" width="24.8" height="5" rx="0.8" />
+        <path d="M2.9 13h20.2v13.2a1.2 1.2 0 0 1-1.2 1.2H4.1a1.2 1.2 0 0 1-1.2-1.2Z" />
+        <path d="M13 8v19.4" />
+      </svg>
+    )
+  }
+  if (kind === 'letter') {
+    return (
+      <svg className={styles.stepIcon} viewBox="0 0 28 26" aria-hidden>
+        <path d="M11.2 5.4a2.8 2.8 0 0 1 5.6 0" />
+        <path d="M6.2 5.4h15.6v6.4M6.2 5.4v6.4" />
+        <path d="M9.6 8.4h8.8M9.6 11h8.8" />
+        <path d="M2.5 10.4h23v13h-23z" />
+        <path d="m2.5 10.4 11.5 8.4 11.5-8.4" />
+      </svg>
+    )
+  }
+  return (
+    <svg className={styles.stepIcon} viewBox="0 0 28 20" aria-hidden>
+      <path d="M1.2 5.2C1.2 3.2 3 2 4.9 2.5l7.3 2.1c1.2.3 2.4.3 3.6 0l7.3-2.1c1.9-.5 3.7.7 3.7 2.7v6.4c0 2-1.4 3.8-3.3 4.3l-7.9 2.1c-1 .3-2.2.3-3.2 0l-7.9-2.1c-1.9-.5-3.3-2.3-3.3-4.3Z" />
+      <path d="M6.6 9.2c1.6-.4 3 .5 3.6 2M21.4 9.2c-1.6-.4-3 .5-3.6 2" />
+    </svg>
+  )
+}
+
+// Галочка выполненного шага: в макете тёмная на золотом круге.
+function StepCheck() {
+  return (
+    <svg viewBox="0 0 14 14" aria-hidden>
+      <path d="m3.2 7.3 2.7 2.8 4.9-5.4" />
+    </svg>
+  )
 }
 
 // Экран 3, данные авто: найдено (3a) / марка и модель вручную (3b) / год и номер (3c)
@@ -50,6 +129,7 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
   const [manualNotice, setManualNotice] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
+  const [appliedLookup, setAppliedLookup] = useState<CarInfo | undefined>(undefined)
   const lookupGeneration = useRef(0)
 
   const models = carModels(brand)
@@ -57,49 +137,47 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
   const finalModel = needsCustomModel ? customModel.trim() : model
   const plateValue = plate ?? data.plateNumber ?? DEFAULT_PLATE_REGION
 
+  // Результат из сессии раскладываем прямо в рендере, а не в эффекте: иначе
+  // между гидратацией и эффектом успевает мелькнуть кадр с загрузчиком, хотя
+  // ответ уже есть. React в этом случае перерисует до отрисовки на экране.
+  if (!manualRequested && data.carLookup && data.carLookup !== appliedLookup) {
+    const next = initialFrom(data.carLookup, false)
+    setAppliedLookup(data.carLookup)
+    setUi(next.ui)
+    setCar(next.car)
+    setManualNotice(next.notice)
+    if (next.brand) setBrand(next.brand)
+    if (next.year) setYear(next.year)
+  }
+
   useEffect(() => {
     if (ready && !show) router.replace('/car-number')
   }, [ready, router, show])
 
-  // определение авто по номеру
+  // Событие определения шлём один раз на пришедший ответ.
   useEffect(() => {
-    if (!show || manualRequested || !data.plateNumber) return
-    // стартовое состояние и так 'loading': лишний сброс только плодит рендеры
+    if (!appliedLookup) return
+    if (!appliedLookup.found) track('car_not_found')
+    else track('car_found', { brand: appliedLookup.brand, model: appliedLookup.model })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appliedLookup])
+
+  // Запасной путь: прямой заход на адрес (перезагрузка страницы), когда ответа
+  // в сессии нет. Обычный проход по воронке сюда не попадает.
+  useEffect(() => {
+    if (!show || manualRequested || !data.plateNumber || data.carLookup) return
     const generation = ++lookupGeneration.current
     lookupCar(data.plateNumber)
+      .catch<CarInfo>(() => ({ found: false }))
       .then((info) => {
         if (lookupGeneration.current !== generation) return
-        if (!info.found) {
-          setManualNotice(true)
-          setUi('manual')
-          track('car_not_found')
-          return
-        }
-        // Модель в базе есть не у всех. Подставляем известную марку и год,
-        // чтобы не сбрасывать человека на пустую форму.
-        if (!info.model) {
-          setBrand(info.brand)
-          if (info.year) setYear(String(info.year))
-          setManualNotice(false)
-          setUi('manual')
-          track('car_found', { brand: info.brand, model: null })
-          return
-        }
-        setCar({ brand: info.brand, model: info.model, year: info.year })
-        setUi('found')
-        track('car_found', { brand: info.brand, model: info.model })
-      })
-      .catch(() => {
-        if (lookupGeneration.current !== generation) return
-        setManualNotice(true)
-        setUi('manual')
-        track('car_not_found')
+        update({ carLookup: info })
       })
     return () => {
       if (lookupGeneration.current === generation) lookupGeneration.current += 1
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [show, manualRequested, data.plateNumber])
+  }, [show, manualRequested, data.plateNumber, data.carLookup])
 
   if (!show) return null
 
@@ -191,6 +269,7 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
   }
 
   const plateShown = formatPlate(data.plateNumber ?? '')
+  const plateMain = splitPlate(data.plateNumber ?? '').main
 
   if (ui === 'found' && car) {
     return (
@@ -213,7 +292,12 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
           </h1>
 
           <div className={styles.staticPlate} aria-label={`Госномер ${plateShown.main} ${plateShown.region}`}>
-            <span className={styles.staticMain}>{plateShown.main}</span>
+            {/* На настоящем знаке цифры крупнее букв — в макете так же */}
+            <span className={styles.staticMain}>
+              <b>{plateMain.slice(0, 1)}</b>
+              <i>{plateMain.slice(1, 4)}</i>
+              <b>{plateMain.slice(4, 6)}</b>
+            </span>
             <span className={styles.staticRegion}>
               <strong>{plateShown.region}</strong>
               <Image src="/images/plate-rus-flag.svg" alt="RUS" width={48} height={12} />
@@ -224,17 +308,17 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
 
           <ul className={styles.progressList}>
             <li>
-              <span className={styles.lineIcon} aria-hidden>♧</span>
+              <StepIcon kind="gift" />
               <span>Персональное<br />приглашение готово</span>
-              <b>✓</b>
+              <b><StepCheck /></b>
             </li>
             <li>
-              <span className={styles.lineIcon} aria-hidden>✉</span>
+              <StepIcon kind="letter" />
               <span>Подарок зарезервирован<br />за вашим автомобилем</span>
-              <b>✓</b>
+              <b><StepCheck /></b>
             </li>
             <li>
-              <span className={styles.lineIcon} aria-hidden>∞</span>
+              <StepIcon kind="mask" />
               <span>Осталось подтвердить<br />владельца</span>
               <b className={styles.pendingCheck} />
             </li>
@@ -249,8 +333,8 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
             <div>
               <small>Сертификат</small>
               <strong>15 000 ₽</strong>
-              <p>на оригинальные запасные части<br />и аксессуары</p>
-              <span>Подробнее</span>
+              <p>на оригинальные<br />запасные части<br />и аксессуары</p>
+              <span>Подробно</span>
             </div>
           </article>
 
@@ -283,7 +367,7 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
       secureInside
       subtitle={
         <>
-          Внесите номер, чтобы получить <b>персональное приглашение</b>
+          Внесите номер, чтобы получить <br /><b>персональное приглашение</b>
         </>
       }
     >

@@ -322,13 +322,17 @@ export function NewsSlider() {
                     alt={s.caption}
                     width={628}
                     height={356}
-                    sizes="(max-width: 767px) 80vw, 320px"
+                    sizes="(max-width: 768px) 100vw, 320px"
                     loading={i < 2 ? 'eager' : 'lazy'}
                   />
                   {s.address && (
                     <span className={styles.address}>
                       <Image src="/images/icon-marker.svg" alt="" width={30} height={38} />
-                      <span>{s.address}</span>
+                      {/* в макете адрес идёт в две строки, разделитель «·» и
+                          есть точка переноса */}
+                      {s.address.split('·').map((part) => (
+                        <span key={part}>{part.trim()}</span>
+                      ))}
                     </span>
                   )}
                   {/* уголки, а не плюс: плюс читается как «добавить» */}
@@ -365,6 +369,11 @@ export function NewsSlider() {
             />
           ))}
         </div>
+
+        {/* На мобиле кадр всегда один, поэтому подпись в макете общая и стоит
+            под точками. На десктопе в ленте несколько карточек сразу, там
+            подписи остаются у каждой. */}
+        <p className={styles.activeCaption}>{slides[active]?.caption}</p>
       </div>
 
       <dialog

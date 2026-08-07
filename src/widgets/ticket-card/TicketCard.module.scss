@@ -1,11 +1,14 @@
 @use 'shared/config/tokens' as t;
+@use 'shared/config/fluid' as f;
 
+// Экран команды свёрстан по координатам кадра 360×800. Все величины проходят
+// через f.frame(): кадр целиком масштабируется под экран одним коэффициентом,
+// поэтому на 360×800 совпадает с макетом, а на телефоне крупнее занимает его
+// полностью, а не оставляет снизу чёрную полосу.
 .card {
   position: relative;
   width: 100%;
-  // Макет из референса имеет пропорцию 360×800. Высота следует за шириной:
-  // на обычном телефоне всё помещается, на более коротком доступен скролл.
-  min-height: calc(min(222.222vw, 1066.67px) - 44px);
+  min-height: f.frame(800);
   overflow: hidden;
   background: #000;
   color: rgba(255, 255, 255, 0.8);
@@ -13,11 +16,13 @@
   text-align: center;
 }
 
+// Колонка сцены не уже самого кадра: на высоком экране кадр вырастает, и
+// фиксированные 480px оказались бы уже карточки команды.
 .backdrop {
   position: absolute;
   inset: 0;
   left: 50%;
-  width: min(100%, 480px);
+  width: min(100%, max(480px, #{f.frame(360)}));
   transform: translateX(-50%);
   transform-origin: 50% 34%;
   background: url('/images/redesign/invite-center.webp') no-repeat center / cover;
@@ -36,16 +41,16 @@
 .content {
   position: relative;
   z-index: 1;
-  width: min(100%, 480px);
-  min-height: calc(min(222.222vw, 1066.67px) - 44px);
+  width: min(100%, max(480px, #{f.frame(360)}));
+  min-height: f.frame(800);
   margin: 0 auto;
 }
 
 .heading {
   position: absolute;
-  top: 44px;
+  top: f.frame(88);
   left: 50%;
-  width: min(326px, calc(100% - 32px));
+  width: f.column(326, 300, 24px);
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
@@ -58,7 +63,7 @@
     padding-bottom: 4px;
     font-family: t.$font-display;
     max-width: 100%;
-    font-size: clamp(21px, 7vw, 26px);
+    font-size: f.frame(26, 18);
     font-weight: 400;
     line-height: 1;
     letter-spacing: 1.3px;
@@ -66,27 +71,9 @@
   }
 
   p {
-    font-size: 12px;
+    font-size: f.frame(12, 10);
     line-height: 1.4;
     letter-spacing: 0.6px;
-  }
-
-}
-
-.certificateAmount {
-  display: flex;
-  align-items: baseline;
-  gap: 5px;
-  color: rgba(255, 255, 255, 0.76);
-  font-size: 10px !important;
-  letter-spacing: 0.8px !important;
-
-  strong {
-    @include t.gold-text;
-    font-family: t.$font-display;
-    font-size: 15px;
-    font-weight: 400;
-    letter-spacing: 0.8px;
   }
 }
 
@@ -118,15 +105,17 @@
 
 .teamCard {
   position: absolute;
-  top: calc(min(42.92vw, 206px) - 44px);
+  top: f.frame(154);
   left: 50%;
-  width: min(464px, calc(100% - 16px));
-  height: min(109.44vw, 525.33px);
+  width: f.column(344, 300);
+  height: f.frame(394);
   transform: translateX(-50%);
   overflow: hidden;
   border: 1px solid #f3d7af;
   border-radius: 12px;
-  background: rgba(13, 11, 12, 0.3);
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.6) 6%, transparent 22%),
+    rgba(13, 11, 12, 0.2);
   backdrop-filter: blur(1px);
   animation: team-glow 5.8s ease-in-out infinite;
 }
@@ -134,9 +123,9 @@
 .teamHeading {
   position: absolute;
   z-index: 3;
-  top: 15px;
-  left: 15px;
-  right: 15px;
+  top: f.frame(15);
+  left: f.frame(15);
+  right: f.frame(15);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -144,7 +133,7 @@
   text-transform: uppercase;
 
   p {
-    font-size: 12px;
+    font-size: f.frame(12, 10);
     line-height: 1.4;
     letter-spacing: 0.6px;
   }
@@ -152,7 +141,7 @@
   h3 {
     @include t.gold-text;
     font-family: t.$font-display;
-    font-size: 24px;
+    font-size: f.frame(24, 17);
     font-weight: 400;
     line-height: 1;
     letter-spacing: 1.2px;
@@ -167,23 +156,31 @@
   overflow: hidden;
 }
 
+// Автомобиль и люди — снимки с прозрачным фоном, поэтому их не кадрируют, а
+// ставят по размеру. Доли подобраны по кадру Figma: люди уже машины, головы
+// начинаются заметно ниже заголовка, ноги уходят под нижний край карточки.
 .car {
   position: absolute;
-  top: -10px;
+  top: f.frame(7);
   left: 50%;
-  width: min(91.67vw, 440px);
+  width: 79%;
   height: auto;
   transform: translateX(-50%);
 }
 
+// object-fit: cover здесь резал героям головы: снимок вытянутый (1024×1450), а
+// окно широкое и низкое, и всё лишнее по высоте уходило в обрез сверху и снизу.
+// contain вписывает кадр целиком, размер задаёт высота, поэтому пропорции людей
+// от ширины карточки больше не зависят. Высота взята с запасом на прозрачные
+// поля снимка: сами герои занимают в нём 48% высоты, значит 487 в кадре дают
+// нужные 234. Отрицательный отступ снизу опускает пустое поле под карточку.
 .people {
   position: absolute;
   left: 0;
-  right: 0;
-  bottom: 79px;
+  bottom: calc(#{f.frame(45)} * -1);
   width: 100%;
-  height: min(65.56vw, 314.67px);
-  object-fit: cover;
+  height: f.frame(487);
+  object-fit: contain;
   animation: team-float 6s ease-in-out infinite;
 }
 
@@ -202,76 +199,85 @@
   50% { transform: translateY(-2px); }
 }
 
+// Низ карточки в макете почти сплошной тёмный: на нём стоят имена и кнопка.
 .visualFade {
   position: absolute;
   left: 0;
   right: 0;
   bottom: -1px;
-  height: 180px;
-  background: linear-gradient(180deg, transparent, rgba(23, 15, 8, 0.94));
+  height: f.frame(200);
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(24, 16, 9, 0.72) 42%,
+    rgba(22, 15, 8, 0.96) 74%,
+    rgba(22, 15, 8, 0.99) 100%
+  );
 }
 
+// Колонки прижаты к центральной черте: левая по правому краю, правая по левому.
+// Сама черта стоит по центру карточки — в макете имена симметричны заголовку,
+// а отступом слева блок уезжал вправо и вставал вразрез с ним.
 .teamNames {
   position: absolute;
   z-index: 3;
-  left: 15px;
-  right: 15px;
-  bottom: 80px;
+  left: 50%;
+  right: auto;
+  bottom: f.frame(79);
+  width: f.frame(312);
+  transform: translateX(-50%);
   display: grid;
-  grid-template-columns: 1fr 12px 1fr;
+  grid-template-columns: 1fr 1px 1fr;
   align-items: end;
-  gap: 5px;
+  gap: f.frame(12, 8);
   text-transform: uppercase;
 
   div {
     min-width: 0;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: flex-end;
+    text-align: right;
   }
 
-  div:last-child { align-items: flex-end; }
+  div:last-child {
+    align-items: flex-start;
+    text-align: left;
+  }
 
   small {
-    font-size: 10px;
-    line-height: 1.4;
-    white-space: nowrap;
+    font-size: f.frame(10, 9);
+    line-height: 1.28;
+    color: rgba(255, 255, 255, 0.88);
   }
 
   strong {
+    @include t.gold-text;
+    margin-top: f.frame(4, 2);
     font-family: t.$font-display;
-    font-size: 20px;
+    font-size: f.frame(22, 16);
     font-weight: 400;
     line-height: 1;
     letter-spacing: 1px;
   }
 }
 
-.secretary { color: #d96a67; }
-.mechanic { color: #7688d0; }
-
+// В макете имена делит простая тонкая линия без ромба: он повторял бы огранку
+// заголовка и в этом месте только спорил с ней.
 .nameDivider {
-  height: 35px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
+  position: relative;
+  width: 6px;
+  height: f.frame(46);
 
-  &::before,
-  &::after {
+  &::before {
     content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
     width: 1px;
-    flex: 1;
-    background: t.$gold;
-  }
-
-  i {
-    width: 5px;
-    height: 5px;
-    transform: rotate(45deg);
-    background: t.$gold-light;
-    box-shadow: 0 0 6px rgba(228, 204, 174, 0.7);
+    transform: translateX(-50%);
+    background: linear-gradient(180deg, transparent, rgba(228, 204, 174, 0.85) 26%, rgba(228, 204, 174, 0.85) 74%, transparent);
   }
 }
 
@@ -279,22 +285,22 @@
   @include t.gold-button;
   position: absolute;
   z-index: 4;
-  left: 15px;
-  right: 15px;
-  bottom: 15px;
-  width: calc(100% - 30px);
-  min-height: 49px;
-  font-size: 16px;
+  left: f.frame(15);
+  right: f.frame(15);
+  bottom: f.frame(15);
+  width: auto;
+  min-height: f.frame(49, 40);
+  font-size: f.frame(16, 13);
   cursor: pointer;
 }
 
 .guest {
   position: absolute;
-  top: calc(min(157.08vw, 754px) - 44px);
+  top: f.frame(565);
   bottom: auto;
   left: 50%;
-  width: min(464px, calc(100% - 16px));
-  height: 85px;
+  width: f.column(344, 300);
+  height: f.frame(89);
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
@@ -308,54 +314,17 @@
   text-transform: uppercase;
 
   img {
-    width: 40px;
-    height: 40px;
+    width: f.frame(40, 28);
+    height: f.frame(40, 28);
   }
 
   p {
-    font-family: t.$font-display;
-    font-size: 18px;
-    line-height: 1;
+    font-family: t.$font-condensed;
+    font-weight: 300;
+    font-size: f.frame(18, 14);
+    line-height: 1.4;
     letter-spacing: 0.9px;
   }
-}
-
-.trust {
-  position: absolute;
-  top: calc(min(207.08vw, 994px) - 44px);
-  bottom: auto;
-  left: 50%;
-  width: calc(100% - 48px);
-  transform: translateX(-50%);
-  text-transform: uppercase;
-
-  p {
-    @include t.gold-text;
-    font-family: t.$font-display;
-    font-size: 15px;
-    line-height: 1.15;
-    letter-spacing: 1px;
-  }
-
-}
-
-@media (min-width: 769px) {
-  .card,
-  .content { min-height: max(100svh, 900px); }
-
-  .heading { top: 88px; width: 380px; }
-
-  .teamCard {
-    top: 164px;
-    width: 410px;
-    height: 470px;
-  }
-
-  .car { top: -20px; width: 394px; }
-  .people { height: 282px; }
-  .teamNames { bottom: 82px; }
-  .guest { top: 650px; bottom: auto; width: 410px; }
-  .trust { top: 824px; bottom: auto; }
 }
 
 @media (prefers-reduced-motion: reduce) {

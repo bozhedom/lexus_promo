@@ -19,7 +19,6 @@
     "@payloadcms/next": "^3.86.0",
     "@payloadcms/richtext-lexical": "^3.86.0",
     "graphql": "^16.14.2",
-    "html-to-image": "^1.11.13",
     "next": "16.2.10",
     "payload": "^3.86.0",
     "react": "19.2.4",

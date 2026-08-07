@@ -1,109 +1,184 @@
-@use 'invite-test/styles/tokens' as t;
+@use 'shared/config/tokens' as t;
 
+// Модалка теперь живёт в воронке, поэтому собрана на её золотой палитре,
+// а не на отдельных токенах демо-страницы.
 .overlay {
   position: fixed;
   inset: 0;
-  z-index: 40;
+  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
-  background: rgba(0, 0, 0, 0.72);
-  backdrop-filter: blur(2px);
+  padding: 16px;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(3px);
   animation: fade 0.2s ease both;
 }
 
 .panel {
   position: relative;
   width: 100%;
-  max-width: 380px;
-  padding: 26px 20px 24px;
-  border-radius: t.$radius-modal;
-  background: t.$surface-modal;
+  max-width: 360px;
+  margin: auto;
+  padding: 26px 18px 22px;
+  border: 1px solid t.$gold;
+  border-radius: 16px;
+  background: linear-gradient(155deg, #1d1813, #080706 66%);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+  color: rgba(255, 255, 255, 0.84);
+  font-family: t.$font-condensed;
   text-align: center;
   animation: rise 0.24s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
 .close {
   position: absolute;
-  top: -12px;
-  right: -6px;
-  padding: 4px;
-  border: none;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid rgba(228, 204, 174, 0.5);
+  border-radius: 50%;
   background: transparent;
+  color: t.$gold-light;
   cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease;
 
-  @include t.mobile {
-    top: 10px;
-    right: 10px;
+  &:hover,
+  &:focus-visible {
+    border-color: t.$gold-light;
+    background: rgba(228, 204, 174, 0.12);
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
   }
 }
 
 .title {
-  font-size: clamp(17px, 4.6vw, 20px);
-  font-weight: 700;
-  line-height: 1.25;
-  color: t.$text;
+  @include t.gold-text;
+  padding-inline: 22px;
+  font-family: t.$font-display;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
 }
 
 .subtitle {
-  margin-top: 6px;
-  font-size: 13px;
-  color: t.$text-dim;
+  margin-top: 7px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+// Превью — сами готовые картинки сертификатов: в них уже стоят имя гостя и
+// его номер, поэтому нарисованные заново карточки только расходились бы с тем,
+// что уходит в мессенджер.
+.preview {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border: 1px solid rgba(228, 204, 174, 0.42);
+  border-radius: 10px;
+  background: #0a0908;
+}
+
+.download {
+  @include t.gold-button;
+  width: 100%;
+  min-height: 49px;
+  margin-top: 18px;
   display: flex;
+  align-items: center;
   justify-content: center;
-  gap: 14px;
-  margin-top: 20px;
+  gap: 9px;
+  font-size: 15px;
+  cursor: pointer;
+
+  &:disabled { opacity: 0.55; cursor: default; }
+
+  svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+}
+
+.or {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 18px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 11px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  white-space: nowrap;
+
+  span {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(154, 123, 86, 0.7));
+
+    &:last-child { transform: scaleX(-1); }
+  }
 }
 
 .actions {
   display: flex;
-  flex-wrap: wrap;
   justify-content: center;
-  gap: 18px 24px;
-  margin-top: 24px;
+  gap: 18px;
+  margin-top: 14px;
 }
 
 .note {
-  margin-top: 16px;
-  font-size: 12px;
+  margin-top: 14px;
+  font-size: 11px;
   line-height: 1.35;
-  color: t.$text-dim;
+  color: rgba(255, 255, 255, 0.55);
 }
 
 .error {
-  margin-top: 16px;
-  font-size: 12px;
+  margin-top: 14px;
+  font-size: 11px;
   line-height: 1.35;
-  color: #e2726b;
+  color: #ef8f79;
 }
 
 @keyframes fade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes rise {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .overlay,
-  .panel {
-    animation: none;
-  }
+  .panel { animation: none; }
 }

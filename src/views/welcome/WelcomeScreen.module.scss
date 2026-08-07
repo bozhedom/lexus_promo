@@ -1,19 +1,29 @@
 @use 'shared/config/tokens' as t;
+@use 'shared/config/fluid' as f;
 
+// Первый экран собирается по вертикали как гибкая колонка, а не по фиксированным
+// координатам макета: между шапкой и блоком приглашения стоит распорка, которая
+// съедает всю свободную высоту. На 800px раскладка совпадает с Figma, на 568px
+// сжимается до читаемого минимума и никуда не уезжает.
 .screen {
   position: relative;
-  min-height: max(100svh, 800px);
+  min-height: 100svh;
   overflow: hidden;
   background: #000;
   color: rgba(255, 255, 255, 0.8);
   font-family: t.$font-condensed;
 
   &[data-ready='false'] {
+
     .stage,
-    .content { opacity: 0; visibility: hidden; }
+    .content {
+      opacity: 0;
+      visibility: hidden;
+    }
   }
 
   &[data-ready='true'] {
+
     .stage,
     .content {
       opacity: 1;
@@ -31,14 +41,15 @@
   top: 0;
   left: 50%;
   width: min(100%, 480px);
-  min-width: min(360px, 100%);
   height: 100%;
   transform: translateX(-50%);
   overflow: hidden;
   opacity: 0;
   pointer-events: none;
 
-  &[data-active] { opacity: 1; }
+  &[data-active] {
+    opacity: 1;
+  }
 }
 
 .introPanel {
@@ -112,39 +123,88 @@
 }
 
 .introCurtain[data-active] {
-  .introLeft { animation: intro-left-open 1.42s cubic-bezier(0.18, 0.74, 0.2, 1) 0.12s both; }
-  .introRight { animation: intro-right-open 1.42s cubic-bezier(0.18, 0.74, 0.2, 1) 0.12s both; }
-  .introSeam { animation: intro-seam 0.74s ease 0.08s both; }
+  .introLeft {
+    animation: intro-left-open 1.42s cubic-bezier(0.18, 0.74, 0.2, 1) 0.12s both;
+  }
+
+  .introRight {
+    animation: intro-right-open 1.42s cubic-bezier(0.18, 0.74, 0.2, 1) 0.12s both;
+  }
+
+  .introSeam {
+    animation: intro-seam 0.74s ease 0.08s both;
+  }
 }
 
 @keyframes intro-left-open {
-  0%, 7% { transform: translate3d(0, 0, 0) scaleX(1); filter: brightness(0.78); visibility: visible; }
-  28% { transform: translate3d(-2%, 0, 0) scaleX(1.018); filter: brightness(0.94); }
-  100% { transform: translate3d(-105%, 0, 0) scaleX(0.96); filter: brightness(1); visibility: hidden; }
+
+  0%,
+  7% {
+    transform: translate3d(0, 0, 0) scaleX(1);
+    filter: brightness(0.78);
+    visibility: visible;
+  }
+
+  28% {
+    transform: translate3d(-2%, 0, 0) scaleX(1.018);
+    filter: brightness(0.94);
+  }
+
+  100% {
+    transform: translate3d(-105%, 0, 0) scaleX(0.96);
+    filter: brightness(1);
+    visibility: hidden;
+  }
 }
 
 @keyframes intro-right-open {
-  0%, 7% { transform: translate3d(0, 0, 0) scaleX(1); filter: brightness(0.78); visibility: visible; }
-  28% { transform: translate3d(2%, 0, 0) scaleX(1.018); filter: brightness(0.94); }
-  100% { transform: translate3d(105%, 0, 0) scaleX(0.96); filter: brightness(1); visibility: hidden; }
+
+  0%,
+  7% {
+    transform: translate3d(0, 0, 0) scaleX(1);
+    filter: brightness(0.78);
+    visibility: visible;
+  }
+
+  28% {
+    transform: translate3d(2%, 0, 0) scaleX(1.018);
+    filter: brightness(0.94);
+  }
+
+  100% {
+    transform: translate3d(105%, 0, 0) scaleX(0.96);
+    filter: brightness(1);
+    visibility: hidden;
+  }
 }
 
 @keyframes intro-seam {
-  0% { opacity: 0; }
-  30% { opacity: 0.86; }
-  100% { opacity: 0; }
+  0% {
+    opacity: 0;
+  }
+
+  30% {
+    opacity: 0.86;
+  }
+
+  100% {
+    opacity: 0;
+  }
 }
 
+// Кадр макета — 360×800 (соотношение 0.45), любой телефон «короче» его, поэтому
+// cover обрезает фото по вертикали. Точку обрезки держим не у верхнего края, а
+// чуть ниже: так решётка радиатора остаётся в той же доле экрана, что и в Figma,
+// а срезаются только однотонные поля сверху и снизу.
 .stage {
   position: absolute;
   inset: 0;
   left: 50%;
   right: auto;
   width: min(100%, 480px);
-  min-width: 360px;
   transform: translateX(-50%);
   transform-origin: 50% 26%;
-  background: var(--welcome-stage-image) no-repeat center top / cover;
+  background: var(--welcome-stage-image) no-repeat center 34% / cover;
   pointer-events: none;
   animation: welcome-breathe 15s ease-in-out infinite alternate;
 
@@ -168,9 +228,9 @@
   position: relative;
   z-index: 1;
   width: min(100%, 480px);
-  min-height: max(100svh, 800px);
+  min-height: 100svh;
   margin: 0 auto;
-  padding: 48px 24px 22px;
+  padding: f.vh(0, 48) 20px f.vh(12, 24);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -185,50 +245,54 @@
 }
 
 .logo {
-  width: 84px;
-  height: 40px;
+  width: f.vh(62, 84);
+  height: auto;
+  aspect-ratio: 84 / 40;
   object-fit: contain;
   animation: welcome-logo 5s ease-in-out infinite;
 }
 
 .carBrand {
   @include t.gold-text;
-  margin-top: 17px;
+  margin-top: f.vh(12, 24);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 20px;
   font-family: t.$font-display;
-  font-size: 40px;
+  font-size: f.vh(30, 40);
   line-height: 1;
   letter-spacing: 2px;
 
   i {
     width: 1px;
-    height: 34px;
+    height: 0.85em;
     background: linear-gradient(transparent, t.$gold-light, transparent);
   }
 }
 
 .screen[data-brand='both'] .carBrand {
-  gap: 16px;
-  font-size: 35px;
+  gap: f.vh(11, 16);
+  font-size: f.vh(27, 35);
   letter-spacing: 1px;
 }
 
 .spec {
   @include t.gold-text;
-  margin-top: 5px;
-  font-size: 12px;
+  margin-top: f.vh(3, 5);
+  font-size: f.vh(10.5, 12);
   line-height: 1.4;
   letter-spacing: 0.6px;
 }
 
+// Окно под фотографию. Забирает всю свободную высоту: на 800px распорка
+// вырастает до 205px, как в макете, на 568px сжимается первой.
+.viewport {
+  flex: 1 1 auto;
+  min-height: f.vh(48, 96);
+}
+
 .invitation {
-  position: absolute;
-  top: 389px;
-  left: 24px;
-  right: 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -236,16 +300,16 @@
   h1 {
     @include t.gold-text;
     font-family: t.$font-display;
-    font-size: 24px;
+    font-size: f.vh(19, 24);
     font-weight: 400;
-    line-height: 1.05;
+    line-height: 1.08;
     letter-spacing: 1.2px;
     text-transform: uppercase;
   }
 
   p {
-    margin-top: 13px;
-    font-size: 13px;
+    margin-top: f.vh(7, 10);
+    font-size: f.vh(11.5, 13);
     line-height: 1.35;
   }
 }
@@ -254,7 +318,9 @@
   position: relative;
   width: 122px;
   height: 1px;
-  margin-top: 12px;
+  // На исходном кадре между второй строкой заголовка и линией всего 14px.
+  // Больший зазор съедал окно под автомобиль и поднимал весь текст на решётку.
+  margin-top: f.vh(8, 14);
   background: linear-gradient(90deg, transparent, t.$gold, transparent);
 
   &::after {
@@ -272,80 +338,90 @@
   }
 }
 
+// Колонки в макете не равны: под средним заголовком стоит самая длинная
+// подпись «только для приглашенных», и она должна оставаться в одну строку.
+// Ряд шире текстовой колонки на 8px с каждой стороны — как в кадре Figma.
 .benefits {
-  position: absolute;
-  top: 510px;
-  left: 24px;
-  right: 24px;
+  width: calc(100% + 8px);
+  // Возвращаем освободившееся место после описания: на 800px ряд остаётся на
+  // своей координате из Figma, а на низком экране этот зазор почти исчезает.
+  margin: f.vh(2, 20) -4px 0;
   display: grid;
-  grid-template-columns: 1fr 1px 1fr 1px 1fr;
+  grid-template-columns: 1fr 1px 1.22fr 1px 1.02fr;
   align-items: center;
-  gap: 6px;
 
-  > i {
+  >i {
     width: 1px;
-    height: 64px;
+    height: f.vh(44, 64);
     background: linear-gradient(transparent, rgba(154, 123, 86, 0.8), transparent);
   }
 
   article {
     min-width: 0;
+    padding-inline: 4px;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 2px;
 
+    // Иконки в макете разной ширины (подарок 28×30, ножницы 37×31,
+    // бриллиант 31×28), но одной высоты: равняем именно по ней.
     svg {
-      width: 36px;
-      height: 36px;
-      margin-bottom: 4px;
+      width: auto;
+      height: f.vh(22, 30);
+      margin-bottom: f.vh(3, 6);
       fill: none;
       stroke: t.$gold-light;
-      stroke-width: 1.15;
+      stroke-width: 1;
       stroke-linecap: round;
       stroke-linejoin: round;
       animation: benefit-float 4.8s ease-in-out infinite;
     }
 
     strong {
-      font-size: 10px;
+      font-size: f.vh(8.6, 10);
       font-weight: 400;
       line-height: 1.15;
       text-transform: uppercase;
     }
 
     span {
-      font-size: 9px;
+      font-size: f.vh(8, 9);
       line-height: 1.2;
+      white-space: nowrap;
     }
   }
 
 
-  article:nth-of-type(2) svg { animation-delay: -1.6s; }
-  article:nth-of-type(3) svg { animation-delay: -3.2s; }
+  article:nth-of-type(2) svg {
+    animation-delay: -1.6s;
+  }
+
+  article:nth-of-type(3) svg {
+    animation-delay: -3.2s;
+  }
 }
 
 .actions {
-  position: absolute;
-  top: 622px;
-  left: 24px;
-  right: 24px;
+  width: 100%;
+  margin-top: f.vh(8, 25);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: f.vh(6, 16);
 }
 
 .cta,
 .booking {
   width: 100%;
-  min-height: 48px;
+  min-height: f.vh(36, 48);
+  padding-block: f.vh(7, 12);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   border-radius: 0;
   font-family: t.$font-condensed;
-  font-size: 16px;
+  font-size: f.vh(13.5, 16);
   font-weight: 300;
   letter-spacing: 1.28px;
   text-transform: uppercase;
@@ -355,8 +431,7 @@
   position: relative;
   border: 1px solid t.$gold;
   background:
-    linear-gradient(105deg, transparent 36%, rgba(228, 204, 174, 0.14) 49%, transparent 62%)
-      100% 0 / 260% 100%,
+    linear-gradient(105deg, transparent 36%, rgba(228, 204, 174, 0.14) 49%, transparent 62%) 100% 0 / 260% 100%,
     rgba(0, 0, 0, 0.12);
   color: t.$gold-light;
   animation: cta-breathe 4.2s ease-in-out infinite, cta-shimmer 5.6s ease-in-out infinite;
@@ -370,43 +445,103 @@
     background: radial-gradient(circle, rgba(255, 247, 207, 0.95), rgba(228, 204, 174, 0.12) 20%, transparent 65%);
   }
 
-  &::before { left: -18px; bottom: -18px; }
-  &::after { right: -18px; top: -18px; }
+  &::before {
+    left: -18px;
+    bottom: -18px;
+  }
+
+  &::after {
+    right: -18px;
+    top: -18px;
+  }
 }
 
 @keyframes welcome-breathe {
-  from { transform: translateX(-50%) scale(1.002); }
-  to { transform: translateX(-50%) scale(1.018); }
+  from {
+    transform: translateX(-50%) scale(1.002);
+  }
+
+  to {
+    transform: translateX(-50%) scale(1.018);
+  }
 }
 
 @keyframes welcome-light {
-  from { opacity: 0.5; transform: translateY(-1%); }
-  to { opacity: 1; transform: translateY(1.5%); }
+  from {
+    opacity: 0.5;
+    transform: translateY(-1%);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(1.5%);
+  }
 }
 
 @keyframes welcome-logo {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-2px); filter: drop-shadow(0 0 7px rgba(228, 204, 174, 0.2)); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-2px);
+    filter: drop-shadow(0 0 7px rgba(228, 204, 174, 0.2));
+  }
 }
 
 @keyframes welcome-spark {
-  0%, 100% { opacity: 0.68; box-shadow: 0 0 8px 2px rgba(228, 204, 174, 0.42); }
-  50% { opacity: 1; box-shadow: 0 0 14px 5px rgba(228, 204, 174, 0.68); }
+
+  0%,
+  100% {
+    opacity: 0.68;
+    box-shadow: 0 0 8px 2px rgba(228, 204, 174, 0.42);
+  }
+
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 14px 5px rgba(228, 204, 174, 0.68);
+  }
 }
 
 @keyframes benefit-float {
-  0%, 100% { transform: translateY(0); filter: drop-shadow(0 0 0 transparent); }
-  50% { transform: translateY(-3px); filter: drop-shadow(0 0 5px rgba(228, 204, 174, 0.22)); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+    filter: drop-shadow(0 0 0 transparent);
+  }
+
+  50% {
+    transform: translateY(-3px);
+    filter: drop-shadow(0 0 5px rgba(228, 204, 174, 0.22));
+  }
 }
 
 @keyframes cta-breathe {
-  0%, 100% { box-shadow: inset 0 0 0 rgba(228, 204, 174, 0), 0 0 0 rgba(228, 204, 174, 0); }
-  50% { box-shadow: inset 0 0 18px rgba(228, 204, 174, 0.045), 0 0 16px rgba(154, 123, 86, 0.13); }
+
+  0%,
+  100% {
+    box-shadow: inset 0 0 0 rgba(228, 204, 174, 0), 0 0 0 rgba(228, 204, 174, 0);
+  }
+
+  50% {
+    box-shadow: inset 0 0 18px rgba(228, 204, 174, 0.045), 0 0 16px rgba(154, 123, 86, 0.13);
+  }
 }
 
 @keyframes cta-shimmer {
-  0%, 34% { background-position: 100% 0, 0 0; }
-  62%, 100% { background-position: -62% 0, 0 0; }
+
+  0%,
+  34% {
+    background-position: 100% 0, 0 0;
+  }
+
+  62%,
+  100% {
+    background-position: -62% 0, 0 0;
+  }
 }
 
 .booking {
@@ -414,8 +549,8 @@
   color: rgba(255, 255, 255, 0.8);
 
   svg {
-    width: 24px;
-    height: 24px;
+    width: f.vh(19, 24);
+    height: f.vh(19, 24);
     fill: none;
     stroke: currentColor;
     stroke-width: 1.4;
@@ -423,11 +558,8 @@
 }
 
 .tagline {
-  position: absolute;
-  top: 758px;
-  left: 0;
-  right: 0;
-  font-size: 13px;
+  margin-top: f.vh(8, 27);
+  font-size: f.vh(11, 13);
   letter-spacing: 1.04px;
   text-transform: uppercase;
 }
@@ -444,23 +576,35 @@
 }
 
 @media (max-width: 359px) {
-  .stage { min-width: 100%; }
-  .content { padding-inline: 16px; }
-  .benefits,
-  .actions,
-  .invitation { left: 16px; right: 16px; }
+  .content {
+    padding-inline: 14px;
+  }
 }
 
 // В мобильном Safari анимированный transform фонового слоя компонуется заново
 // при скрытии адресной строки и визуально «плавает» вслед за скроллом.
 // На телефонах держим сцену неподвижной; анимации интерфейса остаются.
 @media (max-width: 768px) {
+
   .stage,
-  .stage::before { animation: none; }
+  .stage::before {
+    animation: none;
+  }
+}
+
+// При cover у короткого экрана фотография выше вьюпорта. Смещаем её вниз по
+// исходнику сильнее, чтобы решётка и руки уходили вверх, освобождая текстовый
+// блок. На 800px и выше остаётся исходная точка кадрирования из макета.
+@media (max-height: 700px) {
+  .stage {
+    background-position: center 58%;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .introCurtain { display: none; }
+  .introCurtain {
+    display: none;
+  }
 
   .stage,
   .stage::before,

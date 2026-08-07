@@ -24,24 +24,44 @@ const STAGE_IMAGE: Record<BrandVariant, string> = {
   both: '/images/redesign/intro-stage.webp',
 }
 
-function BenefitIcon({ kind }: { kind: 'gift' | 'plane' | 'diamond' }) {
+// Иконки преимуществ обведены по кадру Figma: коробка с бантом, ножницы,
+// перерезающие ленту (открытие техцентра), и бриллиант. Пропорции у всех трёх
+// разные, поэтому viewBox у каждой свой, а в ряд они выравниваются по высоте.
+function BenefitIcon({ kind }: { kind: 'gift' | 'scissors' | 'diamond' }) {
   if (kind === 'gift') {
     return (
-      <svg viewBox="0 0 36 36" aria-hidden>
-        <path d="M5 14h26v17H5zM18 14v17M3 10h30v6H3zM18 10H10c-5 0-5-7-1-7 5 0 9 7 9 7Zm0 0h8c5 0 5-7 1-7-5 0-9 7-9 7Z" />
+      <svg viewBox="0 0 28 30" aria-hidden>
+        <path d="M14 8.5c-2.6 0-5.6-.4-6.8-1.9-1.3-1.7.3-4.2 2.7-3.6C12.3 3.6 13.5 6.2 14 8.5Z" />
+        <path d="M14 8.5c2.6 0 5.6-.4 6.8-1.9 1.3-1.7-.3-4.2-2.7-3.6C15.7 3.6 14.5 6.2 14 8.5Z" />
+        <rect x="0.5" y="8.5" width="27" height="5.5" rx="0.8" />
+        <path d="M3 14h22v14.1a1.4 1.4 0 0 1-1.4 1.4H4.4A1.4 1.4 0 0 1 3 28.1Z" />
+        <path d="M14 8.5v21" />
       </svg>
     )
   }
-  if (kind === 'plane') {
+  if (kind === 'scissors') {
     return (
-      <svg viewBox="0 0 36 36" aria-hidden>
-        <path d="m3 18 30-10-9 24-7-10-14-4Zm14 4 5-5M8 12l7 3M24 4l4 3" />
+      <svg viewBox="0 0 37 29" aria-hidden>
+        {/* лента уходит за лезвия, поэтому собрана из отрезков */}
+        <path d="M0.4 3.7h11.2M25.9 3.4h10.7M0.4 8.9h11.2M27.6 8.6h9M16.4 6.2h9.3" />
+        <path d="m21.4 6.4 2.2-5.9 2.1 5.3" />
+        <path d="M12.9.4c-.7 5.2 1.7 11 4.5 15l3.2 4.4 2-1.5-3.2-4.4C16.6 10 14.6 5 12.9.4Z" />
+        <path d="M24.5.4c.7 5.2-1.7 11-4.5 15l-3.2 4.4-2-1.5 3.2-4.4C20.8 10 22.8 5 24.5.4Z" />
+        <path d="m21.6 19.4 4.4 3.2M15.8 19.4l-4.4 3.2" />
+        <circle cx="18.7" cy="16.6" r="0.8" />
+        <circle cx="28.4" cy="23.9" r="4.3" />
+        <circle cx="28.4" cy="23.9" r="2" />
+        <circle cx="8.2" cy="24.2" r="4.3" />
+        <circle cx="8.2" cy="24.2" r="2" />
       </svg>
     )
   }
   return (
-    <svg viewBox="0 0 36 36" aria-hidden>
-      <path d="M3 12 10 3h16l7 9-15 21L3 12Zm0 0h30M10 3l8 9 8-9M18 12v21" />
+    <svg viewBox="0 0 31 28" aria-hidden>
+      <path d="M5.9.5h19.2l5.4 9-15 18-15-18Z" />
+      <path d="M.5 9.5h30" />
+      <path d="M11.2.5 10 9.5M19.8.5 21 9.5" />
+      <path d="M10 9.5l5.5 18M21 9.5l-5.5 18" />
     </svg>
   )
 }
@@ -98,6 +118,10 @@ export function WelcomeScreen({ brand = 'both' }: { brand?: BrandVariant }) {
           </p>
         </header>
 
+        {/* Свободная высота уходит сюда: на высоком экране распорка растягивает
+            композицию, на низком сжимается раньше текста и кнопок. */}
+        <div className={styles.viewport} aria-hidden />
+
         <section className={styles.invitation}>
           <h1>
             Персональное
@@ -113,21 +137,23 @@ export function WelcomeScreen({ brand = 'both' }: { brand?: BrandVariant }) {
         </section>
 
         <div className={styles.benefits}>
+          {/* Переносы строк проставлены руками: в макете у каждой колонки свой
+              разрыв, а автоматический зависит от ширины экрана. */}
           <article>
             <BenefitIcon kind="gift" />
-            <strong>Персональный подарок</strong>
+            <strong>Персональный<br />подарок</strong>
             <span>каждому гостю</span>
           </article>
           <i />
           <article>
-            <BenefitIcon kind="plane" />
-            <strong>Специальные условия открытия</strong>
+            <BenefitIcon kind="scissors" />
+            <strong>Специальные<br />условия открытия</strong>
             <span>только для приглашенных</span>
           </article>
           <i />
           <article>
             <BenefitIcon kind="diamond" />
-            <strong>Премиум сервис высокого уровня</strong>
+            <strong>Премиум сервис<br />высокого уровня</strong>
             <span>для вашего автомобиля</span>
           </article>
         </div>

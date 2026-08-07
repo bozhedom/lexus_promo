@@ -6,10 +6,22 @@ export type ApplicationStatus =
   | 'draft_personal'
   | 'completed'
 
+export type CarInfo =
+  /** Марка известна всегда; модель и год внешний API отдаёт не для каждой машины. */
+  | { found: true; brand: string; model: string | null; year: number | null }
+  | { found: false }
+
 // Данные воронки, которые копятся на клиенте и переживают F5 (sessionStorage)
 export interface FunnelData {
   applicationId?: string
   plateNumber?: string
+  /**
+   * Ответ внешнего API по последнему введённому номеру. Запрос делает экран
+   * ввода номера — тогда человек видит один загрузчик на месте кнопки, а
+   * следующий экран открывается уже с готовым результатом, без второго
+   * ожидания и мигания.
+   */
+  carLookup?: CarInfo
   carBrand?: string
   carModel?: string
   carYear?: number | null
@@ -23,11 +35,6 @@ export interface FunnelData {
   certificateAmount?: number
   certificateExpiresAt?: string | null
 }
-
-export type CarInfo =
-  /** Марка известна всегда; модель и год внешний API отдаёт не для каждой машины. */
-  | { found: true; brand: string; model: string | null; year: number | null }
-  | { found: false }
 
 export interface Utm {
   utmSource?: string

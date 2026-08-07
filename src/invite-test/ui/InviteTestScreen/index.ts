@@ -1,1 +1,0 @@
-export { InviteTestScreen } from './InviteTestScreen'

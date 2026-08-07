@@ -9,9 +9,19 @@ import {
 } from '../config/certificates'
 import type { DeliveryStatus, InviteSession, PersonalInviteDetails } from '../model/types'
 
-// Сессии живут в памяти процесса: модуль тестовый, ради него не заводим
-// коллекцию и миграцию. При перезапуске сервера выданные коды протухают.
-const sessions = new Map<string, InviteSession>()
+// Сессии живут в памяти процесса: ради них не заводим коллекцию и миграцию.
+// При перезапуске сервера выданные коды протухают.
+//
+// Храним на globalThis, а не в модульной переменной: и в dev с горячей
+// перезагрузкой, и при раздельной сборке маршрутов модуль загружается не один
+// раз, и тогда выдавший код обработчик и читающий его вебхук смотрят в разные
+// Map — код «не находится» сразу после выдачи.
+const globalStore = globalThis as typeof globalThis & {
+  __invitePromoSessions?: Map<string, InviteSession>
+  __invitePromoBusinessId?: string
+}
+
+const sessions: Map<string, InviteSession> = (globalStore.__invitePromoSessions ??= new Map())
 
 const TTL_MS = 60 * 60 * 1000
 const MAX_SESSIONS = 5_000
@@ -97,11 +107,11 @@ export function claimSession(code: string): InviteSession | null {
 }
 
 // Telegram присылает идентификатор подключения один раз, когда менеджер
-// подключает бота в настройках. Держим его рядом с сессиями.
-let businessId = ''
-
+// подключает бота в настройках. Держим его рядом с сессиями, по той же причине
+// на globalThis.
 export const setBusinessId = (id: string) => {
-  businessId = id
+  globalStore.__invitePromoBusinessId = id
 }
 
-export const getBusinessId = (): string => inviteTestEnv.telegram.businessId || businessId
+export const getBusinessId = (): string =>
+  inviteTestEnv.telegram.businessId || globalStore.__invitePromoBusinessId || ''

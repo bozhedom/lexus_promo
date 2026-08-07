@@ -1,5 +1,5 @@
-import { InviteTestScreen } from '@/invite-test/ui/InviteTestScreen'
+import { FinalScreen } from '@/views/final'
 
 export default function LinksPage() {
-  return <InviteTestScreen />
+  return <FinalScreen />
 }

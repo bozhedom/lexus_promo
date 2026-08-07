@@ -20,15 +20,18 @@
   position: relative;
   flex: 0 0 auto;
   min-height: 500px;
-  overflow: hidden;
   display: flex;
   justify-content: center;
   background: #000;
 }
 
+// Кадр со шторами продолжается на 64px ниже сцены: в макете занавес уходит за
+// заголовок галереи и гаснет уже под ним, а не обрывается на строчке. Обрезку
+// держит сама сцена, чтобы у stage не появилось overflow и хвост был виден.
 .scene {
   position: absolute;
   inset: 0;
+  bottom: -64px;
   overflow: hidden;
   pointer-events: none;
 }
@@ -65,7 +68,13 @@
   position: absolute;
   inset: 0;
   z-index: 1;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.08), transparent 32%, rgba(0, 0, 0, 0.28));
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.08),
+    transparent 32%,
+    rgba(0, 0, 0, 0.28) 84%,
+    #000 100%
+  );
 }
 
 .inner {
@@ -79,9 +88,25 @@
   align-items: center;
 }
 
+// В макете перчатки лежат поверх карточки формы, а не уходят за неё. Раньше
+// сюда клали тот же кадр и вырезали руки радиальной маской: маска считается в
+// процентах от слоя, а высота слоя зависит от содержимого карточки, поэтому на
+// длинной форме эллипс уезжал вниз и ложился на номерной знак мутным пятном.
+// Теперь поверх идёт отдельная картинка — только перчатки с прозрачным фоном.
+// Занавес в ней не нужен: карточка полупрозрачная, и ткань просвечивает сама.
 .hands {
   position: absolute;
   z-index: 3;
+  inset: 0;
+  bottom: -64px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+// Кадр слоя рук повторяет .sceneBox один в один, поэтому перчатки садятся
+// ровно на свои места в занавесе при любой ширине экрана.
+.handsBox {
+  position: absolute;
   inset: 0;
   left: 50%;
   right: auto;
@@ -89,17 +114,8 @@
   min-width: 360px;
   transform: translateX(-50%);
   transform-origin: 50% 22%;
-  background: url('/images/redesign/form-stage.webp') no-repeat center top / cover;
-  pointer-events: none;
+  background: url('/images/redesign/form-stage-hands.webp') no-repeat center top / cover;
   animation: scene-breathe 14s ease-in-out infinite alternate;
-  mask-image:
-    radial-gradient(ellipse 23% 12% at 8% 28%, #000 34%, transparent 76%),
-    radial-gradient(ellipse 23% 12% at 92% 28%, #000 34%, transparent 76%);
-  mask-repeat: no-repeat;
-  -webkit-mask-image:
-    radial-gradient(ellipse 23% 12% at 8% 28%, #000 34%, transparent 76%),
-    radial-gradient(ellipse 23% 12% at 92% 28%, #000 34%, transparent 76%);
-  -webkit-mask-repeat: no-repeat;
 }
 
 .logo {
@@ -158,8 +174,10 @@
   }
 }
 
+// В макете подзаголовок стоит в две строки с переносом перед «персональное»,
+// поэтому ширину ограничиваем, а не пускаем на всю карточку.
 .subtitle {
-  max-width: 312px;
+  max-width: 240px;
   font-size: 12px;
   line-height: 1.35;
 
@@ -178,8 +196,13 @@
   border-radius: 16px;
   background: rgba(0, 0, 0, 0.18);
   box-shadow: 0 10px 32px rgba(0, 0, 0, 0.32);
-  backdrop-filter: blur(15px);
-  animation: panel-glow 5.5s ease-in-out infinite;
+  // backdrop-filter: blur(15px);
+  // Вкладки «по номеру» и «вручную» — это разные экраны, и карточка между ними
+  // заметно меняет высоту. Появление всей карточки коротким подъёмом читается
+  // как приход нового блока, а не как рывок старого.
+  animation:
+    panel-glow 5.5s ease-in-out infinite,
+    card-in 0.32s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 
   &::before {
     content: '';
@@ -194,20 +217,22 @@
   }
 }
 
+// Строка про данные в макете помещается в одну линию: щит там мелкий, 13px.
 .secure {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 5px;
   margin-top: 8px;
-  font-size: 10px;
+  font-size: 9.5px;
   line-height: 1.2;
   color: rgba(255, 255, 255, 0.6);
   text-align: center;
 
   img {
-    width: 20px;
-    height: 20px;
+    flex: 0 0 auto;
+    width: 13px;
+    height: 13px;
     filter: sepia(1) saturate(0.6) brightness(1.7);
   }
 }
@@ -237,6 +262,11 @@
   50% { opacity: 1; box-shadow: 0 0 13px 5px rgba(228, 204, 174, 0.64); }
 }
 
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
 @keyframes panel-glow {
   0%, 100% { box-shadow: 0 10px 32px rgba(0, 0, 0, 0.32); }
   50% { box-shadow: 0 12px 38px rgba(0, 0, 0, 0.42), 0 0 18px rgba(154, 123, 86, 0.08); }
@@ -259,14 +289,14 @@
 @media (max-width: 359px) {
   .inner { padding-inline: 10px; }
   .sceneBox,
-  .hands { min-width: 100%; }
+  .handsBox { min-width: 100%; }
   .card { padding-inline: 18px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .sceneBox,
   .sceneBox::after,
-  .hands,
+  .handsBox,
   .logo,
   .title,
   .divider::after,

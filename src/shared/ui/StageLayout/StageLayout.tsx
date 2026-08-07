@@ -8,7 +8,11 @@ import { NewsSlider } from '@/widgets/news-slider'
 import { useSceneAssets } from '@/shared/lib/useSceneAssets'
 import styles from './StageLayout.module.scss'
 
-const STAGE_ASSETS = ['/images/redesign/form-stage.webp', '/images/logo-agc.svg'] as const
+const STAGE_ASSETS = [
+  '/images/redesign/form-stage.webp',
+  '/images/redesign/form-stage-hands.webp',
+  '/images/logo-agc.svg',
+] as const
 
 interface StageLayoutProps {
   subtitle: ReactNode
@@ -62,9 +66,9 @@ export function StageLayout({ subtitle, children, cardClassName, secureInside = 
           {!secureInside && secure}
         </div>
 
-        {/* Руки повторяют тот же кадр, но отдельным верхним слоем. Так они
-            визуально лежат поверх карточки формы, а не уходят за интерфейс. */}
-        <div className={styles.hands} aria-hidden />
+        <div className={styles.hands} aria-hidden>
+          <div className={styles.handsBox} />
+        </div>
       </section>
 
       <NewsSlider />

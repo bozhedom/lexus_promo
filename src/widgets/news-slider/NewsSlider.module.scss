@@ -4,7 +4,8 @@
   position: relative;
   z-index: 2;
   width: 100%;
-  background: #000;
+  // прозрачный: под заголовком галереи виден хвост занавеса со сцены выше
+  background: transparent;
   border-radius: 0;
   box-shadow: none;
   color: rgba(255, 255, 255, 0.8);
@@ -168,8 +169,9 @@
   gap: 10px;
   scroll-snap-stop: always;
 
+  // в макете виден ровно один кадр: за следующий отвечают точки, а не «хвост»
   @include t.mobile {
-    flex-basis: min(calc(100% - 32px), 360px);
+    flex-basis: 100%;
     scroll-snap-align: center;
     opacity: 0.58;
     transform: scale(0.94);
@@ -242,10 +244,16 @@
   opacity: 1;
 }
 
-// на тач-экранах наводить нечем: показываем сразу
+// на тач-экранах наводить нечем: показываем сразу, но приглушённо — в макете
+// поверх фотографии ничего нет, значок нужен только как подсказка о развороте
 @media (hover: none) {
   .zoom {
-    opacity: 0.85;
+    width: 22px;
+    height: 22px;
+    background: rgba(10, 9, 10, 0.4);
+    opacity: 0.5;
+
+    svg { width: 13px; height: 13px; }
   }
 }
 
@@ -278,13 +286,27 @@
   }
 }
 
-.caption {
+.caption,
+.activeCaption {
   font-size: clamp(9px, 0.82vw, 11px);
   line-height: 1.35;
   letter-spacing: 0.4px;
   text-transform: uppercase;
   @include t.gold-text;
   text-align: center;
+}
+
+.activeCaption {
+  display: none;
+  margin-top: 14px;
+
+  @include t.mobile {
+    display: block;
+  }
+}
+
+@include t.mobile {
+  .caption { display: none; }
 }
 
 // ── точки (мобильная карусель) ─────────────────────────────────────────────

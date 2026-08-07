@@ -21,7 +21,7 @@ const LAT_TO_CYR: Record<string, string> = {
   X: 'Х',
 }
 
-function toCyr(ch: string): string {
+export function toCyrillic(ch: string): string {
   const up = ch.toUpperCase()
   return LAT_TO_CYR[up] ?? up
 }
@@ -30,7 +30,7 @@ function toCyr(ch: string): string {
 export function maskPlateMain(input: string): string {
   let out = ''
   for (const raw of input) {
-    const ch = toCyr(raw)
+    const ch = toCyrillic(raw)
     const pos = out.length
     if (pos === 0 || pos === 4 || pos === 5) {
       if (ALLOWED_LETTERS.includes(ch)) out += ch
@@ -45,6 +45,30 @@ export function maskPlateMain(input: string): string {
 // Регион: 2-3 цифры
 export function maskRegion(input: string): string {
   return input.replace(/\D/g, '').slice(0, 3)
+}
+
+/** Что принимает позиция основной части: буква, три цифры, две буквы. */
+export const MAIN_SLOT_KINDS = ['letter', 'digit', 'digit', 'digit', 'letter', 'letter'] as const
+
+export type SlotKind = (typeof MAIN_SLOT_KINDS)[number]
+
+/** Подходит ли символ этой позиции. Латинские двойники приводятся к кириллице. */
+export function fitsSlot(kind: SlotKind, ch: string): boolean {
+  const c = toCyrillic(ch)
+  return kind === 'digit' ? /^\d$/.test(c) : ALLOWED_LETTERS.includes(c)
+}
+
+/**
+ * Позиции номера как массив ячеек фиксированной длины. Нужны, чтобы каретку
+ * можно было поставить в середину, а «Стереть» убирало один символ, не сдвигая
+ * остальные: у номера у каждой позиции свой тип, и сдвиг ломал бы весь ввод.
+ */
+export function plateSlots(full: string): { main: string[]; region: string[] } {
+  const { main, region } = splitPlate(full)
+  return {
+    main: Array.from({ length: 6 }, (_, i) => main[i] ?? ''),
+    region: Array.from({ length: 3 }, (_, i) => region[i] ?? ''),
+  }
 }
 
 export function splitPlate(full: string): { main: string; region: string } {

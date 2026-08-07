@@ -27,6 +27,7 @@ const COMMON_STAGE_ASSETS = [
   '/images/curtain-left.webp',
   '/images/curtain-right.webp',
   '/images/redesign/form-stage.webp',
+  '/images/redesign/form-stage-hands.webp',
   '/images/redesign/reception.webp',
   '/images/redesign/gold-dust.webp',
   '/images/redesign/invite-center.webp',
