@@ -175,8 +175,10 @@ export function ContactScreen() {
           </Button>
 
           <p className={styles.secure}>
-            <Image src="/images/icon-shield-check.svg" alt="" width={20} height={20} />
-            Ваши данные защищены и не передаются третьим лицам
+            <Image src="/images/icon-shield-check.svg" alt="" width={22} height={22} />
+            <span>
+              Ваши данные защищены<br />и не передаются третьим лицам
+            </span>
           </p>
         </div>
       </div>

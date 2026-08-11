@@ -35,31 +35,45 @@ export async function POST(req: NextRequest) {
     collection: 'certificates',
     where: { application: { in: applications.docs.map((app) => app.id) } },
     sort: '-createdAt',
-    limit: 1,
+    limit: 10,
     depth: 0,
   })
-  const certificate = certificates.docs[0]
-  if (!certificate) return NextResponse.json({ existing: false })
+  const newest = certificates.docs[0]
+  if (!newest) return NextResponse.json({ existing: false })
 
-  const applicationId = typeof certificate.application === 'string'
-    ? certificate.application
-    : certificate.application.id
+  const idOf = (value: string | { id: string }) => (typeof value === 'string' ? value : value.id)
+  const applicationId = idOf(newest.application)
   const application = applications.docs.find((app) => app.id === applicationId)
   if (!application) return NextResponse.json({ existing: false })
+
+  // Отдаём всю пару этой заявки: экран возвращения показывает оба
+  // пригласительных, а не только последнее выписанное.
+  const issued = certificates.docs.filter((cert) => idOf(cert.application) === applicationId)
+  const gift = issued.find((cert) => cert.kind === 'gift') ?? newest
 
   return NextResponse.json({
     existing: true,
     certificate: {
-      id: certificate.id,
-      code: certificate.code,
-      amount: certificate.amount,
-      expiresAt: certificate.expiresAt ?? null,
+      id: gift.id,
+      code: gift.code,
+      amount: gift.amount,
+      expiresAt: gift.expiresAt ?? null,
     },
+    certificates: issued.map((cert) => ({
+      id: cert.id,
+      kind: cert.kind,
+      code: cert.code,
+      amount: cert.amount,
+      expiresAt: cert.expiresAt ?? null,
+    })),
     vehicle: {
       plateNumber,
       brand: application.carBrand ?? null,
       model: application.carModel ?? null,
       year: application.carYear ?? null,
     },
+    // Имя и отчество (фамилии в заявке нет) — гостю нужно узнать себя на
+    // экране возвращения. Ответ закрыт рейт-лимитом по IP.
+    guest: { fullName: application.fullName ?? null },
   })
 }

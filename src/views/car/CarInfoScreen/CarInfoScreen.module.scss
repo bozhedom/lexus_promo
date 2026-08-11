@@ -356,9 +356,10 @@
   cursor: pointer;
   transition: transform 0.18s ease;
 
-  // у Toyota автомобиль на кадре стоит ниже, поэтому вырез свой
-  &[data-frame='diagnostics'] { background-position: 3% 71%; background-size: 171% auto; }
+  // на каждом кадре автомобиль стоит по-своему, поэтому вырез свой
+  &[data-frame='diagnostics-lexus'] { background-position: 3% 71%; background-size: 171% auto; }
   &[data-frame='diagnostics-toyota'] { background-position: 3% 67%; background-size: 171% auto; }
+  &[data-frame='diagnostics-default'] { background-position: 37% 68%; background-size: 171% auto; }
   &[data-frame='gift'] { background-position: 92% 46%; background-size: 157% auto; }
 
   &:active { transform: scale(0.985); }

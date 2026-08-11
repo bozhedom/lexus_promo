@@ -204,14 +204,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  margin-top: f.vh(6, 11);
+  gap: 8px;
+  // Строка держится за кнопку: между ними ровно один зазор, иначе она
+  // отрывается вниз и висит сама по себе.
+  margin-top: f.vh(4, 8);
   // Строка про защиту данных — единственное, что успокаивает перед вводом
   // персональных данных: в 10px её просто не читали.
   font-size: 13px;
-  line-height: 1.3;
+  line-height: 1.28;
   color: rgba(255, 255, 255, 0.78);
-  text-align: center;
+  text-align: left;
 
   img {
     flex: 0 0 auto;

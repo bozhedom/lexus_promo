@@ -29,6 +29,7 @@ import { Button, Loader, SelectField, StageLayout, TextField } from '@/shared/ui
 import {
   CertificateViewer,
   certificateFace,
+  certificateFrameName,
   isToyota,
   type CertificateKind,
 } from '@/widgets/certificate-sheet'
@@ -429,11 +430,7 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
                 <button
                   type="button"
                   className={styles.giftCard}
-                  data-frame={
-                    gift.kind === 'diagnostics' && isToyota(car.brand)
-                      ? 'diagnostics-toyota'
-                      : gift.kind
-                  }
+                  data-frame={certificateFrameName(gift.kind, car.brand)}
                   style={
                     {
                       '--gift-image': `url(${certificateFace(gift.kind, car.brand).photo})`,

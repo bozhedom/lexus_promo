@@ -67,6 +67,7 @@ function ReadyCarNumberScreen() {
           carBrand: previous.vehicle.brand ?? undefined,
           carModel: previous.vehicle.model ?? undefined,
           carYear: previous.vehicle.year,
+          fullName: previous.guest.fullName ?? undefined,
           status: 'completed',
           certificateId: previous.certificate.id,
           certificateCode: previous.certificate.code,

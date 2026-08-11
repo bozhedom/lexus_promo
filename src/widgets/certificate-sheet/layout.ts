@@ -1,6 +1,7 @@
 export type CertificateKind = 'diagnostics' | 'gift'
 
 export const isToyota = (brand: string) => /toyota|тойота/i.test(brand)
+export const isLexus = (brand: string) => /lexus|лексус/i.test(brand)
 
 /**
  * Общие константы пригласительного. Живут отдельно от разметки, потому что по
@@ -35,9 +36,12 @@ const DIAGNOSTICS_ADDRESS = ['Снеговая, 1', '«Таксопарк»']
 const GIFT_ADDRESS = ['Шилкинская, 32а']
 
 /**
- * Кадр и адрес пригласительного. У диагностики фотография зависит от марки:
- * на ней стоит автомобиль гостя, и поверх печатается его госномер. Для чужих
- * марок базой служит Lexus — так же, как и на экране найденного автомобиля.
+ * Кадр и адрес пригласительного. У диагностики фотография зависит от марки: на
+ * ней стоит автомобиль гостя, и поверх печатается его настоящий госномер.
+ *
+ * Марок техцентра две, а приезжают на любых: для всех остальных берётся кадр
+ * без марки — обычный автомобиль в студии, чтобы пригласительный не обещал
+ * чужому владельцу Lexus.
  */
 export function certificateFace(kind: CertificateKind, brand: string): CertificateFace {
   if (kind === 'gift') {
@@ -57,12 +61,28 @@ export function certificateFace(kind: CertificateKind, brand: string): Certifica
       plate: { x: 448 / 1080, y: 1236 / 1920, w: 171 / 1080 },
     }
   }
-  return {
-    photo: '/images/cert/bg-diagnostics-lexus.webp',
-    photoRaster: 'images/cert/bg-diagnostics-lexus.jpg',
-    address: DIAGNOSTICS_ADDRESS,
-    plate: { x: 439 / 1080, y: 1162 / 1920, w: 197 / 1080 },
+  if (isLexus(brand)) {
+    return {
+      photo: '/images/cert/bg-diagnostics-lexus.webp',
+      photoRaster: 'images/cert/bg-diagnostics-lexus.jpg',
+      address: DIAGNOSTICS_ADDRESS,
+      plate: { x: 439 / 1080, y: 1162 / 1920, w: 197 / 1080 },
+    }
   }
+  return {
+    photo: '/images/cert/bg-diagnostics-default.webp',
+    photoRaster: 'images/cert/bg-diagnostics-default.jpg',
+    address: DIAGNOSTICS_ADDRESS,
+    plate: { x: 434 / 1080, y: 1312 / 1920, w: 208 / 1080 },
+  }
+}
+
+/** Какой вырез кадра показывать на слайде подарка: зависит от той же марки. */
+export function certificateFrameName(kind: CertificateKind, brand: string): string {
+  if (kind === 'gift') return 'gift'
+  if (isToyota(brand)) return 'diagnostics-toyota'
+  if (isLexus(brand)) return 'diagnostics-lexus'
+  return 'diagnostics-default'
 }
 
 interface CertificateCopy {

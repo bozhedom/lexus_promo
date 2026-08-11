@@ -138,12 +138,15 @@ export type ExistingCertificateResult =
   | {
       existing: true
       certificate: { id: string; code: string; amount: number; expiresAt: string | null }
+      /** Вся выписанная пара: экран возвращения показывает оба пригласительных. */
+      certificates: IssuedCertificate[]
       vehicle: {
         plateNumber: string
         brand: string | null
         model: string | null
         year: number | null
       }
+      guest: { fullName: string | null }
     }
 
 export function findExistingCertificate(
