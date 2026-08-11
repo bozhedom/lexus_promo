@@ -1,6 +1,5 @@
 'use client'
 
-import Image from 'next/image'
 import type { CSSProperties } from 'react'
 
 import {
@@ -114,7 +113,7 @@ export function CertificateSheet({
         )}
 
         <p className={styles.invite}>
-          приглашаем Вас в наш новый
+          приглашаем Вас в новый
           <br />
           специализированный техцентр
         </p>
@@ -126,13 +125,10 @@ export function CertificateSheet({
         {toyota ? (
           <p className={styles.wordmarkToyota}>TOYOTA</p>
         ) : (
-          <Image
-            className={styles.wordmark}
-            src="/images/redesign/lexus-logo.svg"
-            alt="Lexus"
-            width={144}
-            height={20}
-          />
+          // Логотип взят из того же фрейма Figma: у копии в /redesign другая
+          // пропорция, и в кадре сертификата она была бы уже макетной.
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img className={styles.wordmark} src="/images/cert/lexus.svg" alt="Lexus" />
         )}
         <p className={styles.from}>от «АвтоГарантСити»</p>
       </div>

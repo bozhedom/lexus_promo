@@ -107,7 +107,7 @@ export async function renderCertificate(
       dataUrl('images/cert/gift.svg', 'image/svg+xml'),
       dataUrl('images/cert/marker.svg', 'image/svg+xml'),
       dataUrl('images/cert/phone.svg', 'image/svg+xml'),
-      dataUrl('images/redesign/lexus-logo.png', 'image/png'),
+      dataUrl('images/cert/lexus.svg', 'image/svg+xml'),
       readFile(asset('fonts/forum.ttf')),
       readFile(asset('fonts/roboto-condensed-400.ttf')),
       readFile(asset('fonts/roboto-condensed-700.ttf')),
@@ -116,7 +116,7 @@ export async function renderCertificate(
   const nameLines = splitGuestName(details.fullName)
   // Длинное отчество ужимаем, чтобы оно не упиралось в рамку кадра
   const longest = Math.max(...nameLines.map((line) => line.length), 1)
-  const nameSize = Math.round(Math.min(u(36), (u(330) * 1.72) / longest))
+  const nameSize = Math.round(Math.min(u(40), (u(330) * 1.9) / longest))
 
   const onCar = details.plate ? plateParts(details.plate) : null
   const plateW = face.plate ? Math.round(face.plate.w * CERT_WIDTH) : 0
@@ -228,7 +228,7 @@ export async function renderCertificate(
           style={{
             ...centered,
             position: 'absolute',
-            top: u(70),
+            top: u(72),
             left: u(15),
             width: CERT_WIDTH - u(30),
             fontFamily: 'Forum',
@@ -252,15 +252,15 @@ export async function renderCertificate(
           <div
             style={{
               position: 'absolute',
-              top: u(161),
+              top: u(159),
               left: 0,
               width: CERT_WIDTH,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: u(14),
+              fontSize: u(10.8),
               fontWeight: 700,
-              letterSpacing: u(1),
+              letterSpacing: u(0.88),
               textTransform: 'uppercase',
               color: GOLD_RULE,
             }}
@@ -271,7 +271,7 @@ export async function renderCertificate(
             <div
               style={{
                 width: 1,
-                height: u(14),
+                height: u(13),
                 marginLeft: u(9),
                 marginRight: u(9),
                 background: 'rgba(214,204,166,0.75)',
@@ -293,7 +293,7 @@ export async function renderCertificate(
             color: 'rgba(255,255,255,0.84)',
           }}
         >
-          <span style={{ display: 'flex' }}>приглашаем Вас в наш новый</span>
+          <span style={{ display: 'flex' }}>приглашаем Вас в новый</span>
           <span style={{ display: 'flex' }}>специализированный техцентр</span>
         </div>
 
@@ -337,7 +337,7 @@ export async function renderCertificate(
             width: CERT_WIDTH,
             fontSize: u(9),
             fontWeight: 600,
-            letterSpacing: u(2.6),
+            letterSpacing: u(2.75),
             textTransform: 'uppercase',
             color: GOLD_WARM,
           }}
@@ -363,9 +363,9 @@ export async function renderCertificate(
           <div
             style={{
               ...centered,
-              fontSize: u(10),
+              fontSize: u(9.55),
               fontWeight: 600,
-              letterSpacing: u(1.6),
+              letterSpacing: u(1.5),
               textTransform: 'uppercase',
               color: GOLD_WARM,
             }}
@@ -379,11 +379,11 @@ export async function renderCertificate(
           <div
             style={{
               ...centered,
-              marginTop: u(copy.amount ? 2 : 5),
-              fontSize: u(copy.amount ? 30 : 17),
+              marginTop: u(copy.amount ? 2 : 6),
+              fontSize: u(copy.amount ? 30 : 14.8),
               fontWeight: 700,
-              letterSpacing: u(copy.amount ? 1 : 0.4),
-              lineHeight: 1.06,
+              letterSpacing: u(copy.amount ? 1 : 0.3),
+              lineHeight: copy.amount ? 1.13 : 1.08,
               textTransform: 'uppercase',
               color: '#f0f0ef',
             }}
@@ -398,9 +398,9 @@ export async function renderCertificate(
             style={{
               display: 'flex',
               marginTop: u(5),
-              fontSize: u(10),
+              fontSize: u(9.55),
               fontWeight: 600,
-              letterSpacing: u(1.6),
+              letterSpacing: u(1.5),
               textTransform: 'uppercase',
               color: GOLD_WARM,
             }}
@@ -437,8 +437,8 @@ export async function renderCertificate(
             display: 'flex',
             alignItems: 'flex-start',
             justifyContent: 'center',
-            gap: u(16),
-            fontSize: u(11),
+            gap: u(15),
+            fontSize: u(10.5),
             color: 'rgba(255,255,255,0.88)',
           }}
         >
@@ -471,9 +471,9 @@ export async function renderCertificate(
             top: u(615),
             left: 0,
             width: CERT_WIDTH,
-            fontSize: u(8),
+            fontSize: u(7.9),
             fontWeight: 600,
-            letterSpacing: u(1.2),
+            letterSpacing: u(1.16),
             textTransform: 'uppercase',
             color: 'rgba(255,255,255,0.5)',
           }}
