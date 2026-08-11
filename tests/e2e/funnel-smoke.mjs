@@ -30,19 +30,31 @@ const page = await ctx.newPage()
 const errors = []
 page.on('console', (m) => m.type() === 'error' && !IGNORE.test(m.text()) && errors.push(m.text()))
 page.on('pageerror', (e) => !IGNORE.test(String(e)) && errors.push(String(e)))
+page.on('response', async (response) => {
+  if (response.status() < 400 || !response.url().includes('/api/')) return
+  console.log(`  API ${response.status()} ${response.url()} ${await response.text().catch(() => '')}`)
+})
 
 const shot = async (name) => page.screenshot({ path: `${OUT}/${TAG}_${name}.png` })
 
-const check = async (label) => {
+const check = async (label, { allowScroll = false } = {}) => {
+  await page
+    .waitForFunction(() => [...document.images].every((image) => image.loading === 'lazy' || image.complete), null, {
+      timeout: 10000,
+    })
+    .catch(() => undefined)
   const m = await page.evaluate(() => ({
     sw: document.documentElement.scrollWidth,
     cw: document.documentElement.clientWidth,
     sh: document.documentElement.scrollHeight,
     ch: document.documentElement.clientHeight,
-    broken: [...document.images].filter((i) => i.loading !== 'lazy' && (!i.complete || !i.naturalWidth)).map((i) => i.src.slice(-60)),
+    broken: [...document.images]
+      .filter((i) => i.loading !== 'lazy' && i.complete && !i.naturalWidth)
+      .map((i) => i.src.slice(-60)),
   }))
   const bad = []
   if (m.sw > m.cw) bad.push(`H-OVERFLOW ${m.sw}>${m.cw}`)
+  if (!allowScroll && m.sh > m.ch + 1) bad.push(`V-OVERFLOW ${m.sh}>${m.ch}`)
   if (m.broken.length) bad.push(`BROKEN ${JSON.stringify(m.broken)}`)
   const scroll = m.sh > m.ch + 1 ? `scroll +${m.sh - m.ch}` : 'fits'
   console.log(`  ${label.padEnd(16)} ${scroll.padEnd(12)} ${bad.length ? '✗ ' + bad.join(' | ') : 'ok'}`)
@@ -90,13 +102,14 @@ await shot('2d-loading')
 await page.waitForURL('**/car-info', { timeout: 40000 })
 await page.waitForTimeout(1500)
 await shot('3-car-info')
-ok = (await check('car-info')) && ok
 
 // 3 — найдено или ручной ввод
 const mine = page.getByRole('button', { name: /Это мой автомобиль/i })
 if (await mine.count()) {
+  ok = (await check('car-info')) && ok
   await mine.click()
 } else {
+  ok = (await check('car-info', { allowScroll: true })) && ok
   const choose = async (field, option) => {
     await page.getByRole('combobox', { name: field }).click()
     await page.getByRole('option', { name: option, exact: true }).click()
@@ -107,7 +120,7 @@ if (await mine.count()) {
   await choose('Год', '2022')
   await page.waitForTimeout(200)
   await shot('3b-manual')
-  ok = (await check('manual')) && ok
+  ok = (await check('manual', { allowScroll: true })) && ok
   await page.getByRole('button', { name: /Подтвердить/i }).click()
 }
 
@@ -116,18 +129,44 @@ await page.waitForTimeout(1400)
 await shot('4-personal')
 ok = (await check('personal')) && ok
 
-// 4 — контакты
+// 4 — имя и отчество
 await page.getByRole('textbox', { name: 'Имя' }).fill('Иван')
 await page.getByRole('textbox', { name: 'Отчество' }).fill('Сергеевич')
-await page.getByRole('textbox', { name: 'Телефон' }).click()
-await page.keyboard.type('9996660012')
 await page.locator('input[type=checkbox]').click()
 await page.waitForTimeout(200)
 await shot('4b-filled')
-await page.getByRole('button', { name: /Получить приглашение/i }).click()
+await page.getByRole('button', { name: /Оформить приглашение/i }).click()
 
-// 5 — код из СМС на своей клавиатуре
-await page.locator('[role=dialog]').waitFor({ timeout: 30000 })
+// 5 — пригласительные, мессенджеры и телефон
+const claim = page.getByRole('dialog', { name: 'Ваши персональные пригласительные' })
+await claim.waitFor({ timeout: 30000 })
+await claim.getByRole('button', { name: /Открыть:/i }).first().click()
+const certificateViewer = page.getByRole('dialog', { name: 'Пригласительный сертификат' })
+await certificateViewer.waitFor({ timeout: 10000 })
+await certificateViewer.locator('img').waitFor({ state: 'visible', timeout: 10000 })
+await page.waitForFunction(
+  () => document.querySelector('[aria-label="Пригласительный сертификат"] img')?.naturalWidth > 0,
+  null,
+  { timeout: 15000 },
+)
+await page.waitForTimeout(150)
+await shot('5a-certificate')
+ok = (await check('certificate')) && ok
+await certificateViewer.getByRole('button', { name: 'Закрыть сертификат' }).click()
+await page.waitForTimeout(300)
+await shot('5-claim')
+ok = (await check('claim')) && ok
+await claim.getByRole('button', { name: /Продолжить/i }).click()
+
+const phoneDialog = page.getByRole('dialog', { name: 'Введите номер телефона' })
+await phoneDialog.waitFor({ timeout: 10000 })
+await phoneDialog.getByRole('textbox', { name: 'Телефон' }).fill('+7 999 666-00-12')
+await shot('5b-phone')
+ok = (await check('phone')) && ok
+await phoneDialog.getByRole('button', { name: /Подтвердить номер/i }).click()
+
+// 6 — код из СМС на своей клавиатуре
+await page.getByRole('dialog', { name: /Введите код из СМС/i }).waitFor({ timeout: 30000 })
 await page.waitForTimeout(900)
 await shot('5-sms')
 ok = (await check('sms')) && ok
@@ -137,13 +176,13 @@ if (!code) throw new Error('нет dev-кода в модалке: ' + dev)
 await type(code)
 
 await page.waitForURL('**/certificate', { timeout: 40000 })
-await page.getByRole('button', { name: /Скачать пригласительный/i }).waitFor({ timeout: 60000 })
+await page.getByRole('button', { name: /Отправить в мессенджер/i }).waitFor({ timeout: 60000 })
 await page.waitForTimeout(2200)
 await shot('6-team')
 ok = (await check('team')) && ok
 
-// 6 — модалка с сертификатами
-await page.getByRole('button', { name: /Скачать пригласительный/i }).click()
+// 7 — повторное открытие отправки в мессенджер
+await page.getByRole('button', { name: /Отправить в мессенджер/i }).click()
 await page.locator('[aria-label="Ваши персональные пригласительные"]').waitFor({ timeout: 10000 })
 await page.waitForTimeout(3500)
 await shot('7-modal')
@@ -151,7 +190,7 @@ ok = (await check('modal')) && ok
 await page.locator('[aria-label="Закрыть"]').last().click()
 await page.waitForTimeout(400)
 
-// 7 — итоговый экран
+// 8 — итоговый экран
 await page.getByRole('button', { name: /Познакомиться/i }).click()
 await page.waitForURL('**/links', { timeout: 30000 })
 await page.waitForTimeout(1800)

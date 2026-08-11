@@ -40,7 +40,7 @@ describe('MAX certificate delivery', () => {
     expect(body.text).toContain('Иван Иванович')
     expect(body.attachments).toEqual([
       { type: 'image', payload: { url: 'https://promo.test/invite-test/cert-diagnostics.png' } },
-      { type: 'image', payload: { url: 'https://promo.test/invite-test/cert-gift.png' } },
+      { type: 'image', payload: { url: 'https://promo.test/invite-test/cert-diagnostics.png' } },
       {
         type: 'inline_keyboard',
         payload: {

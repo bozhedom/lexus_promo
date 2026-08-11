@@ -71,6 +71,7 @@ export interface Config {
     certificates: Certificate;
     'promo-slides': PromoSlide;
     'certificate-rules': CertificateRule;
+    'car-catalog': CarCatalog;
     events: Event;
     users: User;
     media: Media;
@@ -85,6 +86,7 @@ export interface Config {
     certificates: CertificatesSelect<false> | CertificatesSelect<true>;
     'promo-slides': PromoSlidesSelect<false> | PromoSlidesSelect<true>;
     'certificate-rules': CertificateRulesSelect<false> | CertificateRulesSelect<true>;
+    'car-catalog': CarCatalogSelect<false> | CarCatalogSelect<true>;
     events: EventsSelect<false> | EventsSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
@@ -255,6 +257,24 @@ export interface CertificateRule {
   createdAt: string;
 }
 /**
+ * Brands and models available in the manual vehicle form.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "car-catalog".
+ */
+export interface CarCatalog {
+  id: string;
+  brand: string;
+  models: {
+    model: string;
+    id?: string | null;
+  }[];
+  order: number;
+  active: boolean;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "events".
  */
@@ -339,6 +359,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'certificate-rules';
         value: string | CertificateRule;
+      } | null)
+    | ({
+        relationTo: 'car-catalog';
+        value: string | CarCatalog;
       } | null)
     | ({
         relationTo: 'events';
@@ -461,6 +485,23 @@ export interface CertificateRulesSelect<T extends boolean = true> {
       };
   amount?: T;
   priority?: T;
+  active?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "car-catalog_select".
+ */
+export interface CarCatalogSelect<T extends boolean = true> {
+  brand?: T;
+  models?:
+    | T
+    | {
+        model?: T;
+        id?: T;
+      };
+  order?: T;
   active?: T;
   updatedAt?: T;
   createdAt?: T;

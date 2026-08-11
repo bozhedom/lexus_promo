@@ -9,6 +9,8 @@ import styles from './SelectField.module.scss'
 export interface SelectOption {
   value: string
   label: string
+  /** Приоритетный пункт: стоит наверху списка и подсвечен золотом. */
+  featured?: boolean
 }
 
 interface SelectFieldProps {
@@ -227,6 +229,9 @@ export function SelectField({
             styles.option,
             i === cursor && styles.optionActive,
             o.value === value && styles.optionSelected,
+            o.featured && styles.optionFeatured,
+            // Черта отделяет марки техцентра от остальных.
+            o.featured && !options[i + 1]?.featured && styles.optionFeaturedLast,
           )}
           // click, а не pointerdown: иначе на телефоне пункт выбирается в
           // момент касания и список не пролистать

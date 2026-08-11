@@ -41,7 +41,7 @@
   color: rgba(255, 255, 255, 0.62);
 }
 
-.erase {
+.barAction {
   padding: 5px 6px;
   border: none;
   background: none;
@@ -113,7 +113,7 @@
   }
 }
 
-.done {
+.wideAction {
   min-height: 42px;
   padding: 0;
   border: 1px solid rgba(154, 123, 86, 0.72);
@@ -131,6 +131,10 @@
     background: rgba(154, 123, 86, 0.3);
   }
 
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
 }
 
 @keyframes rise {

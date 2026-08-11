@@ -6,11 +6,12 @@ import styles from './MessengerButton.module.scss'
 interface MessengerButtonProps {
   icon: string
   label: string
+  ariaLabel?: string
   disabled: boolean
   onClick: () => void
 }
 
-export function MessengerButton({ icon, label, disabled, onClick }: MessengerButtonProps) {
+export function MessengerButton({ icon, label, ariaLabel, disabled, onClick }: MessengerButtonProps) {
   return (
     <div className={styles.wrap}>
       <Button
@@ -18,9 +19,9 @@ export function MessengerButton({ icon, label, disabled, onClick }: MessengerBut
         className={styles.btn}
         onClick={onClick}
         disabled={disabled}
-        aria-label={label}
+        aria-label={ariaLabel ?? label}
       >
-        <Image src={icon} alt="" width={48} height={48} className={styles.icon} />
+        <Image src={icon} alt="" width={64} height={64} className={styles.icon} />
       </Button>
       <span className={styles.label}>{label}</span>
     </div>

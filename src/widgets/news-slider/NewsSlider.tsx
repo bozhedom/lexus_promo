@@ -34,7 +34,13 @@ const DEFAULT_SLIDES: PromoSlideDto[] = [
 // Галерея автоцентра в футере экранов 2-4. На мобиле свайп с точками,
 // на десктопе стрелки: мышью горизонтальную ленту не прокрутить.
 // Тап по карточке разворачивает кадр на весь экран.
-export function NewsSlider() {
+interface NewsSliderProps {
+  hideActiveCaption?: boolean
+  /** Экран собран в один viewport: галерея тянется на весь остаток высоты. */
+  fillViewport?: boolean
+}
+
+export function NewsSlider({ hideActiveCaption = false, fillViewport = false }: NewsSliderProps) {
   const [slides, setSlides] = useState<PromoSlideDto[]>(DEFAULT_SLIDES)
   const assetsReady = useSceneAssets(
     [...new Set(slides.flatMap((slide) => [slide.src, slide.mobileSrc]))],
@@ -280,7 +286,12 @@ export function NewsSlider() {
   }
 
   return (
-    <section className={styles.wrap} data-ready={assetsReady}>
+    <section
+      className={styles.wrap}
+      data-ready={assetsReady}
+      data-hide-active-caption={hideActiveCaption || undefined}
+      data-fill={fillViewport || undefined}
+    >
       <div className={styles.panel}>
         <h2 className={styles.heading}>
           <span className={styles.line} />
@@ -373,7 +384,9 @@ export function NewsSlider() {
         {/* На мобиле кадр всегда один, поэтому подпись в макете общая и стоит
             под точками. На десктопе в ленте несколько карточек сразу, там
             подписи остаются у каждой. */}
-        <p className={styles.activeCaption}>{slides[active]?.caption}</p>
+        {!hideActiveCaption && (
+          <p className={styles.activeCaption}>{slides[active]?.caption}</p>
+        )}
       </div>
 
       <dialog

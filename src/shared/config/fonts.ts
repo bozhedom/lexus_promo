@@ -1,4 +1,4 @@
-import { Forum, Manrope, Marck_Script, Open_Sans, Roboto_Condensed } from 'next/font/google'
+import { Forum, Manrope, Marck_Script, Roboto, Roboto_Condensed } from 'next/font/google'
 
 // Основной шрифт интерфейса
 export const manrope = Manrope({
@@ -17,10 +17,10 @@ export const marckScript = Marck_Script({
 })
 
 // Цифры госномера
-export const openSans = Open_Sans({
+export const roboto = Roboto({
   subsets: ['latin', 'cyrillic'],
-  weight: ['600', '700'],
-  variable: '--font-opensans',
+  weight: ['500', '600'],
+  variable: '--font-roboto',
   display: 'swap',
 })
 
@@ -39,4 +39,4 @@ export const robotoCondensed = Roboto_Condensed({
   display: 'swap',
 })
 
-export const fontVariables = `${manrope.variable} ${marckScript.variable} ${openSans.variable} ${forum.variable} ${robotoCondensed.variable}`
+export const fontVariables = `${manrope.variable} ${marckScript.variable} ${roboto.variable} ${forum.variable} ${robotoCondensed.variable}`

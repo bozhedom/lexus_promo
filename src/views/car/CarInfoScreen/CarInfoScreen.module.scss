@@ -29,6 +29,10 @@
 
 .tabs {
   @include tabs.tabs;
+  // Панель ручного ввода растягивает детей по ширине карточки, а ряд вкладок
+  // должен остаться ровно той же ширины, что и на вкладке «по номеру авто»:
+  // иначе подписи и подчёркивание съезжают на несколько пикселей.
+  align-self: center;
 }
 
 .lookupButton {
@@ -97,28 +101,40 @@
   text-transform: uppercase;
 }
 
+// Рамка занимает экран целиком, как в макете: сверху 52+17+12, снизу 12.
+// Свободную высоту первой забирает лента подарков, остаток расходится по
+// зазорам, поэтому под кнопками не остаётся пустого поля.
 .foundPanel {
   width: min(336px, 100%);
-  min-height: 707px;
+  height: calc(100svh - 93px);
   margin-top: 12px;
   padding: 15px 15px 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: space-between;
   border: 1px solid t.$gold;
   border-radius: 16px;
+
+  // У чужой марки нет ни подарков, ни ленты: содержимого мало, и растягивать
+  // рамку на весь экран нечем — она садится по своему содержимому.
+  &[data-compact] {
+    height: auto;
+    justify-content: flex-start;
+  }
 }
 
-.lexusLogo {
+.brandLogo {
   width: 154px;
   height: 28px;
+  margin-bottom: 12px;
   object-fit: contain;
 }
 
 .carName {
   width: 100%;
   min-width: 0;
-  margin-top: 17px;
+  margin-top: 0;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -290,28 +306,60 @@
   span { @include t.gold-text; }
 }
 
+// Лента подарков: один кадр в фокусе, следующий выглядывает справа — как в
+// макете. Прокрутка со снапом, стрелок нет: экран мобильный.
+.giftRail {
+  flex: 1 1 auto;
+  min-height: 106px;
+  max-height: 220px;
+  width: calc(100% + 30px);
+  margin: 12px -15px 0;
+  padding-inline: 15px;
+  display: flex;
+  gap: 24px;
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 15px;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+
+  &::-webkit-scrollbar { display: none; }
+}
+
+.giftSlide {
+  flex: 0 0 272px;
+  max-width: 272px;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
 .giftCard {
   position: relative;
-  width: 304px;
-  height: 157px;
-  margin-top: 12px;
+  width: 100%;
+  height: 100%;
   padding: 16px;
   overflow: hidden;
   border: 1px solid t.$gold;
-  border-radius: 16px;
-  background: #0b0a04 url('/images/redesign/gift-card.webp') no-repeat center / cover;
+  border-radius: 12px;
+  background: #0b0a04 var(--gift-image, url('/images/redesign/gift-card.webp')) no-repeat center / cover;
+
+  // Фотографии в подарках сняты так, что смысловой объект стоит справа.
+  &[data-cover='right'] { background-position: right center; }
 
   &::after {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(90deg, rgba(0, 0, 0, 0.92) 0%, rgba(0, 0, 0, 0.72) 38%, transparent 66%);
+    background: linear-gradient(90deg, rgba(0, 0, 0, 0.94) 0%, rgba(0, 0, 0, 0.76) 42%, transparent 78%);
   }
 
   > div {
     position: relative;
     z-index: 1;
-    width: 118px;
+    width: 132px;
+    height: 100%;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -319,11 +367,10 @@
 
   small,
   strong { @include t.gold-text; }
-  small { font-size: 12px; letter-spacing: 1.7px; text-transform: uppercase; }
-  strong { font-size: 24px; line-height: 1; }
-  p { margin-top: 4px; font-size: 11px; line-height: 1.2; }
+  small { font-size: 11px; letter-spacing: 1.7px; text-transform: uppercase; }
+  strong { margin-top: 4px; font-size: 24px; line-height: 1; }
   span {
-    margin-top: 10px;
+    margin-top: auto;
     padding: 5px 9px;
     border: 1px solid t.$gold;
     border-radius: 8px;
@@ -332,6 +379,13 @@
     letter-spacing: 1px;
     text-transform: uppercase;
   }
+}
+
+.giftTitle {
+  margin-top: 6px;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 15px;
+  line-height: 1.2;
 }
 
 .giftDots {
@@ -345,12 +399,63 @@
     height: 4px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.4);
+    transition: width 0.28s cubic-bezier(0.2, 0.72, 0.2, 1), background 0.24s ease;
 
-    &:first-child {
+    &[data-active] {
       width: 16px;
       border-radius: 4px;
       background: linear-gradient(90deg, t.$gold-dark, t.$gold-light, t.$gold);
     }
+  }
+}
+
+.otherBrandNotice {
+  width: 304px;
+  margin-top: 14px;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid t.$gold;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(154, 123, 86, 0.14), rgba(0, 0, 0, 0.2));
+  text-align: left;
+
+  strong {
+    @include t.gold-text;
+    display: block;
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 1.25;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  p {
+    margin-top: 5px;
+    font-size: 10px;
+    line-height: 1.3;
+    color: rgba(255, 255, 255, 0.7);
+  }
+}
+
+.serviceIcon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 1px solid t.$gold;
+  border-radius: 50%;
+
+  svg {
+    width: 25px;
+    height: 25px;
+    fill: none;
+    stroke: t.$gold-light;
+    stroke-width: 1.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
 }
 
@@ -373,7 +478,123 @@
   .foundScreen { padding-inline: 8px; }
   .foundPanel { padding-inline: 10px; }
   .staticPlate,
-  .giftCard,
+  .otherBrandNotice,
   .confirmButton { width: 100%; }
+
+  .giftSlide {
+    flex-basis: calc(100% - 24px);
+    max-width: calc(100% - 24px);
+  }
   .carName { font-size: clamp(16px, 5.8vw, 20px); gap: 8px; }
+}
+
+@media (max-height: 700px) {
+  .foundScreen {
+    min-height: 100svh;
+    height: 100svh;
+    padding: 10px 8px 8px;
+    overflow: hidden;
+  }
+
+  .foundEyebrow { font-size: 12px; }
+
+  .foundPanel {
+    width: min(336px, 100%);
+    height: calc(100svh - 40px);
+    margin-top: 5px;
+    padding: 8px 14px 9px;
+
+    &[data-compact] { height: auto; }
+  }
+
+  .carName {
+    gap: 8px;
+    font-size: clamp(20px, 6.6vw, 24px);
+    line-height: 1.05;
+  }
+
+  .staticPlate {
+    width: 250px;
+    height: 54px;
+    margin-top: 7px;
+    grid-template-columns: 1fr 60px;
+  }
+
+  .staticMain b { font-size: 28px; }
+  .staticMain i { padding-inline: 2px; font-size: 38px; }
+  .staticRegion strong { font-size: 20px; }
+
+  .carCharacter { margin-top: 6px; font-size: 12px; }
+
+  .progressList {
+    margin-top: 8px;
+
+    li {
+      min-height: 34px;
+      grid-template-columns: 28px 1fr 24px;
+      gap: 7px;
+      font-size: 12px;
+
+      > b { width: 24px; height: 24px; }
+    }
+  }
+
+  .stepIcon { height: 18px; }
+
+  .giftLead {
+    margin-top: 5px;
+    font-size: 14px;
+    line-height: 1.25;
+  }
+
+  .giftRail {
+    margin-top: 6px;
+    gap: 14px;
+  }
+
+  .giftSlide {
+    flex-basis: 240px;
+    max-width: 240px;
+  }
+
+  .giftRail {
+    // Текст и кнопка «Подробно» должны оставаться внутри золотой рамки.
+    min-height: 96px;
+    max-height: 150px;
+  }
+
+  .giftCard {
+    padding: 9px 12px;
+
+    small { font-size: 10px; }
+    strong { margin-top: 2px; font-size: 20px; }
+    span { padding: 3px 6px; font-size: 9px; }
+  }
+
+  .giftTitle { margin-top: 3px; font-size: 12px; }
+
+  .giftDots { margin-top: 5px; }
+
+  .otherBrandNotice {
+    width: 270px;
+    margin-top: 7px;
+    padding: 8px 10px;
+    grid-template-columns: 34px 1fr;
+    gap: 8px;
+
+    strong { font-size: 11px; }
+    p { margin-top: 3px; font-size: 10px; }
+  }
+
+  .serviceIcon { width: 34px; height: 34px; }
+  .serviceIcon svg { width: 20px; height: 20px; }
+
+  .confirmButton {
+    width: 270px;
+    min-height: 39px;
+    margin-top: 7px;
+    font-size: 16px;
+  }
+
+  .changeButton { margin-top: 6px; font-size: 12px; }
 }

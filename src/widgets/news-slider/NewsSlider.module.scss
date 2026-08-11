@@ -24,6 +24,63 @@
   max-width: 1440px;
   margin: 0 auto;
   padding: 4px 0 20px;
+
+  @include t.mobile {
+    padding-bottom: 14px;
+  }
+}
+
+// На экране номера нижней подписи нет. Освободившееся место отдаём не пустому
+// хвосту, а симметричной полосе вокруг «Ваш новый автоцентр».
+@media (min-height: 800px) and (max-width: 768px) {
+  .wrap[data-fill][data-hide-active-caption] {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+
+    .panel {
+      height: 100%;
+      min-height: 0;
+      padding: 0 0 5px;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      overflow: hidden;
+    }
+
+    .heading {
+      margin-bottom: clamp(12px, 1.8dvh, 17px);
+    }
+
+    .viewport,
+    .rail,
+    .slide {
+      min-height: 0;
+      height: 100%;
+    }
+
+    .viewport {
+      width: calc(100% - 32px);
+      margin-inline: auto;
+      overflow: hidden;
+    }
+
+    .rail {
+      --gutter: 0px;
+      padding-bottom: 0;
+      overflow-y: hidden;
+    }
+
+    .slide { gap: 0; }
+
+    .card {
+      height: 100%;
+      min-height: 0;
+      aspect-ratio: auto;
+      border-radius: 10px;
+    }
+
+    .dots { margin-top: 5px; }
+  }
 }
 
 .heading {
@@ -31,11 +88,11 @@
   align-items: center;
   justify-content: center;
   gap: clamp(10px, 1.4vw, 18px);
-  margin: 0 clamp(16px, 2vw, 28px) clamp(14px, 2vh, 22px);
+  margin: 0 clamp(16px, 2vw, 28px) clamp(9px, 1.5vh, 14px);
 }
 
 .title {
-  font-size: clamp(12px, 1.15vw, 16px);
+  font-size: 16px;
   font-family: t.$font-display;
   font-weight: 400;
   letter-spacing: clamp(1.2px, 0.16vw, 2.2px);
@@ -173,16 +230,22 @@
   @include t.mobile {
     flex-basis: 100%;
     scroll-snap-align: center;
-    opacity: 0.58;
-    transform: scale(0.94);
-    transform-origin: center;
-    transition:
-      opacity 0.42s ease,
-      transform 0.48s cubic-bezier(0.2, 0.72, 0.2, 1);
 
-    &[data-active] {
-      opacity: 1;
-      transform: scale(1);
+    // Соседние кадры приглушены и чуть уменьшены только там, где галерея
+    // занимает весь остаток экрана. На прокручиваемой странице карточки
+    // одного размера: разный масштаб там читается как разная высота слайдов.
+    .wrap[data-fill] & {
+      opacity: 0.58;
+      transform: scale(0.94);
+      transform-origin: center;
+      transition:
+        opacity 0.42s ease,
+        transform 0.48s cubic-bezier(0.2, 0.72, 0.2, 1);
+
+      &[data-active] {
+        opacity: 1;
+        transform: scale(1);
+      }
     }
   }
 }
@@ -274,7 +337,7 @@
   gap: 6px;
   background: linear-gradient(180deg, rgba(0, 0, 0, 0.48), rgba(0, 0, 0, 0.08) 58%);
   color: t.$white;
-  font-size: clamp(13px, 1.25vw, 18px);
+  font-size: 18px;
   font-weight: 500;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
 
@@ -299,9 +362,13 @@
 .activeCaption {
   display: none;
   margin-top: 14px;
+  font-size: 14px;
 
   @include t.mobile {
     display: block;
+    // В Figma подпись отделена от точек заметной паузой, но всё ещё
+    // заканчивается внутри одного 800px-экрана.
+    margin-top: 32px;
   }
 }
 
@@ -318,6 +385,8 @@
 
   @include t.mobile {
     display: flex;
+    gap: 4px;
+    margin-top: 8px;
   }
 }
 
@@ -332,12 +401,141 @@
   transition: background 0.32s ease, width 0.38s cubic-bezier(0.2, 0.72, 0.2, 1), transform 0.25s ease;
 
   &:hover { transform: scale(1.18); }
+
+  @include t.mobile {
+    width: 4px;
+    height: 4px;
+  }
 }
 
 .dotActive {
   width: 18px;
   border-radius: 4px;
   background: linear-gradient(90deg, t.$gold-dark, t.$gold-light, t.$gold);
+
+  @include t.mobile { width: 16px; }
+}
+
+@media (max-height: 799px) and (max-width: 768px) {
+  // Верхняя сцена остаётся неизменной, поэтому галерея забирает ровно остаток
+  // viewport. Фото тянется по доступной высоте, а не толкает форму наверх.
+  .wrap[data-fill] {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+
+    .panel {
+      // На высотах 550–799px ширина и высота кадра меняются плавно. Так при
+      // переходе через 650px галерея не перескакивает на высокий статичный вид.
+      --slider-inset: clamp(16px, calc(84.27px - 8.53dvh), 32px);
+      height: 100%;
+      min-height: 0;
+      padding: 3px 0 5px;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto auto;
+      overflow: hidden;
+    }
+
+    .heading {
+      margin: 0 var(--slider-inset) 3px;
+      gap: 6px;
+    }
+
+    .title {
+      font-size: clamp(12px, calc(2.67dvh - 5.36px), 16px);
+      letter-spacing: 1px;
+    }
+
+    .viewport,
+    .rail,
+    .slide {
+      min-height: 0;
+      height: 100%;
+    }
+
+    // Фотография забирает весь остаток экрана под карточкой: жёсткого потолка
+    // нет, поэтому на 700–800px внизу не остаётся пустой полосы. Ниже 34px
+    // кадр уже не читается, поэтому это единственное ограничение.
+    .viewport {
+      width: calc(100% - (2 * var(--slider-inset)));
+      min-height: 34px;
+      margin-inline: auto;
+      margin-top: 6px;
+      align-self: stretch;
+      overflow: hidden;
+    }
+
+    .rail {
+      --gutter: 0px;
+      padding-bottom: 0;
+      overflow-y: hidden;
+    }
+
+    .slide { gap: 0; }
+
+    .card {
+      height: 100%;
+      min-height: 0;
+      aspect-ratio: auto;
+      border-radius: 10px;
+    }
+
+    .address {
+      gap: 1px;
+      font-size: clamp(9px, 1.7dvh, 11px);
+      line-height: 1;
+
+      img { width: clamp(7px, 1.5dvh, 10px); }
+    }
+
+    .activeCaption {
+      margin-top: 1px;
+      font-size: 10px;
+      line-height: 1.1;
+    }
+
+    .dots { margin-top: 1px; gap: 4px; }
+    .dot { width: 4px; height: 4px; }
+    .dotActive { width: 13px; }
+  }
+}
+
+// Между коротким экраном и макетными 800px раскладываем элементы обычным
+// потоком. Все отступы сходятся с полноразмерным видом к 800px, поэтому ни
+// на 651px, ни при дальнейшем увеличении высоты содержимое не обрезается.
+@media (min-height: 651px) and (max-height: 799px) and (max-width: 768px) {
+  .wrap[data-fill] {
+
+    .panel {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .heading {
+      flex: 0 0 auto;
+      margin-bottom: clamp(13px, calc(42px - 3.67dvh), 18px);
+    }
+
+    .viewport {
+      flex: 1 1 auto;
+      height: auto;
+      min-height: 105px;
+      max-height: none;
+      margin-top: 0;
+      align-self: auto;
+    }
+
+    .dots {
+      flex: 0 0 auto;
+      margin-top: clamp(12px, calc(28.1px - 2.02dvh), 15px);
+    }
+
+    .activeCaption {
+      flex: 0 0 auto;
+      margin-top: clamp(1px, calc(29.3dvh - 204.1px), 30px);
+      font-size: clamp(10px, calc(2.68dvh - 7.42px), 14px);
+    }
+  }
 }
 
 // ── развёрнутый кадр ───────────────────────────────────────────────────────

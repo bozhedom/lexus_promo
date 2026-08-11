@@ -131,6 +131,7 @@
 }
 
 .option {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -150,6 +151,34 @@
 .optionActive {
   background: rgba(154, 123, 86, 0.22);
   color: t.$white;
+}
+
+// Марки техцентра: золотая подпись и точка-маркер слева. Цвет задаём обычным
+// color, а не градиентом с background-clip: у активного пункта своя подложка,
+// и она затирала бы градиент, оставляя прозрачный текст.
+.optionFeatured {
+  padding-left: 24px;
+  color: t.$gold-light;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 12px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: t.$gold-light;
+    box-shadow: 0 0 7px 1px rgba(228, 204, 174, 0.6);
+  }
+}
+
+// Черта отделяет марки техцентра от остальных.
+.optionFeaturedLast {
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(154, 123, 86, 0.5);
+  border-radius: 7px 7px 0 0;
 }
 
 .optionSelected {

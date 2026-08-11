@@ -106,6 +106,8 @@ function ReadyCarNumberScreen() {
     <StageLayout
       cardClassName={styles.lookupCard}
       secureInside
+      compactViewport
+      hideSliderCaption
       subtitle={
         <>
           Внесите номер, чтобы получить <br /><b>персональное приглашение</b>

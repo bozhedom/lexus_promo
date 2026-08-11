@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 
 import {
   DEFAULT_PLATE_REGION,
@@ -13,7 +13,15 @@ import {
 } from '@/features/plate-lookup'
 import { createApplication, isApiError, lookupCar, patchApplication } from '@/shared/api/funnel'
 import { useScreenView } from '@/shared/analytics'
-import { CAR_BRANDS, OTHER_OPTION, carModels, carYears } from '@/shared/config/car-data'
+import {
+  DEFAULT_CAR_CATALOG,
+  OTHER_OPTION,
+  carBrands,
+  carModels,
+  carYears,
+  fetchCarCatalog,
+  isFeaturedBrand,
+} from '@/shared/config/car-data'
 import { useFunnel } from '@/shared/lib/funnel'
 import type { CarInfo } from '@/shared/lib/types'
 import { Button, Loader, SelectField, StageLayout, TextField } from '@/shared/ui'
@@ -129,11 +137,20 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
   const [manualNotice, setManualNotice] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
+  const [catalog, setCatalog] = useState(DEFAULT_CAR_CATALOG)
   const [appliedLookup, setAppliedLookup] = useState<CarInfo | undefined>(undefined)
   const lookupGeneration = useRef(0)
+  const giftRailRef = useRef<HTMLUListElement>(null)
+  const [giftIndex, setGiftIndex] = useState(0)
 
-  const models = carModels(brand)
-  const needsCustomModel = brand === OTHER_OPTION || model === OTHER_OPTION || models.length === 0
+  const onGiftScroll = () => {
+    const rail = giftRailRef.current
+    if (!rail) return
+    setGiftIndex(Math.round(rail.scrollLeft / Math.max(1, rail.clientWidth)))
+  }
+
+  const models = carModels(catalog, brand)
+  const needsCustomModel = model === OTHER_OPTION || models.length === 0
   const finalModel = needsCustomModel ? customModel.trim() : model
   const plateValue = plate ?? data.plateNumber ?? DEFAULT_PLATE_REGION
 
@@ -178,6 +195,18 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [show, manualRequested, data.plateNumber, data.carLookup])
+
+  useEffect(() => {
+    let active = true
+    fetchCarCatalog()
+      .then((configured) => {
+        if (active) setCatalog(configured)
+      })
+      .catch(() => undefined)
+    return () => {
+      active = false
+    }
+  }, [])
 
   if (!show) return null
 
@@ -270,21 +299,33 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
 
   const plateShown = formatPlate(data.plateNumber ?? '')
   const plateMain = splitPlate(data.plateNumber ?? '').main
+  const supportedBrand = /^(toyota|lexus)$/i.test(car?.brand ?? '')
+  // Логотип марки над карточкой есть только у Lexus: в макетах Toyota идёт
+  // набором, а чужие марки логотипом не подписываются вовсе.
+  const brandLogo = /^lexus$/i.test(car?.brand ?? '') ? '/images/redesign/lexus-logo.svg' : null
+  // Обложка первого подарка — кадр с подъёмником под марку техцентра.
+  const liftImage = /^toyota$/i.test(car?.brand ?? '')
+    ? '/images/cert-lift-toyota.png'
+    : '/images/cert-lift-lexus.png'
 
   if (ui === 'found' && car) {
     return (
       <main className={styles.foundScreen}>
         <p className={styles.foundEyebrow}>Автомобиль успешно найден</p>
 
-        <section className={styles.foundPanel}>
-          <Image
-            className={styles.lexusLogo}
-            src="/images/redesign/lexus-logo.svg"
-            alt="Lexus"
-            width={154}
-            height={28}
-            priority
-          />
+        {/* У чужой марки нет ни подарков, ни ленты: карточка короче, и держать
+            её на высоту макета с подарками — значит оставить пустое поле. */}
+        <section className={styles.foundPanel} data-compact={!supportedBrand || undefined}>
+          {brandLogo && (
+            <Image
+              className={styles.brandLogo}
+              src={brandLogo}
+              alt={car.brand}
+              width={154}
+              height={28}
+              priority
+            />
+          )}
 
           <h1 className={styles.carName}>
             <span>{car.brand} {car.model}</span>
@@ -304,41 +345,95 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
             </span>
           </div>
 
-          <p className={styles.carCharacter}>Брутальный внедорожник</p>
+          {/* Характер машины, список готовности и подарки — про марки
+              техцентра. Чужой марке всё это не положено: вместо них одна
+              строка о том, что её обслуживает другой техцентр. */}
+          {supportedBrand ? (
+            <>
+              <p className={styles.carCharacter}>Брутальный внедорожник</p>
 
-          <ul className={styles.progressList}>
-            <li>
-              <StepIcon kind="gift" />
-              <span>Персональное<br />приглашение готово</span>
-              <b><StepCheck /></b>
-            </li>
-            <li>
-              <StepIcon kind="letter" />
-              <span>Подарок зарезервирован<br />за вашим автомобилем</span>
-              <b><StepCheck /></b>
-            </li>
-            <li>
-              <StepIcon kind="mask" />
-              <span>Осталось подтвердить<br />владельца</span>
-              <b className={styles.pendingCheck} />
-            </li>
-          </ul>
+              <ul className={styles.progressList}>
+                <li>
+                  <StepIcon kind="gift" />
+                  <span>Персональное<br />приглашение готово</span>
+                  <b><StepCheck /></b>
+                </li>
+                <li>
+                  <StepIcon kind="letter" />
+                  <span>Подарок зарезервирован<br />за вашим автомобилем</span>
+                  <b><StepCheck /></b>
+                </li>
+                <li>
+                  <StepIcon kind="mask" />
+                  <span>Осталось подтвердить<br />владельца</span>
+                  <b className={styles.pendingCheck} />
+                </li>
+              </ul>
 
-          <p className={styles.giftLead}>
-            Для Вашего автомобиля приготовлены
-            <span>персональные подарки в честь знакомства</span>
-          </p>
+              <p className={styles.giftLead}>
+                Для Вашего автомобиля приготовлены
+                <span>персональные подарки в честь знакомства</span>
+              </p>
 
-          <article className={styles.giftCard}>
-            <div>
-              <small>Сертификат</small>
-              <strong>15 000 ₽</strong>
-              <p>на оригинальные<br />запасные части<br />и аксессуары</p>
-              <span>Подробно</span>
-            </div>
-          </article>
+              {/* Подарки листаются свайпом: в кадр помещается один, второй
+                  выглядывает справа. Точки под лентой показывают, где мы. */}
+              <ul
+                className={styles.giftRail}
+                ref={giftRailRef}
+                onScroll={onGiftScroll}
+                aria-label="Подарки в честь знакомства"
+              >
+                <li className={styles.giftSlide}>
+                  <article
+                    className={styles.giftCard}
+                    style={{ '--gift-image': `url(${liftImage})` } as CSSProperties}
+                    data-cover="right"
+                  >
+                    <div>
+                      <small>Сертификат</small>
+                      <p className={styles.giftTitle}>Диагностика<br />ходовой части</p>
+                      <span>Подробно</span>
+                    </div>
+                  </article>
+                </li>
+                <li className={styles.giftSlide}>
+                  <article
+                    className={styles.giftCard}
+                    style={{ '--gift-image': 'url(/images/redesign/offer-oil.webp)' } as CSSProperties}
+                    data-cover="right"
+                  >
+                    <div>
+                      <small>Сертификат</small>
+                      <strong>1 500 ₽</strong>
+                      <p className={styles.giftTitle}>на первую<br />замену масла</p>
+                      <span>Подробно</span>
+                    </div>
+                  </article>
+                </li>
+              </ul>
 
-          <div className={styles.giftDots} aria-hidden><i /><i /></div>
+              <div className={styles.giftDots} aria-hidden>
+                <i data-active={giftIndex === 0 || undefined} />
+                <i data-active={giftIndex === 1 || undefined} />
+              </div>
+            </>
+          ) : (
+            <article className={styles.otherBrandNotice}>
+              <span className={styles.serviceIcon} aria-hidden>
+                <svg viewBox="0 0 32 32">
+                  <path d="M5 14.5 16 5l11 9.5v12H5z" />
+                  <path d="M12 26.5v-8h8v8M3 15.5 16 4l13 11.5" />
+                </svg>
+              </span>
+              <div>
+                <strong>Ваш автомобиль обслуживается в другом техцентре</strong>
+                <p>
+                  Мы специализируемся на Toyota и Lexus. Для вашего автомобиля у нас есть
+                  отдельный специализированный техцентр.
+                </p>
+              </div>
+            </article>
+          )}
 
           {errors.form && <p className={styles.error}>{errors.form}</p>}
 
@@ -428,7 +523,11 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
               setCustomModel('')
               setErrors({})
             }}
-            options={CAR_BRANDS.map((b) => ({ value: b, label: b }))}
+            options={carBrands(catalog).map((item) => ({
+              value: item,
+              label: item,
+              featured: isFeaturedBrand(item),
+            }))}
           />
 
           {!brand ? (
@@ -449,6 +548,9 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
             />
           ) : (
             <TextField
+              // Пустой <label> вокруг поля перебивает placeholder, и поле
+              // остаётся без доступного имени: подписываем явно.
+              aria-label="Модель"
               placeholder="Модель"
               maxLength={40}
               value={customModel}
@@ -459,6 +561,7 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
 
           {models.length > 0 && model === OTHER_OPTION && (
             <TextField
+              aria-label="Впишите модель"
               placeholder="Впишите модель"
               maxLength={40}
               value={customModel}

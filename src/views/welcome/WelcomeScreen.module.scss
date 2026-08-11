@@ -13,6 +13,24 @@
   color: rgba(255, 255, 255, 0.8);
   font-family: t.$font-condensed;
 
+  // Где на экране заканчивается автомобиль — от этой отметки считается всё
+  // остальное. Кадр приколот к верхнему краю, cover масштабирует его по
+  // ширине сцены (или по высоте, если экран выше кадра), а нижняя кромка
+  // машины в исходнике стоит на 49.625%.
+  --car-raw: max(calc(min(100vw, 480px) * 1.1028), 49.625svh);
+  // Верхняя кромка капота в том же кадре — 26.5%.
+  --car-top: calc(var(--car-raw) * 0.534);
+  // Высота шапки: та же линейная привязка, что и у её собственных размеров.
+  --brand-h: #{f.vh(145, 171)};
+  // Сколько кадра нужно увести за верхний край, чтобы под машиной поместилась
+  // нижняя группа. Больше, чем разрешает капот, поднимать нельзя: у Toyota он
+  // светлый и подходит под подпись техцентра. Базовые 16px кадр поднят всегда —
+  // так автомобиль стоит чуть выше и низу достаётся больше воздуха.
+  --stage-need: calc(var(--car-raw) + 14px + #{f.vh(259, 318)} - 100svh);
+  --stage-room: calc(var(--car-top) - var(--brand-h) - 12px);
+  --stage-shift: clamp(0px, min(max(var(--stage-need), 16px), var(--stage-room)), 140px);
+  --car-bottom: calc(var(--car-raw) - var(--stage-shift));
+
   &[data-ready='false'] {
 
     .stage,
@@ -193,9 +211,10 @@
 }
 
 // Кадр макета — 360×800 (соотношение 0.45), любой телефон «короче» его, поэтому
-// cover обрезает фото по вертикали. Точку обрезки держим не у верхнего края, а
-// чуть ниже: так решётка радиатора остаётся в той же доле экрана, что и в Figma,
-// а срезаются только однотонные поля сверху и снизу.
+// cover обрезает фото по вертикали. Режем строго снизу: там у обоих кадров
+// однотонная темнота, а расстояние от шапки до капота остаётся ровно таким же,
+// как в Figma. Если резать сверху, автомобиль поднимается тем выше, чем короче
+// экран, и светлый капот Toyota подходит под подпись техцентра.
 .stage {
   position: absolute;
   inset: 0;
@@ -204,7 +223,7 @@
   width: min(100%, 480px);
   transform: translateX(-50%);
   transform-origin: 50% 26%;
-  background: var(--welcome-stage-image) no-repeat center 34% / cover;
+  background: var(--welcome-stage-image) no-repeat center calc(-1 * var(--stage-shift)) / cover;
   pointer-events: none;
   animation: welcome-breathe 15s ease-in-out infinite alternate;
 
@@ -224,13 +243,16 @@
   }
 }
 
+// Высота колонки жёсткая, а не минимальная: только так безопасная зона может
+// поджаться на коротком экране, а не растянуть страницу за край.
 .content {
   position: relative;
   z-index: 1;
   width: min(100%, 480px);
-  min-height: 100svh;
+  height: 100svh;
   margin: 0 auto;
-  padding: f.vh(0, 48) 20px f.vh(12, 24);
+  // Логотип не касается системной строки и верхнего края даже без safe-area.
+  padding: max(20px, env(safe-area-inset-top)) 20px max(14px, env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -245,24 +267,23 @@
 }
 
 .logo {
-  width: f.vh(62, 84);
+  width: f.vh(68, 94);
   height: auto;
   aspect-ratio: 84 / 40;
   object-fit: contain;
-  animation: welcome-logo 5s ease-in-out infinite;
 }
 
 .carBrand {
-  @include t.gold-text;
   margin-top: f.vh(12, 24);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 20px;
-  font-family: t.$font-display;
-  font-size: f.vh(30, 40);
-  line-height: 1;
-  letter-spacing: 2px;
+  font-family: t.$font-main;
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.96px;
 
   i {
     width: 1px;
@@ -271,25 +292,55 @@
   }
 }
 
+.screen[data-brand='toyota'] .carBrand,
+.screen[data-brand='both'] .carBrand span:first-child { color: #d82f2f; }
+
+.screen[data-brand='lexus'] .carBrand,
+.screen[data-brand='both'] .carBrand span:last-child { color: #fff; }
+
 .screen[data-brand='both'] .carBrand {
   gap: f.vh(11, 16);
-  font-size: f.vh(27, 35);
-  letter-spacing: 1px;
+  font-size: 28px;
+  letter-spacing: 0.84px;
 }
 
 .spec {
   @include t.gold-text;
   margin-top: f.vh(3, 5);
-  font-size: f.vh(10.5, 12);
+  font-size: 14px;
   line-height: 1.4;
   letter-spacing: 0.6px;
 }
 
-// Окно под фотографию. Забирает всю свободную высоту: на 800px распорка
-// вырастает до 205px, как в макете, на 568px сжимается первой.
+// Безопасная зона автомобиля: на макете она заканчивается ровно на y=397
+// (49.625% высоты экрана). Текст не может подняться внутрь этой области.
+// На высоком экране зона растёт вместе с cover-фоном, поэтому автомобиль не
+// оказывается под заголовком; на коротком телефоне она сжимается первой.
+// Распорка забирает весь свободный остаток: нижняя группа прижата к краю
+// экрана, а лишний воздух уходит наверх, под автомобиль.
+// Безопасная зона автомобиля: она заканчивается ровно под его нижней кромкой,
+// плюс 14px воздуха. Высоту шапки над ней описывает та же линейная привязка,
+// что и её собственные размеры, — от 145px на 568 до 171px на 800.
+// Задана height, а не min-height: на экране ниже 620px места под кадром уже
+// не хватает, и зона должна поджаться, а не выпихнуть кнопки за край.
 .viewport {
+  flex: 0 1 auto;
+  height: calc(var(--car-bottom) + 14px - var(--brand-h));
+  min-height: 0;
+}
+
+// Нижняя группа забирает весь остаток под безопасной зоной автомобиля и
+// раздаёт его поровну между заголовком, кнопками и слоганом. Так свободная
+// высота не собирается в одну пустую полосу под капотом, а расходится по
+// блокам; gap работает нижней границей зазора на коротком экране.
+.lower {
+  width: 100%;
   flex: 1 1 auto;
-  min-height: f.vh(48, 96);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: f.vh(16, 26);
 }
 
 .invitation {
@@ -300,7 +351,7 @@
   h1 {
     @include t.gold-text;
     font-family: t.$font-display;
-    font-size: f.vh(19, 24);
+    font-size: 24px;
     font-weight: 400;
     line-height: 1.08;
     letter-spacing: 1.2px;
@@ -308,9 +359,10 @@
   }
 
   p {
-    margin-top: f.vh(7, 10);
-    font-size: f.vh(11.5, 13);
-    line-height: 1.35;
+    margin-top: f.vh(10, 14);
+    font-size: 18px;
+    font-weight: 300;
+    line-height: 1.15;
   }
 }
 
@@ -404,10 +456,9 @@
 
 .actions {
   width: 100%;
-  margin-top: f.vh(8, 25);
   display: flex;
   flex-direction: column;
-  gap: f.vh(6, 16);
+  gap: f.vh(9, 16);
 }
 
 .cta,
@@ -421,7 +472,7 @@
   gap: 8px;
   border-radius: 0;
   font-family: t.$font-condensed;
-  font-size: f.vh(13.5, 16);
+  font-size: 16px;
   font-weight: 300;
   letter-spacing: 1.28px;
   text-transform: uppercase;
@@ -475,19 +526,6 @@
   to {
     opacity: 1;
     transform: translateY(1.5%);
-  }
-}
-
-@keyframes welcome-logo {
-
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-
-  50% {
-    transform: translateY(-2px);
-    filter: drop-shadow(0 0 7px rgba(228, 204, 174, 0.2));
   }
 }
 
@@ -558,8 +596,7 @@
 }
 
 .tagline {
-  margin-top: f.vh(8, 27);
-  font-size: f.vh(11, 13);
+  font-size: 13px;
   letter-spacing: 1.04px;
   text-transform: uppercase;
 }
@@ -592,15 +629,6 @@
   }
 }
 
-// При cover у короткого экрана фотография выше вьюпорта. Смещаем её вниз по
-// исходнику сильнее, чтобы решётка и руки уходили вверх, освобождая текстовый
-// блок. На 800px и выше остаётся исходная точка кадрирования из макета.
-@media (max-height: 700px) {
-  .stage {
-    background-position: center 58%;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .introCurtain {
     display: none;
@@ -608,7 +636,6 @@
 
   .stage,
   .stage::before,
-  .logo,
   .spark::after,
   .benefits svg,
   .cta {

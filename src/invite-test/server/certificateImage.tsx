@@ -82,8 +82,8 @@ function copyFor(kind: CertificateKind, amount: number): CertificateCopy {
   if (kind === 'gift') {
     return {
       eyebrow: 'Ваш персональный подарок',
-      title: `Сертификат ${new Intl.NumberFormat('ru-RU').format(amount)} ₽`,
-      note: 'на оригинальные запчасти и аксессуары',
+      title: 'Сертификат в честь знакомства',
+      note: `подарок ${new Intl.NumberFormat('ru-RU').format(amount)} ₽ для вашего автомобиля`,
     }
   }
   return {

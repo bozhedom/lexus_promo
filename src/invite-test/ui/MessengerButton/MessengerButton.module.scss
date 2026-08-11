@@ -8,14 +8,14 @@
 }
 
 .btn {
-  width: 58px;
-  height: 58px;
+  width: 64px;
+  height: 64px;
   padding: 0;
   display: grid;
   place-items: center;
   border: 1px solid t.$gold;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.04);
+  background: #050505;
   cursor: pointer;
   transition: box-shadow 0.18s ease, transform 0.18s ease;
 
@@ -25,20 +25,23 @@
   }
 
   &:disabled {
-    opacity: 0.35;
+    // Недоступный канал остаётся узнаваемым по фирменному цвету, но кнопка
+    // визуально тише активной.
+    opacity: 0.72;
     cursor: default;
   }
 }
 
 .icon {
-  width: 30px;
-  height: 30px;
+  width: 46px;
+  height: 46px;
   object-fit: contain;
+  border-radius: 13px;
 }
 
 .label {
   color: rgba(255, 255, 255, 0.68);
   font-family: t.$font-condensed;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.4px;
 }

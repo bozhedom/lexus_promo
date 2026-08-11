@@ -59,16 +59,6 @@ $open-ms: 680;
     pointer-events: none;
   }
 
-  &::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    opacity: 0.78;
-    background: linear-gradient(180deg, transparent, t.$gold-light 18%, t.$gold 72%, transparent);
-    box-shadow: 0 0 18px rgba(228, 204, 174, 0.22);
-  }
 }
 
 .left {
@@ -82,8 +72,6 @@ $open-ms: 680;
   background-position: right top;
   // мягкая тень на стыке: половинки читаются как две шторы, а не как одна плоскость
   box-shadow: 14px 0 46px rgba(0, 0, 0, 0.75);
-
-  &::after { right: 0; }
 }
 
 .right {
@@ -96,8 +84,6 @@ $open-ms: 680;
     url('/images/curtain-right.webp');
   background-position: left top;
   box-shadow: -14px 0 46px rgba(0, 0, 0, 0.75);
-
-  &::after { left: 0; }
 }
 
 // тёплый блик по центру в момент смыкания/раскрытия

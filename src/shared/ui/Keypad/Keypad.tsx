@@ -42,18 +42,19 @@ export function KeypadSheet({
       role="group"
       aria-label={label}
     >
+      {/* «Готово» стоит в шапке, а «Стереть» — широкой клавишей под набором:
+          стирают заметно чаще, и до нижней кромки большой палец дотягивается
+          без перехвата телефона. */}
       <div className={styles.bar}>
         <span className={styles.hint} aria-live="polite">
           {hint}
         </span>
         <button
           type="button"
-          className={styles.erase}
-          onClick={onErase}
-          disabled={!canErase}
-          aria-label="Удалить символ"
+          className={styles.barAction}
+          onClick={onDone}
         >
-          Стереть
+          Готово
         </button>
       </div>
 
@@ -61,10 +62,12 @@ export function KeypadSheet({
 
       <button
         type="button"
-        className={styles.done}
-        onClick={onDone}
+        className={styles.wideAction}
+        onClick={onErase}
+        disabled={!canErase}
+        aria-label="Удалить символ"
       >
-        Готово
+        Стереть
       </button>
     </div>
   )

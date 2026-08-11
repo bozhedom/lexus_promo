@@ -19,10 +19,19 @@ interface StageLayoutProps {
   children: ReactNode
   cardClassName?: string
   secureInside?: boolean
+  compactViewport?: boolean
+  hideSliderCaption?: boolean
 }
 
 // Каркас экранов 2-4: сцена, заголовок «В ЧИСЛЕ ПЕРВЫХ», карточка формы, футер
-export function StageLayout({ subtitle, children, cardClassName, secureInside = false }: StageLayoutProps) {
+export function StageLayout({
+  subtitle,
+  children,
+  cardClassName,
+  secureInside = false,
+  compactViewport = false,
+  hideSliderCaption = false,
+}: StageLayoutProps) {
   const assetsReady = useSceneAssets(STAGE_ASSETS)
   const secure = (
     <p className={styles.secure}>
@@ -32,7 +41,11 @@ export function StageLayout({ subtitle, children, cardClassName, secureInside = 
   )
 
   return (
-    <div className={styles.page} data-ready={assetsReady}>
+    <div
+      className={styles.page}
+      data-ready={assetsReady}
+      data-compact-viewport={compactViewport || undefined}
+    >
       <section className={styles.stage}>
         <div className={styles.scene} aria-hidden>
           <div className={styles.sceneBox}>
@@ -46,8 +59,8 @@ export function StageLayout({ subtitle, children, cardClassName, secureInside = 
             className={styles.logo}
             src="/images/logo-agc.svg"
             alt="АвтоГарантСити"
-            width={84}
-            height={40}
+            width={94}
+            height={45}
             priority
           />
 
@@ -71,7 +84,11 @@ export function StageLayout({ subtitle, children, cardClassName, secureInside = 
         </div>
       </section>
 
-      <NewsSlider />
+      {/* Тянуться на остаток экрана галерее можно только там, где экран
+          собран в один viewport. На прокручиваемых страницах у карточки
+          фиксированная пропорция, иначе высота слайда зависит от того, какой
+          длины форма стоит выше. */}
+      <NewsSlider hideActiveCaption={hideSliderCaption} fillViewport={compactViewport} />
     </div>
   )
 }

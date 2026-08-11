@@ -8,8 +8,8 @@ export const DEFAULT_CERTIFICATES: Certificate[] = [
   },
   {
     id: 'gift',
-    image: '/invite-test/cert-gift.png',
-    alt: 'Подарочный сертификат на 1500 рублей',
+    image: '/invite-test/cert-diagnostics.png',
+    alt: 'Сертификат в честь знакомства',
   },
 ]
 

@@ -150,7 +150,7 @@ export function TicketScreen() {
 
           <div className={styles.bar}>
             <Button className={styles.saveBtn} onClick={openCertificates}>
-              Скачать пригласительный
+              Отправить в мессенджер
               <svg viewBox="0 0 24 24" aria-hidden>
                 <path d="M12 3v12m0 0 5-5m-5 5-5-5M5 20h14" />
               </svg>
@@ -171,11 +171,10 @@ export function TicketScreen() {
         </div>
       )}
 
-      {modalOpen && details && (
+      {modalOpen && details && delivery.session && (
         <CertificatesModal
           delivery={delivery}
-          details={details}
-          certificateId={result?.certificate.id}
+          guestName={details.fullName}
           onClose={() => setModalOpen(false)}
         />
       )}

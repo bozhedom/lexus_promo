@@ -88,15 +88,15 @@
   align-items: center;
 }
 
-// В макете перчатки лежат поверх карточки формы, а не уходят за неё. Раньше
-// сюда клали тот же кадр и вырезали руки радиальной маской: маска считается в
-// процентах от слоя, а высота слоя зависит от содержимого карточки, поэтому на
-// длинной форме эллипс уезжал вниз и ложился на номерной знак мутным пятном.
-// Теперь поверх идёт отдельная картинка — только перчатки с прозрачным фоном.
-// Занавес в ней не нужен: карточка полупрозрачная, и ткань просвечивает сама.
+// Отдельный слой только с перчатками (прозрачный фон). Занавес в нём не нужен:
+// карточка полупрозрачная, и ткань просвечивает сама.
+//
+// Слой лежит под карточкой, а не над ней. Сверху перчатки срезали верхние углы
+// золотой рамки, и обводка блока читалась как оборванная: сплошная линия по
+// центру и обрубленные концы у манжет.
 .hands {
   position: absolute;
-  z-index: 3;
+  z-index: 1;
   inset: 0;
   bottom: -64px;
   overflow: hidden;
@@ -119,10 +119,9 @@
 }
 
 .logo {
-  width: 84px;
-  height: 40px;
+  width: 94px;
+  height: 45px;
   object-fit: contain;
-  animation: logo-float 5.5s ease-in-out infinite;
 }
 
 .header {
@@ -178,8 +177,8 @@
 // поэтому ширину ограничиваем, а не пускаем на всю карточку.
 .subtitle {
   max-width: 240px;
-  font-size: 12px;
-  line-height: 1.35;
+  font-size: 16px;
+  line-height: normal;
 
   b {
     @include t.gold-text;
@@ -224,15 +223,18 @@
   justify-content: center;
   gap: 5px;
   margin-top: 8px;
-  font-size: 9.5px;
+  font-size: 10px;
   line-height: 1.2;
   color: rgba(255, 255, 255, 0.6);
   text-align: center;
 
   img {
     flex: 0 0 auto;
-    width: 13px;
-    height: 13px;
+    // Исходный SVG имеет пропорцию 15.1x18. Квадрат 13x13 растягивал его
+    // по горизонтали и визуально сплющивал щит.
+    width: 13.5px;
+    height: 16px;
+    object-fit: contain;
     filter: sepia(1) saturate(0.6) brightness(1.7);
   }
 }
@@ -245,11 +247,6 @@
 @keyframes spotlight-drift {
   from { transform: translate3d(-2%, -1%, 0); opacity: 0.65; }
   to { transform: translate3d(2%, 1.5%, 0); opacity: 1; }
-}
-
-@keyframes logo-float {
-  0%, 100% { transform: translateY(0); filter: drop-shadow(0 0 0 transparent); }
-  50% { transform: translateY(-2px); filter: drop-shadow(0 0 7px rgba(228, 204, 174, 0.2)); }
 }
 
 @keyframes title-glow {
@@ -277,11 +274,49 @@
   50% { opacity: 1; }
 }
 
+// На телефоне метрики шапки одни для обеих вкладок — «по номеру авто» и
+// «указать вручную». Это разные маршруты с разной высотой формы, поэтому
+// логотип, заголовок и верхняя кромка карточки должны стоять на одних и тех
+// же координатах: при переключении не должно двигаться ничего, кроме самой
+// формы. Сцена не фиксируется по высоте, а только не опускается ниже 430px:
+// на узком экране строка про защиту данных переносится, карточка становится
+// выше, и при жёсткой высоте она вылезала под «Ваш новый автоцентр».
+@media (max-width: 768px) {
+  .stage { min-height: 430px; }
+
+  .inner {
+    min-height: 430px;
+    padding-top: 12px;
+  }
+
+  .header { margin-top: 10px; }
+  .card { margin-top: 12px; }
+
+  // Основной кадр и прозрачный слой перчаток двигаются синхронно: иначе
+  // проступают два положения одних и тех же рук.
+  .sceneBox,
+  .handsBox { background-position: center -28px; }
+
+  // Только экран с определением номера собирается в один viewport:
+  // освободившаяся высота остаётся фотографии автоцентра ниже.
+  .page[data-compact-viewport='true'] {
+    width: 100%;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+
+    > :last-child {
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+  }
+}
+
 @media (min-width: 769px) {
   .stage { min-height: 610px; }
   .inner { min-height: 610px; padding-top: 38px; }
   .sceneBox { box-shadow: 0 0 90px rgba(154, 123, 86, 0.16); }
-  .logo { width: 104px; height: 50px; }
+  .logo { width: 114px; height: 55px; }
   .header { margin-top: 20px; }
   .card { width: 380px; }
 }
@@ -297,7 +332,6 @@
   .sceneBox,
   .sceneBox::after,
   .handsBox,
-  .logo,
   .title,
   .divider::after,
   .card,

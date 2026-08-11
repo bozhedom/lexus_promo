@@ -154,16 +154,22 @@ export function PlateInput({
   }
 
   /**
-   * Тап ставит каретку в выбранную ячейку, но не дальше первой незаполненной:
+   * Тап ставит каретку в выбранную ячейку, но не дальше конца набранного:
    * иначе по пустому знаку можно было бы начать печатать с середины и оставить
    * дырки. Внутри уже введённой части каретка встаёт куда угодно — ради того,
    * чтобы поправить один символ, всё и затевалось.
+   *
+   * Границу считаем по последней заполненной ячейке, а не по первой пустой.
+   * Иначе стёртый символ в середине номера сам становился границей: каретка
+   * запиралась слева от дырки и до остальных символов было уже не добраться.
    */
   const openAt = (part: Part, index: number) => {
     if (disabled) return
     const slots = part === 'main' ? main : region
     let limit = 0
-    while (limit < slots.length && slots[limit]) limit += 1
+    slots.forEach((slot, i) => {
+      if (slot) limit = i + 1
+    })
     setCaret({ part, index: Math.min(index, limit, LENGTH[part] - 1) })
     if (touch) setPadOpen(true)
     else fieldRef.current?.focus()

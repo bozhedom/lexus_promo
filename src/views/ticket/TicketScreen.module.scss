@@ -90,7 +90,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  font-size: f.frame(16, 13);
+  font-size: 16px;
   line-height: 1;
 
   svg {
@@ -119,9 +119,9 @@
   gap: 9px;
   border: 0;
   background: none;
-  color: rgba(255, 255, 255, 0.82);
-  font-family: t.$font-condensed;
-  font-size: 13px;
+  @include t.gold-text;
+  font-family: t.$font-display;
+  font-size: 16px;
   letter-spacing: 0.9px;
   text-transform: uppercase;
   cursor: pointer;
@@ -151,6 +151,19 @@
   text-align: center;
 
   button { @include t.gold-button; }
+}
+
+@media (max-height: 650px) {
+  .screen {
+    height: 100svh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .reveal {
+    height: 100svh;
+    min-height: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
