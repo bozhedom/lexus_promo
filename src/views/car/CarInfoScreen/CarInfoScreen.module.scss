@@ -82,64 +82,83 @@
   text-align: center;
 }
 
-// Экран успешно найденного автомобиля — отдельный третий Figma-фрейм.
+
+/**
+ * Экран успешно найденного автомобиля — отдельный Figma-фрейм 360×800.
+ *
+ * Он нарисован до последнего пикселя, и подгонять его блоки по отдельности
+ * бессмысленно: весь кадр целиком масштабируется одним множителем `--k`, где
+ * 1 — макетный пиксель. Поэтому ниже стоят ровно те числа, что и в Figma
+ * (за вычетом 44px системной шапки телефона, которой у страницы нет).
+ */
+@function k($n) {
+  @return calc(#{$n} * var(--k));
+}
+
 .foundScreen {
+  --k: min(calc(100vw / 360), calc(100dvh / 772));
   min-height: 100dvh;
-  padding: 52px 12px 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  padding: k(8) 0;
   background: #000;
   color: rgba(255, 255, 255, 0.8);
   font-family: t.$font-condensed;
 }
 
 .foundEyebrow {
-  font-size: 12px;
-  line-height: 1.4;
-  letter-spacing: 0.6px;
+  font-size: k(13);
+  line-height: k(17);
+  letter-spacing: k(1.2);
   text-transform: uppercase;
 }
 
-// Рамка занимает экран целиком, как в макете: сверху 52+17+12, снизу 12.
-// Свободную высоту первой забирает лента подарков, остаток расходится по
-// зазорам, поэтому под кнопками не остаётся пустого поля.
 .foundPanel {
-  width: min(336px, 100%);
-  height: calc(100svh - 93px);
-  margin-top: 12px;
-  padding: 15px 15px 20px;
+  width: k(336);
+  height: k(707);
+  margin-top: k(12);
+  padding: k(16) k(16) k(25);
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
   border: 1px solid t.$gold;
-  border-radius: 16px;
+  border-radius: k(16);
 }
 
 .brandLogo {
-  width: 154px;
-  height: 28px;
-  margin-bottom: 12px;
+  width: k(154);
+  height: k(28);
   object-fit: contain;
+}
+
+.brandWordmark {
+  height: k(28);
+  font-size: k(28);
+  line-height: k(28);
+  font-weight: 700;
+  letter-spacing: k(3);
+  color: #d82f2f;
 }
 
 .carName {
   width: 100%;
   min-width: 0;
-  margin-top: 0;
+  margin-top: k(12);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  font-size: clamp(18px, 6.6vw, 24px);
+  gap: k(12);
+  font-size: k(22);
   font-weight: 500;
-  line-height: 1.18;
-  letter-spacing: 1.2px;
+  line-height: k(34);
+  letter-spacing: k(1.2);
   overflow-wrap: anywhere;
   text-align: center;
   text-transform: uppercase;
+  color: #fff;
 
   > span:first-child {
     min-width: 0;
@@ -148,23 +167,28 @@
 
   i {
     width: 1px;
-    height: 20px;
+    height: k(20);
     background: rgba(255, 255, 255, 0.55);
   }
 }
 
+// Марка без логотипа: без него строка с названием прижимается к верху рамки.
+.foundPanel > .carName:first-child {
+  margin-top: k(28);
+}
+
 .staticPlate {
-  width: 280px;
-  height: 66px;
-  padding: 4px;
+  width: k(280);
+  height: k(66);
+  margin-top: k(8);
+  padding: k(4);
   display: grid;
-  grid-template-columns: 1fr 68px;
-  gap: 2px;
+  grid-template-columns: 1fr k(68);
+  gap: k(2);
   border: 1px solid t.$gold;
-  border-radius: 10px;
+  border-radius: k(10);
   color: #050505;
   font-family: t.$font-plate;
-  margin-top: 14px;
 }
 
 .staticMain,
@@ -172,95 +196,82 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: k(8);
   background: #fff;
 }
 
-// Как на настоящем знаке: цифры крупнее букв, поэтому размеры разные, а сами
-// символы выровнены по базовой линии.
+// Как на настоящем знаке: цифры крупнее букв, символы по базовой линии.
 .staticMain {
   align-items: baseline;
-  gap: 2px;
+  gap: k(2);
   font-weight: 600;
   line-height: 1;
-  letter-spacing: 1px;
+  letter-spacing: k(1);
 
   b {
     font-family: t.$font-main;
-    font-size: 34px;
+    font-size: k(34);
     font-weight: 700;
   }
 
   i {
-    font-size: 46px;
+    padding-inline: k(4);
+    font-size: k(46);
     font-style: normal;
-    letter-spacing: 0.5px;
-    padding-inline: 4px;
+    letter-spacing: k(0.5);
   }
 }
 
 .staticRegion {
   flex-direction: column;
   justify-content: center;
-  gap: 2px;
-  padding: 5px 0 4px;
+  gap: k(2);
+  padding: k(5) 0 k(4);
 
   strong {
-    font-size: 23px;
+    font-size: k(23);
     font-weight: 600;
     line-height: 1;
   }
 
-  img { width: 40px; height: auto; }
-}
-
-.carCharacter {
-  @include t.gold-text;
-  position: relative;
-  margin-top: 14px;
-  font-size: 12px;
-
-  &::before,
-  &::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    width: 55px;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, t.$gold);
+  img {
+    width: k(40);
+    height: auto;
   }
-  &::before { right: calc(100% + 8px); }
-  &::after { left: calc(100% + 8px); transform: scaleX(-1); }
 }
 
 .progressList {
-  width: 100%;
-  margin-top: 22px;
+  width: k(304);
+  margin-top: k(32);
   list-style: none;
 
   li {
-    min-height: 44px;
+    min-height: k(32);
     display: grid;
-    grid-template-columns: 34px 1fr 30px;
-    gap: 10px;
+    grid-template-columns: k(32) 1fr k(28);
+    gap: k(8);
     align-items: center;
-    border-bottom: 1px solid rgba(154, 123, 86, 0.35);
-    font-size: 12px;
-    line-height: 1.32;
+    font-size: k(13);
+    line-height: k(15);
+    text-align: left;
 
-    &:last-child { border-bottom: 0; }
+    + li {
+      margin-top: k(6);
+      padding-top: k(6);
+      border-top: 1px solid rgba(154, 123, 86, 0.35);
+    }
 
     > b {
-      width: 30px;
-      height: 30px;
+      width: k(28);
+      height: k(28);
       display: grid;
       place-items: center;
       border-radius: 50%;
       background: linear-gradient(135deg, t.$gold-light, t.$gold-dark);
 
       svg {
-        width: 14px;
-        height: 14px;
+        width: k(13);
+        height: k(13);
         fill: none;
         stroke: #17130c;
         stroke-width: 1.9;
@@ -274,7 +285,7 @@
 // Контурные иконки шагов: выравниваем по высоте, ширина у каждой своя.
 .stepIcon {
   width: auto;
-  height: 22px;
+  height: k(24);
   justify-self: center;
   fill: none;
   stroke: t.$gold-light;
@@ -289,31 +300,30 @@
 }
 
 .giftLead {
-  margin-top: 10px;
+  margin-top: k(28);
   display: flex;
   flex-direction: column;
   align-items: center;
-  font-size: 14px;
-  line-height: 1.4;
+  font-size: k(14);
+  line-height: k(20);
 
   span { @include t.gold-text; }
 }
 
-// Лента подарков: один кадр в фокусе, следующий выглядывает справа — как в
+// Лента подарков: один слайд в кадре, следующий выглядывает справа — как в
 // макете. Прокрутка со снапом, стрелок нет: экран мобильный.
 .giftRail {
-  flex: 1 1 auto;
-  min-height: 106px;
-  max-height: 220px;
-  width: calc(100% + 30px);
-  margin: 12px -15px 0;
-  padding-inline: 15px;
+  flex: 0 0 auto;
+  width: calc(100% + #{k(32)});
+  height: k(156);
+  margin: k(12) k(-16) 0;
+  padding-inline: k(16);
   display: flex;
-  gap: 24px;
+  gap: k(8);
   list-style: none;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
-  scroll-padding-inline: 15px;
+  scroll-padding-inline: k(16);
   overscroll-behavior-x: contain;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
@@ -322,45 +332,49 @@
 }
 
 .giftSlide {
-  flex: 0 0 272px;
-  max-width: 272px;
+  flex: 0 0 k(272);
+  max-width: k(272);
+  height: 100%;
   scroll-snap-align: start;
   scroll-snap-stop: always;
 }
 
-// Карточка подарка — кнопка: тап разворачивает сам пригласительный.
+/**
+ * Карточка подарка — кнопка: тап разворачивает сам пригласительный. Обложка —
+ * кадр этого же пригласительного, поэтому под каждый вид свой вырез: доли
+ * подобраны так, чтобы в 272×156 попадало то же место фотографии, что в макете.
+ */
 .giftCard {
   position: relative;
   width: 100%;
   height: 100%;
-  padding: 16px;
+  padding: k(20) k(17) k(19);
   overflow: hidden;
   border: 1px solid t.$gold;
-  border-radius: 12px;
-  // Фотографии в подарках сняты так, что смысловой объект стоит справа.
-  background: #0b0a04 var(--gift-image, url('/images/redesign/gift-card.webp')) no-repeat right center / cover;
+  border-radius: k(8);
+  background: #0b0a04 var(--gift-image) no-repeat;
   cursor: pointer;
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  transition: transform 0.18s ease;
+
+  // у Toyota автомобиль на кадре стоит ниже, поэтому вырез свой
+  &[data-frame='diagnostics'] { background-position: 3% 71%; background-size: 171% auto; }
+  &[data-frame='diagnostics-toyota'] { background-position: 3% 67%; background-size: 171% auto; }
+  &[data-frame='gift'] { background-position: 92% 46%; background-size: 157% auto; }
 
   &:active { transform: scale(0.985); }
-
-  &:focus-visible {
-    outline: 2px solid t.$gold-light;
-    outline-offset: 2px;
-  }
 
   &::after {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(90deg, rgba(0, 0, 0, 0.94) 0%, rgba(0, 0, 0, 0.76) 42%, transparent 78%);
+    background: linear-gradient(90deg, rgba(0, 0, 0, 0.94) 0%, rgba(0, 0, 0, 0.74) 46%, transparent 82%);
   }
 }
 
 .giftCardInner {
   position: relative;
   z-index: 1;
-  width: 132px;
+  width: k(150);
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -369,91 +383,111 @@
 
   small,
   strong { @include t.gold-text; }
-  small { font-size: 11px; letter-spacing: 1.7px; text-transform: uppercase; }
-  strong { margin-top: 4px; font-size: 24px; line-height: 1; }
+
+  small {
+    font-size: k(9.5);
+    line-height: k(12);
+    letter-spacing: k(2.6);
+    text-transform: uppercase;
+  }
+
+  strong {
+    margin-top: k(10);
+    font-size: k(28);
+    line-height: k(26);
+  }
 }
 
 .giftTitle {
-  margin-top: 6px;
-  color: rgba(255, 255, 255, 0.92);
-  font-size: 15px;
-  line-height: 1.2;
+  margin-top: k(8);
+  color: rgba(255, 255, 255, 0.94);
+  font-size: k(20);
+  line-height: k(23);
+}
+
+.giftCardInner strong + .giftTitle {
+  margin-top: k(6);
+  font-size: k(18);
+  line-height: k(20);
 }
 
 .giftMore {
   margin-top: auto;
-  padding: 5px 9px;
+  padding: k(4) k(12);
   border: 1px solid t.$gold;
-  border-radius: 8px;
+  border-radius: k(10);
   color: t.$gold-light;
-  font-size: 11px;
-  letter-spacing: 1px;
+  font-size: k(9.5);
+  line-height: k(13);
+  letter-spacing: k(1.6);
   text-transform: uppercase;
 }
 
 .giftDots {
-  height: 4px;
-  margin-top: 12px;
+  height: k(4);
+  margin-top: k(12);
   display: flex;
-  gap: 4px;
+  gap: k(4);
 
   i {
-    width: 4px;
-    height: 4px;
+    width: k(4);
+    height: k(4);
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.4);
     transition: width 0.28s cubic-bezier(0.2, 0.72, 0.2, 1), background 0.24s ease;
 
     &[data-active] {
-      width: 16px;
-      border-radius: 4px;
+      width: k(16);
+      border-radius: k(4);
       background: linear-gradient(90deg, t.$gold-dark, t.$gold-light, t.$gold);
     }
   }
 }
 
+// Чужая марка: вместо списка готовности одна плашка, ростом с этот список.
 .otherBrandNotice {
-  width: 304px;
-  margin-top: 14px;
-  padding: 14px;
+  width: k(304);
+  min-height: k(120);
+  margin-top: k(32);
+  padding: k(16);
   display: grid;
-  grid-template-columns: 42px 1fr;
-  gap: 12px;
+  grid-template-columns: k(46) 1fr;
+  gap: k(14);
   align-items: center;
   border: 1px solid t.$gold;
-  border-radius: 14px;
+  border-radius: k(14);
   background: linear-gradient(135deg, rgba(154, 123, 86, 0.14), rgba(0, 0, 0, 0.2));
   text-align: left;
 
   strong {
     @include t.gold-text;
     display: block;
-    font-size: 11px;
+    font-size: k(13);
     font-weight: 400;
-    line-height: 1.25;
-    letter-spacing: 0.5px;
+    line-height: k(16);
+    letter-spacing: k(0.5);
     text-transform: uppercase;
   }
 
   p {
-    margin-top: 5px;
-    font-size: 10px;
-    line-height: 1.3;
+    margin-top: k(6);
+    font-size: k(12);
+    line-height: k(15);
     color: rgba(255, 255, 255, 0.7);
   }
 }
 
 .serviceIcon {
-  width: 42px;
-  height: 42px;
+  width: k(46);
+  height: k(46);
   display: grid;
   place-items: center;
   border: 1px solid t.$gold;
   border-radius: 50%;
 
   svg {
-    width: 25px;
-    height: 25px;
+    width: k(27);
+    height: k(27);
     fill: none;
     stroke: t.$gold-light;
     stroke-width: 1.4;
@@ -464,138 +498,24 @@
 
 .confirmButton {
   @include t.gold-button;
-  width: 304px;
-  min-height: 49px;
-  margin-top: 20px;
-  font-size: 16px;
+  width: k(304);
+  min-height: k(48);
+  margin-top: k(30);
+  font-size: k(15);
+  letter-spacing: k(1.3);
 }
 
-.changeButton { margin-top: 15px; }
+.changeButton {
+  margin-top: k(20);
+  font-size: k(14);
+  line-height: k(16);
+  letter-spacing: k(1.5);
+}
 
+// Свободную высоту (широкий экран, планшет) отдаём зазорам, а не растягиваем
+// рамку: макет рассчитан на телефон.
 @media (min-width: 769px) {
-  .foundScreen { padding-top: 38px; }
-  .foundPanel { width: 390px; padding-inline: 28px; }
-}
-
-@media (max-width: 359px) {
-  .foundScreen { padding-inline: 8px; }
-  .foundPanel { padding-inline: 10px; }
-  .staticPlate,
-  .otherBrandNotice,
-  .confirmButton { width: 100%; }
-
-  .giftSlide {
-    flex-basis: calc(100% - 24px);
-    max-width: calc(100% - 24px);
-  }
-  .carName { font-size: clamp(16px, 5.8vw, 20px); gap: 8px; }
-}
-
-@media (max-height: 700px) {
   .foundScreen {
-    min-height: 100svh;
-    height: 100svh;
-    padding: 10px 8px 8px;
-    overflow: hidden;
+    --k: min(calc(420px / 360), calc(100dvh / 772));
   }
-
-  .foundEyebrow { font-size: 12px; }
-
-  .foundPanel {
-    width: min(336px, 100%);
-    height: calc(100svh - 40px);
-    margin-top: 5px;
-    padding: 8px 14px 9px;
-  }
-
-  .carName {
-    gap: 8px;
-    font-size: clamp(20px, 6.6vw, 24px);
-    line-height: 1.05;
-  }
-
-  .staticPlate {
-    width: 250px;
-    height: 54px;
-    margin-top: 7px;
-    grid-template-columns: 1fr 60px;
-  }
-
-  .staticMain b { font-size: 28px; }
-  .staticMain i { padding-inline: 2px; font-size: 38px; }
-  .staticRegion strong { font-size: 20px; }
-
-  .carCharacter { margin-top: 6px; font-size: 12px; }
-
-  .progressList {
-    margin-top: 8px;
-
-    li {
-      min-height: 34px;
-      grid-template-columns: 28px 1fr 24px;
-      gap: 7px;
-      font-size: 12px;
-
-      > b { width: 24px; height: 24px; }
-    }
-  }
-
-  .stepIcon { height: 18px; }
-
-  .giftLead {
-    margin-top: 5px;
-    font-size: 14px;
-    line-height: 1.25;
-  }
-
-  .giftRail {
-    margin-top: 6px;
-    gap: 14px;
-  }
-
-  .giftSlide {
-    flex-basis: 240px;
-    max-width: 240px;
-  }
-
-  .giftRail {
-    // Текст и кнопка «Подробно» должны оставаться внутри золотой рамки.
-    min-height: 96px;
-    max-height: 150px;
-  }
-
-  .giftCard { padding: 9px 12px; }
-
-  .giftCardInner {
-    small { font-size: 10px; }
-    strong { margin-top: 2px; font-size: 20px; }
-  }
-
-  .giftMore { padding: 3px 6px; font-size: 9px; }
-  .giftTitle { margin-top: 3px; font-size: 12px; }
-
-  .giftDots { margin-top: 5px; }
-
-  .otherBrandNotice {
-    width: 270px;
-    margin-top: 7px;
-    padding: 8px 10px;
-    grid-template-columns: 34px 1fr;
-    gap: 8px;
-
-    strong { font-size: 11px; }
-    p { margin-top: 3px; font-size: 10px; }
-  }
-
-  .serviceIcon { width: 34px; height: 34px; }
-  .serviceIcon svg { width: 20px; height: 20px; }
-
-  .confirmButton {
-    width: 270px;
-    min-height: 39px;
-    margin-top: 7px;
-    font-size: 16px;
-  }
-
-  .changeButton { margin-top: 6px; font-size: 12px; }
 }

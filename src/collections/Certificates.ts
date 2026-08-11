@@ -10,7 +10,7 @@ export const Certificates: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'code',
-    defaultColumns: ['image', 'code', 'amount', 'application', 'redeemedAt', 'createdAt'],
+    defaultColumns: ['image', 'code', 'kind', 'amount', 'application', 'redeemedAt', 'createdAt'],
     listSearchableFields: ['code'],
   },
   access: {
@@ -19,15 +19,35 @@ export const Certificates: CollectionConfig = {
     update: authenticated,
     delete: authenticated,
   },
+  // На заявку выписывается ровно по одному пригласительному каждого вида:
+  // повторный запрос выдачи не должен плодить третий сертификат.
+  indexes: [{ fields: ['application', 'kind'], unique: true }],
   fields: [
     {
       name: 'application',
       type: 'relationship',
       relationTo: 'applications',
       required: true,
-      // один сертификат на заявку: гарантия идемпотентности /complete на уровне БД
-      unique: true,
+      index: true,
       label: { ru: 'Заявка', en: 'Application' },
+    },
+    {
+      name: 'kind',
+      type: 'select',
+      required: true,
+      defaultValue: 'diagnostics',
+      index: true,
+      options: [
+        { value: 'diagnostics', label: { ru: 'Диагностика ходовой', en: 'Diagnostics' } },
+        { value: 'gift', label: { ru: 'В честь знакомства', en: 'Welcome gift' } },
+      ],
+      admin: {
+        description: {
+          ru: 'На гостя выписываются оба: пара уникальна в рамках заявки',
+          en: 'Both are issued per guest: the pair is unique within an application',
+        },
+      },
+      label: { ru: 'Пригласительный', en: 'Kind' },
     },
     {
       name: 'code',

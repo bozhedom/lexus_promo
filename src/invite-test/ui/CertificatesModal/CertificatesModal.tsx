@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 
-import { CertificateViewer, type CertificateKind } from '@/widgets/certificate-sheet'
+import { CertificateSheet, CertificateViewer, type CertificateKind } from '@/widgets/certificate-sheet'
 
 import type { useInviteSession } from '../../model/useInviteSession'
 import { MessengerButton } from '../MessengerButton'
@@ -12,30 +12,42 @@ interface CertificatesModalProps {
   delivery: ReturnType<typeof useInviteSession>
   /** Имя и отчество гостя: они же напечатаны на самих пригласительных. */
   guestName?: string
-  /** Марка из заявки: от неё зависит оформление развёрнутого пригласительного. */
+  /** Марка из заявки: от неё зависит оформление пригласительного. */
   brand?: string
+  /** «Lexus RX»: подпись над номером на самом пригласительном. */
+  carTitle?: string | null
+  plate?: string | null
   amount?: number
-  onClose: () => void
+  /**
+   * Крестик появляется, только когда закрывать модалку действительно можно.
+   * На шаге выдачи пригласительных возврата нет: сертификаты уже выписаны на
+   * гостя, и обработчик туда не передаётся.
+   */
+  onClose?: () => void
 }
 
-const KINDS: CertificateKind[] = ['diagnostics', 'gift']
+const CARDS: { kind: CertificateKind; label: string }[] = [
+  { kind: 'diagnostics', label: 'Диагностика' },
+  { kind: 'gift', label: 'В честь знакомства' },
+]
 
 export function CertificatesModal({
   delivery,
   guestName,
   brand = 'Lexus',
+  carTitle,
+  plate,
   amount,
   onClose,
 }: CertificatesModalProps) {
   const { session, status, error, opened, openChat } = delivery
   const [expanded, setExpanded] = useState<CertificateKind | null>(null)
-  const certificates = session?.certificates ?? []
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
       if (expanded) setExpanded(null)
-      else onClose()
+      else onClose?.()
     }
     document.addEventListener('keydown', onKey)
     document.body.style.overflow = 'hidden'
@@ -59,7 +71,7 @@ export function CertificatesModal({
   })()
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
+    <div className={styles.overlay} onClick={onClose ? () => onClose() : undefined}>
       <section
         className={styles.panel}
         role="dialog"
@@ -67,11 +79,13 @@ export function CertificatesModal({
         aria-label="Ваши персональные пригласительные"
         onClick={(event) => event.stopPropagation()}
       >
-        <button type="button" className={styles.close} onClick={onClose} aria-label="Закрыть">
-          <svg viewBox="0 0 24 24" aria-hidden>
-            <path d="M16.5 7.5 7.5 16.5M7.5 7.5l9 9" />
-          </svg>
-        </button>
+        {onClose && (
+          <button type="button" className={styles.close} onClick={onClose} aria-label="Закрыть">
+            <svg viewBox="0 0 24 24" aria-hidden>
+              <path d="M16.5 7.5 7.5 16.5M7.5 7.5l9 9" />
+            </svg>
+          </button>
+        )}
 
         {guestName && <p className={styles.guest}>{guestName}</p>}
 
@@ -79,28 +93,33 @@ export function CertificatesModal({
 
         <p className={styles.subtitle}>Ждем Вас в гости!</p>
 
+        {/* Превью — тот же компонент, что раскрывается на весь экран: маленькая
+            и большая карточки не могут разойтись оформлением. */}
         <div className={styles.cards}>
-          {certificates.map((certificate, index) => (
+          {CARDS.map((card) => (
             <button
               type="button"
               className={styles.previewButton}
-              key={certificate.id}
-              onClick={() => setExpanded(KINDS[index] ?? 'diagnostics')}
-              aria-label={`Открыть: ${certificate.alt}`}
+              key={card.kind}
+              onClick={() => setExpanded(card.kind)}
+              aria-label={`Открыть пригласительный: ${card.label}`}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                className={styles.preview}
-                src={certificate.image}
-                alt={certificate.alt}
-                loading="eager"
-              />
+              <span className={styles.previewFrame}>
+                <CertificateSheet
+                  kind={card.kind}
+                  brand={brand}
+                  name={guestName ?? ''}
+                  carTitle={carTitle}
+                  plate={plate}
+                  amount={amount}
+                />
+              </span>
               <span className={styles.zoom} aria-hidden="true">
                 <svg viewBox="0 0 24 24">
                   <path d="M9 4H5a1 1 0 0 0-1 1v4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4" />
                 </svg>
               </span>
-              <span className={styles.previewLabel}>{index === 0 ? 'Диагностика' : 'В честь знакомства'}</span>
+              <span className={styles.previewLabel}>{card.label}</span>
             </button>
           ))}
         </div>
@@ -141,6 +160,8 @@ export function CertificatesModal({
           kind={expanded}
           brand={brand}
           name={guestName ?? ''}
+          carTitle={carTitle}
+          plate={plate}
           amount={amount}
           onClose={() => setExpanded(null)}
         />

@@ -114,15 +114,20 @@ export function PlateInput({
     }
   }
 
-  /** Ввод символа в текущую ячейку: перезаписываем её и уходим на следующую. */
+  /**
+   * Ввод символа в текущую ячейку: перезаписываем её и уходим на следующую.
+   *
+   * На последней ячейке основной части каретка в регион не перескакивает: там
+   * уже стоит 125, и почти всем его менять не надо. Кому надо — ставит каретку
+   * тапом по региону.
+   */
   const pressKey = (raw: string) => {
     const { part, index } = caret
     if (index >= LENGTH[part]) return
     const kind = part === 'region' ? 'digit' : MAIN_SLOT_KINDS[index]
     if (!fitsSlot(kind, raw)) return
     writeSlot(part, index, toCyrillic(raw))
-    if (part === 'main' && index === 5) setCaret({ part: 'region', index: 0 })
-    else setCaret({ part, index: index + 1 })
+    setCaret({ part, index: index + 1 })
   }
 
   /**
@@ -210,7 +215,12 @@ export function PlateInput({
     setCaret({ part: 'region', index: slots.region.filter(Boolean).length })
   }
 
-  const padKind = caret.part === 'region' ? 'digit' : MAIN_SLOT_KINDS[caret.index]
+  const padKind =
+    caret.part === 'region'
+      ? 'digit'
+      : caret.index >= LENGTH.main
+        ? 'done'
+        : MAIN_SLOT_KINDS[caret.index]
   const caretVisible = touch ? padOpen : focused
 
   // В body: у карточки StageLayout своя transform, а она превращается в

@@ -6,12 +6,21 @@
   inset: 0;
   display: grid;
   place-items: center;
-  background: rgba(2, 2, 2, 0.96);
+  background: #000;
   animation: fade 0.18s ease both;
 }
 
+/**
+ * Раскрытый сертификат занимает экран целиком: ширина упирается в края, а по
+ * высоте кадр тянется до 100dvh, пока пропорция не станет слишком вытянутой.
+ * `--u` — один пиксель макета 360×640, от него считается вся вёрстка внутри.
+ */
 .frame {
+  --scale: min(calc(100vw / 360), calc(100dvh / 600));
+  container-type: inline-size;
   display: flex;
+  width: calc(360 * var(--scale));
+  height: min(100dvh, calc(860 * var(--scale)));
   animation: rise 0.24s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
@@ -22,18 +31,18 @@
   right: 12px;
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
   padding: 0;
   border: 1px solid rgba(228, 204, 174, 0.6);
   border-radius: 50%;
-  background: rgba(8, 7, 6, 0.6);
+  background: rgba(8, 7, 6, 0.72);
   color: t.$gold-light;
   cursor: pointer;
 
   svg {
-    width: 17px;
-    height: 17px;
+    width: 19px;
+    height: 19px;
     fill: none;
     stroke: currentColor;
     stroke-width: 1.7;

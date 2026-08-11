@@ -127,26 +127,26 @@ $glow-accent: 0 0 20px 0 rgba(216, 47, 47, 0.3);
   background-clip: padding-box, border-box;
 }
 
-// Красная сплошная кнопка (Определить, Это мой автомобиль, Далее...)
+// Сплошная кнопка (Определить, Это мой автомобиль, Далее...). Базовый цвет
+// золотой: красных состояний в редизайне нет нигде, и подсветка нажатия не
+// должна перекрашивать кнопку — на тач-экране :hover после тапа залипает.
 @mixin btn-solid {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-height: 46px;
   padding: 12px 22px;
-  border: none;
+  border: 1px solid $gold-border;
   border-radius: $radius-input;
-  background: $accent;
-  color: $white;
+  background: linear-gradient(90deg, $gold-button 0%, #ebb664 50%, $gold-button-end 100%);
+  color: #050505;
   font-family: $font-main;
   font-weight: 500;
   font-size: 16px;
   line-height: 1.15;
   cursor: pointer;
-  transition: opacity 0.15s ease, background 0.15s ease, box-shadow 0.2s ease;
+  transition: opacity 0.15s ease, filter 0.15s ease, box-shadow 0.2s ease;
 
-  // Ни наведение, ни нажатие не перекрашивают кнопку: на тач-экране :hover
-  // после тапа залипает, и золотая кнопка так и оставалась красной.
   &:hover:not(:disabled) {
     filter: brightness(1.06);
   }
@@ -159,7 +159,7 @@ $glow-accent: 0 0 20px 0 rgba(216, 47, 47, 0.3);
   }
 }
 
-// Прозрачная кнопка с красной рамкой (стартовая, сохранить)
+// Прозрачная кнопка с золотой рамкой (стартовая, сохранить)
 @mixin btn-outline {
   display: inline-flex;
   align-items: center;
@@ -167,7 +167,7 @@ $glow-accent: 0 0 20px 0 rgba(216, 47, 47, 0.3);
   min-height: 46px;
   padding: 12px 22px;
   background: transparent;
-  border: 2px solid $accent-start-btn;
+  border: 2px solid $gold;
   color: $white;
   font-family: $font-main;
   font-weight: 600;

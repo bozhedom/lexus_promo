@@ -11,6 +11,8 @@ export interface SelectOption {
   label: string
   /** Приоритетный пункт: стоит наверху списка и подсвечен золотом. */
   featured?: boolean
+  /** Отчеркнуть группу: линия рисуется под этим пунктом. */
+  divider?: boolean
 }
 
 interface SelectFieldProps {
@@ -230,8 +232,8 @@ export function SelectField({
             i === cursor && styles.optionActive,
             o.value === value && styles.optionSelected,
             o.featured && styles.optionFeatured,
-            // Черта отделяет марки техцентра от остальных.
-            o.featured && !options[i + 1]?.featured && styles.optionFeaturedLast,
+            // Черта отделяет группу (марки техцентра, ходовые марки) от следующей.
+            o.divider && styles.optionFeaturedLast,
           )}
           // click, а не pointerdown: иначе на телефоне пункт выбирается в
           // момент касания и список не пролистать

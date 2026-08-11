@@ -3,6 +3,7 @@ import * as migration_20260729_052538_certificate_image from './20260729_052538_
 import * as migration_20260729_055715_media_thumbnail from './20260729_055715_media_thumbnail';
 import * as migration_20260806_024013_promo_slides_and_certificate_rules from './20260806_024013_promo_slides_and_certificate_rules';
 import * as migration_20260810_120000_car_catalog from './20260810_120000_car_catalog';
+import * as migration_20260811_140000_certificate_kind from './20260811_140000_certificate_kind';
 
 export const migrations = [
   {
@@ -29,5 +30,10 @@ export const migrations = [
     up: migration_20260810_120000_car_catalog.up,
     down: migration_20260810_120000_car_catalog.down,
     name: '20260810_120000_car_catalog',
+  },
+  {
+    up: migration_20260811_140000_certificate_kind.up,
+    down: migration_20260811_140000_certificate_kind.down,
+    name: '20260811_140000_certificate_kind',
   },
 ];

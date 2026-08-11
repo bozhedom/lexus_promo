@@ -1,243 +1,363 @@
 @use 'shared/config/tokens' as t;
 
-// Кадр макета — 360×800. `--u` равен одному его пикселю: кадр вписывается в
-// экран по меньшей из сторон, поэтому пропорции всегда как в Figma, а за край
-// ничего не уезжает ни на узком, ни на коротком телефоне.
+// Один пиксель макета 360×640. Кадр целиком масштабируется этой переменной,
+// поэтому превью в модалке и раскрытый сертификат — буквально одна разметка.
+@function u($n) {
+  @return calc(#{$n} * var(--u));
+}
+
+$gold-rule: #d6cca6;
+$gold-line: #7b7254;
+$gold-warm: #e0c7a9;
+
+// Кадр масштабируется от ширины родителя, поэтому каждая обёртка объявляет
+// `container-type: inline-size`: и превью в модалке, и раскрытый сертификат,
+// и слайд на экране найденного автомобиля.
 .sheet {
-  --u: calc(min(100vw, 45dvh) / 360);
+  --u: calc(100cqw / 360);
   position: relative;
-  width: calc(var(--u) * 360);
-  height: calc(var(--u) * 800);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  min-height: u(640);
   overflow: hidden;
-  border-radius: calc(var(--u) * 10);
-  background: #040303;
-  color: rgba(255, 255, 255, 0.86);
+  background: #000;
+  color: #fff;
   font-family: t.$font-condensed;
   text-align: center;
+  // содержимое не должно тянуться выше кадра, если сертификат ужали
+  contain: paint;
 }
 
-// Фотография занимает нижние две трети у диагностики и весь кадр у подарка:
-// в макете бармен — это фон целиком, а автомобиль стоит полосой.
 .photo {
   position: absolute;
-  inset: 0;
-  background: var(--sheet-photo) no-repeat center / cover;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  aspect-ratio: 360 / 640;
+  background: var(--sheet-photo) center / 100% 100% no-repeat;
 }
 
-// Автомобиль стоит полосой в нижних двух третях кадра: показываем ту часть
-// исходника, где он целиком в стойках подъёмника.
-.sheet[data-kind='diagnostics'] .photo {
-  top: calc(var(--u) * 318);
-  background-position: center 84%;
-}
-
-// Затемнение гасит верх и низ кадра, но оставляет сам автомобиль читаемым.
+// Растянутый по высоте кадр не достаёт до краёв: стык гасим затемнением,
+// сверху и снизу макет всё равно уходит в чёрное.
 .veil {
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(circle at 50% 12%, rgba(203, 171, 123, 0.16), transparent 46%),
-    linear-gradient(
-      180deg,
-      #040303 0%,
-      rgba(4, 3, 3, 0.92) 26%,
-      rgba(4, 3, 3, 0.34) 40%,
-      rgba(4, 3, 3, 0) 52%,
-      rgba(4, 3, 3, 0.16) 66%,
-      rgba(4, 3, 3, 0.88) 82%,
-      #040303 100%
-    );
+  background: linear-gradient(
+    180deg,
+    #000 0%,
+    rgba(0, 0, 0, 0) 9%,
+    rgba(0, 0, 0, 0) 84%,
+    rgba(0, 0, 0, 0.86) 97%,
+    #000 100%
+  );
 }
 
-// Кадр бара горизонтальный: cover приближал его до одного лица. Показываем
-// почти всю ширину исходника — в кадр попадают и канистра, и стакан, и бармен,
-// а поля сверху и снизу и так уходят в затемнение.
-.sheet[data-kind='gift'] .photo {
-  background-size: 132% auto;
-  background-position: 55% 42%;
+.border {
+  position: absolute;
+  inset: u(8);
+  border: 1px solid $gold-line;
+  border-radius: u(10);
+  pointer-events: none;
 }
 
-.sheet[data-kind='gift'] .veil {
-  background:
-    radial-gradient(circle at 50% 12%, rgba(203, 171, 123, 0.14), transparent 44%),
-    linear-gradient(180deg, rgba(4, 3, 3, 0.94) 0%, rgba(4, 3, 3, 0.62) 34%, rgba(4, 3, 3, 0.34) 52%, rgba(4, 3, 3, 0.9) 74%, #040303 100%);
+// Настоящий госномер поверх знака на фотографии
+// `--plate-left/top/width` приходят числами в макетных пикселях кадра 360×640
+.carPlate {
+  position: absolute;
+  left: u(var(--plate-left));
+  top: u(var(--plate-top));
+  width: u(var(--plate-width));
+  // пропорция реального знака с регионом
+  aspect-ratio: 4.64;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: u(calc(0.012 * var(--plate-width)));
+  border-radius: u(calc(0.012 * var(--plate-width)));
+  background: #f1f1ee;
+  color: #101010;
+  font-family: t.$font-plate;
+  font-weight: 700;
+  line-height: 1;
+
+  b {
+    font-size: u(calc(0.115 * var(--plate-width)));
+  }
+
+  i {
+    font-size: u(calc(0.155 * var(--plate-width)));
+    font-style: normal;
+  }
+
+  u {
+    margin-left: u(calc(0.024 * var(--plate-width)));
+    padding-left: u(calc(0.028 * var(--plate-width)));
+    border-left: 1px solid rgba(16, 16, 16, 0.55);
+    font-size: u(calc(0.105 * var(--plate-width)));
+    text-decoration: none;
+  }
 }
 
 .top,
-.bottom {
+.brand,
+.panelWrap,
+.contacts,
+.legal {
   position: relative;
-  z-index: 2;
+  z-index: 1;
+}
+
+.top,
+.brand {
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 100%;
 }
 
-.top { padding-top: calc(var(--u) * 42); }
+.top {
+  padding-top: u(20.6);
+}
 
 .crown {
-  width: calc(var(--u) * 30);
-  height: calc(var(--u) * 21);
-  fill: none;
-  stroke: t.$gold-light;
-  stroke-width: 2.6;
-  stroke-linejoin: round;
+  width: u(23.6);
+  height: u(17.7);
 }
 
 .eyebrow {
-  margin-top: calc(var(--u) * 9);
-  color: rgba(169, 142, 99, 0.95);
-  font-size: calc(var(--u) * 9);
-  letter-spacing: calc(var(--u) * 3);
+  margin-top: u(7);
+  font-size: u(8.5);
+  line-height: u(11);
+  font-weight: 600;
+  letter-spacing: u(2.2);
   text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.82);
 }
 
-.rhombus {
-  width: calc(var(--u) * 5);
-  height: calc(var(--u) * 5);
-  margin-top: calc(var(--u) * 9);
-  background: t.$gold;
-  transform: rotate(45deg);
+// Черта с ромбом: линии гаснут к краям кадра
+.rule {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: u(8);
+  width: u(232);
+  height: u(6);
+  margin-top: u(7);
+
+  i {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(214, 204, 166, 0) 0%, $gold-rule 100%);
+
+    &:last-child {
+      background: linear-gradient(270deg, rgba(214, 204, 166, 0) 0%, $gold-rule 100%);
+    }
+  }
+
+  b {
+    width: u(6);
+    height: u(6);
+    background: $gold-rule;
+    box-shadow: 0 0 u(6) rgba(255, 255, 233, 0.9);
+    transform: rotate(45deg);
+  }
 }
 
-// Кегль имени подбирается по самой длинной строке: «Ваше имя» и
-// «Александрович» должны одинаково укладываться в ширину кадра.
 .name {
+  margin-top: u(2);
+  padding-inline: u(16);
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: calc(var(--u) * 12);
-  padding-inline: calc(var(--u) * 20);
   font-family: t.$font-display;
-  font-size: calc(var(--u) * clamp(24, calc(320 / var(--name-fit)), 38));
   font-weight: 400;
-  line-height: 1.14;
+  font-size: u(36);
+  line-height: u(32);
+  letter-spacing: 0;
   @include t.gold-text;
+
+  // длинное отчество не должно упираться в рамку
+  span {
+    max-width: 100%;
+  }
+}
+
+.name + .rule {
+  margin-top: u(13);
 }
 
 .carLine {
-  margin-top: calc(var(--u) * 10);
-  color: rgba(255, 255, 255, 0.9);
-  font-size: calc(var(--u) * 11);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: u(9);
+  margin-top: u(10);
+  font-size: u(14);
+  line-height: u(14);
   font-weight: 700;
-  letter-spacing: calc(var(--u) * 1.2);
+  letter-spacing: u(1);
   text-transform: uppercase;
+  color: $gold-rule;
+
+  i {
+    width: 1px;
+    height: u(14);
+    background: rgba(214, 204, 166, 0.75);
+  }
 }
 
 .invite {
-  margin-top: calc(var(--u) * 14);
-  font-size: calc(var(--u) * 13);
-  line-height: 1.45;
+  margin-top: u(18);
+  font-size: u(14);
+  line-height: u(16);
+  color: rgba(255, 255, 255, 0.84);
+}
+
+.carLine + .invite {
+  margin-top: u(6);
+}
+
+/**
+ * Лишняя высота кадра расходится по пяти зазорам. Доли сняты с макета: он
+ * нарисован и на 640, и на 800 — от 640 к 800 сильнее всего растут поля вокруг
+ * марки, а низ раздвигается совсем немного.
+ */
+.gapTop {
+  flex: 0.31 1 u(12);
+}
+
+.gapBrand {
+  flex: 0.45 1 u(199);
+}
+
+.gapPanel {
+  flex: 0.06 1 u(16);
+}
+
+.gapContacts {
+  flex: 0.07 1 u(14);
+}
+
+.gapFoot {
+  flex: 0.11 1 u(16);
 }
 
 .wordmark {
-  width: calc(var(--u) * 154);
-  height: calc(var(--u) * 28);
-  margin-top: calc(var(--u) * 18);
+  width: u(144);
+  height: u(20);
   object-fit: contain;
 }
 
 .wordmarkToyota {
-  margin-top: calc(var(--u) * 18);
-  height: calc(var(--u) * 28);
-  color: #d8231f;
-  font-size: calc(var(--u) * 27);
+  font-size: u(30);
+  line-height: u(20);
   font-weight: 700;
-  letter-spacing: calc(var(--u) * 3);
-  line-height: calc(var(--u) * 28);
+  letter-spacing: u(3);
+  color: #d82f2f;
 }
 
 .from {
-  margin-top: calc(var(--u) * 4);
-  color: rgba(169, 142, 99, 0.95);
-  font-size: calc(var(--u) * 9);
-  letter-spacing: calc(var(--u) * 2.6);
+  margin-top: u(6);
+  font-size: u(9);
+  line-height: u(14);
+  font-weight: 600;
+  letter-spacing: u(2.6);
   text-transform: uppercase;
+  color: $gold-warm;
 }
 
-// Нижний блок прижат к краю кадра: подарок, контакты и сноска.
-.bottom {
-  position: absolute;
-  z-index: 2;
-  left: 0;
-  right: 0;
-  bottom: calc(var(--u) * 16);
+.panelWrap {
+  position: relative;
+  padding-top: u(14);
 }
 
 .giftIcon {
-  width: calc(var(--u) * 20);
-  height: calc(var(--u) * 21);
-  fill: none;
-  stroke: t.$gold-light;
-  stroke-width: 1.2;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: u(20);
+  height: u(22);
+  padding-inline: u(9);
+  box-sizing: content-box;
+  transform: translateX(-50%);
+  // разрывает рамку панели, как в макете
+  background: #060505;
 }
 
 .panel {
-  width: calc(var(--u) * 308);
-  margin-top: calc(var(--u) * 8);
-  padding: calc(var(--u) * 12) calc(var(--u) * 14);
+  width: u(264);
+  padding: u(12) u(16) u(10);
+  border: 1px solid #8a7250;
+  border-radius: u(13);
+  background: rgba(0, 0, 0, 0.86);
   display: flex;
   flex-direction: column;
   align-items: center;
-  border: calc(var(--u) * 1) solid t.$gold;
-  border-radius: calc(var(--u) * 12);
-  background: rgba(0, 0, 0, 0.82);
 }
 
-.panelEyebrow {
-  color: rgba(169, 142, 99, 0.95);
-  font-size: calc(var(--u) * 9);
-  letter-spacing: calc(var(--u) * 2.4);
+.panelEyebrow,
+.panelNote {
+  display: flex;
+  flex-direction: column;
+  font-size: u(10);
+  line-height: u(13);
+  font-weight: 600;
+  letter-spacing: u(1.6);
   text-transform: uppercase;
+  color: $gold-warm;
+}
+
+.panelTitle,
+.panelAmount {
+  display: flex;
+  flex-direction: column;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #f0f0ef;
 }
 
 .panelTitle {
-  margin-top: calc(var(--u) * 6);
-  font-size: calc(var(--u) * 16);
-  font-weight: 700;
-  letter-spacing: calc(var(--u) * 0.6);
-  line-height: 1.2;
-  text-transform: uppercase;
+  margin-top: u(5);
+  font-size: u(17);
+  line-height: u(18);
+  letter-spacing: u(0.4);
 }
 
 .panelAmount {
-  margin-top: calc(var(--u) * 4);
-  font-size: calc(var(--u) * 26);
-  font-weight: 700;
-  line-height: 1;
+  margin-top: u(2);
+  font-size: u(30);
+  line-height: u(34);
+  letter-spacing: u(1);
 }
 
 .panelNote {
-  margin-top: calc(var(--u) * 6);
-  color: rgba(169, 142, 99, 0.95);
-  font-size: calc(var(--u) * 9);
-  letter-spacing: calc(var(--u) * 2.2);
-  text-transform: uppercase;
+  margin-top: u(5);
 }
 
 .contacts {
-  width: calc(var(--u) * 308);
-  margin-top: calc(var(--u) * 14);
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: calc(var(--u) * 8);
+  align-items: flex-start;
+  justify-content: center;
+  gap: u(16);
 }
 
 .contact {
   display: flex;
   align-items: center;
-  gap: calc(var(--u) * 6);
-  font-size: calc(var(--u) * 9);
-  line-height: 1.3;
+  gap: u(4);
+  font-size: u(11);
+  line-height: u(13);
+  color: rgba(255, 255, 255, 0.88);
   text-align: left;
 
-  svg {
+  img {
     flex: 0 0 auto;
-    width: calc(var(--u) * 14);
-    height: calc(var(--u) * 14);
-    fill: none;
-    stroke: t.$gold;
-    stroke-width: 1.4;
+    width: u(24);
+    height: u(24);
   }
 
   > span {
@@ -246,18 +366,11 @@
   }
 }
 
-.hours { color: rgba(255, 255, 255, 0.55); }
-
-.qr {
-  width: calc(var(--u) * 38);
-  height: calc(var(--u) * 38);
-  object-fit: contain;
-}
-
 .legal {
-  margin-top: calc(var(--u) * 12);
-  color: rgba(255, 255, 255, 0.45);
-  font-size: calc(var(--u) * 8);
-  letter-spacing: calc(var(--u) * 1.8);
+  font-size: u(8);
+  line-height: u(9);
+  font-weight: 600;
+  letter-spacing: u(1.2);
   text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
 }

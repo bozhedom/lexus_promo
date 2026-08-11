@@ -97,7 +97,12 @@ export async function POST(
       try {
         cert = await payload.create({
           collection: 'certificates',
-          data: { application: app.id, code: generateCertificateCode(), amount },
+          data: {
+            application: app.id,
+            kind: 'diagnostics',
+            code: generateCertificateCode(),
+            amount,
+          },
           req: txReq,
         })
         break

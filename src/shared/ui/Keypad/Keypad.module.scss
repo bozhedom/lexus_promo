@@ -29,6 +29,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
   padding: 0 4px;
 }
 
@@ -41,15 +42,27 @@
   color: rgba(255, 255, 255, 0.62);
 }
 
+// «Готово» закрывает клавиатуру, и в него целятся большим пальцем на весу:
+// поэтому это полноценная кнопка на 44px, а не текстовая ссылка в шапке.
 .barAction {
-  padding: 5px 6px;
-  border: none;
-  background: none;
-  color: t.$gold-light;
+  flex: 0 0 auto;
+  min-width: 112px;
+  min-height: 34px;
+  padding: 0 24px;
+  border: 1px solid t.$gold-border;
+  border-radius: 10px;
+  background: linear-gradient(90deg, t.$gold-button 0%, #ebb664 50%, t.$gold-button-end 100%);
+  color: #100c07;
   font-family: t.$font-condensed;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
   cursor: pointer;
+
+  &:active:not(:disabled) {
+    filter: brightness(0.94);
+  }
 
   &:disabled {
     opacity: 0.4;

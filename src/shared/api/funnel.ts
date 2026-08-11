@@ -113,6 +113,22 @@ export function completeApplication(
   )
 }
 
+export interface IssuedCertificate {
+  id: string
+  kind: 'diagnostics' | 'gift'
+  code: string
+  amount: number
+  expiresAt: string | null
+}
+
+/** Оба пригласительных выписываются на шаге «Оформить приглашение». */
+export function issueCertificates(
+  id: string,
+  sessionId: string,
+): Promise<{ certificates: IssuedCertificate[] }> {
+  return request(`/api/applications/${id}/certificates`, jsonInit({ sessionId }))
+}
+
 export function lookupCar(plate: string): Promise<CarInfo> {
   return request(`/api/car-info?plate=${encodeURIComponent(plate)}`)
 }

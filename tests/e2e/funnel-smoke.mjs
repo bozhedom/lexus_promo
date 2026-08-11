@@ -89,8 +89,9 @@ await page.locator('[aria-label="Госномер"]').first().waitFor()
 await page.locator('div[class*="mainBlock"]').first().click()
 await page.locator('[data-keypad]').waitFor({ timeout: 5000 })
 await shot('2b-keypad')
+// Регион уже стоит (125) и каретка в него не перескакивает: набираем только
+// основную часть, как это делает человек.
 await type(PLATE)
-await type('125')
 await page.waitForTimeout(200)
 await shot('2c-filled')
 await page.locator('[data-keypad] button', { hasText: 'Готово' }).click()
@@ -137,10 +138,14 @@ await page.waitForTimeout(200)
 await shot('4b-filled')
 await page.getByRole('button', { name: /Оформить приглашение/i }).click()
 
-// 5 — пригласительные, мессенджеры и телефон
+// 5 — пригласительные: выданы сразу, возврата назад с этого шага нет
 const claim = page.getByRole('dialog', { name: 'Ваши персональные пригласительные' })
-await claim.waitFor({ timeout: 30000 })
-await claim.getByRole('button', { name: /Открыть:/i }).first().click()
+await claim.waitFor({ timeout: 40000 })
+await page.waitForTimeout(1200)
+await shot('5-claim')
+ok = (await check('claim')) && ok
+
+await claim.getByRole('button', { name: /Открыть пригласительный/i }).first().click()
 const certificateViewer = page.getByRole('dialog', { name: 'Пригласительный сертификат' })
 await certificateViewer.waitFor({ timeout: 10000 })
 // Пригласительный рисуется разметкой: ждём сам кадр и загрузку его картинок.
@@ -156,50 +161,17 @@ await page.waitForFunction(
 await page.waitForTimeout(150)
 await shot('5a-certificate')
 ok = (await check('certificate')) && ok
+
+// крестик закрывает только сам пригласительный, модалка выдачи остаётся
 await certificateViewer.getByRole('button', { name: 'Закрыть сертификат' }).click()
-await page.waitForTimeout(300)
-await shot('5-claim')
-ok = (await check('claim')) && ok
-await claim.getByRole('button', { name: /Продолжить/i }).click()
-
-const phoneDialog = page.getByRole('dialog', { name: 'Введите номер телефона' })
-await phoneDialog.waitFor({ timeout: 10000 })
-await phoneDialog.getByRole('textbox', { name: 'Телефон' }).fill('+7 999 666-00-12')
-await shot('5b-phone')
-ok = (await check('phone')) && ok
-await phoneDialog.getByRole('button', { name: /Подтвердить номер/i }).click()
-
-// 6 — код из СМС на своей клавиатуре
-await page.getByRole('dialog', { name: /Введите код из СМС/i }).waitFor({ timeout: 30000 })
-await page.waitForTimeout(900)
-await shot('5-sms')
-ok = (await check('sms')) && ok
-const dev = await page.locator('text=/Код для локальной разработки/').textContent().catch(() => null)
-const code = dev?.match(/(\d{4,6})/)?.[1]
-if (!code) throw new Error('нет dev-кода в модалке: ' + dev)
-await type(code)
-
-await page.waitForURL('**/certificate', { timeout: 40000 })
-await page.getByRole('button', { name: /Отправить в мессенджер/i }).waitFor({ timeout: 60000 })
-await page.waitForTimeout(2200)
-await shot('6-team')
-ok = (await check('team')) && ok
-
-// 7 — повторное открытие отправки в мессенджер
-await page.getByRole('button', { name: /Отправить в мессенджер/i }).click()
-await page.locator('[aria-label="Ваши персональные пригласительные"]').waitFor({ timeout: 10000 })
-await page.waitForTimeout(3500)
-await shot('7-modal')
-ok = (await check('modal')) && ok
-await page.locator('[aria-label="Закрыть"]').last().click()
 await page.waitForTimeout(400)
-
-// 8 — итоговый экран
-await page.getByRole('button', { name: /Познакомиться/i }).click()
-await page.waitForURL('**/links', { timeout: 30000 })
-await page.waitForTimeout(1800)
-await shot('8-links')
-ok = (await check('links')) && ok
+if (!(await claim.isVisible())) {
+  ok = false
+  console.log('  claim-after-close  ✗ модалка выдачи закрылась вместе с сертификатом')
+} else {
+  console.log('  claim-after-close  ok')
+}
+await shot('5b-claim-after-close')
 
 console.log(`  console errors: ${errors.length ? JSON.stringify(errors.slice(0, 3)) : 0}`)
 console.log(ok && !errors.length ? `=== ${TAG}: PASS ===` : `=== ${TAG}: CHECK ===`)

@@ -28,9 +28,23 @@ export function CertificateViewer({ onClose, ...sheet }: CertificateViewerProps)
       role="dialog"
       aria-modal="true"
       aria-label="Пригласительный сертификат"
-      onClick={onClose}
+      // Портал лежит в body, но React пускает событие по дереву компонентов:
+      // без остановки клик по крестику доходил бы до модалки-родителя и
+      // закрывал вместе с сертификатом её саму.
+      onClick={(event) => {
+        event.stopPropagation()
+        onClose()
+      }}
     >
-      <button type="button" className={styles.close} onClick={onClose} aria-label="Закрыть сертификат">
+      <button
+        type="button"
+        className={styles.close}
+        onClick={(event) => {
+          event.stopPropagation()
+          onClose()
+        }}
+        aria-label="Закрыть сертификат"
+      >
         <svg viewBox="0 0 24 24" aria-hidden>
           <path d="M16.5 7.5 7.5 16.5M7.5 7.5l9 9" />
         </svg>

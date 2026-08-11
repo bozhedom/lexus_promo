@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { preloadSceneAssets } from '@/shared/lib/useSceneAssets'
+import { certificateFace } from '@/widgets/certificate-sheet'
 
 import * as api from '../api/client'
 import type { Channel, DeliveryStatus, PersonalInviteDetails, SessionResponse } from './types'
@@ -26,10 +27,12 @@ export function useInviteSession(details: PersonalInviteDetails | null) {
     api
       .createSession(details)
       .then(async (data) => {
-        // Сначала загружаем и декодируем именно персональные изображения, и
-        // только потом отдаём сессию модалке. Так встроенные сертификаты не
-        // успевают промелькнуть перед серверными.
-        await preloadSceneAssets(data.certificates.map((certificate) => certificate.image))
+        // Кадры пригласительных догружаем до показа модалки: сами карточки
+        // рисуются разметкой, и без фотографии они мигнули бы чёрным.
+        await preloadSceneAssets([
+          certificateFace('diagnostics', details.brand).photo,
+          certificateFace('gift', details.brand).photo,
+        ])
         if (alive) {
           setResolvedKey(detailsKey)
           setSession(data)

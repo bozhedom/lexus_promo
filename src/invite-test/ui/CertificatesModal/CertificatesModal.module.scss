@@ -31,28 +31,25 @@
   animation: rise 0.24s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
-.close,
-.viewerClose {
+.close {
   position: absolute;
   z-index: 2;
   top: 10px;
   right: 10px;
   display: grid;
   place-items: center;
-  width: 25px;
-  height: 25px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   border: 1px solid rgba(228, 204, 174, 0.62);
   border-radius: 50%;
   background: rgba(8, 7, 6, 0.5);
   color: t.$gold-light;
-  font-size: 18px;
-  line-height: 1;
   cursor: pointer;
 
   svg {
-    width: 14px;
-    height: 14px;
+    width: 15px;
+    height: 15px;
     fill: none;
     stroke: currentColor;
     stroke-width: 1.7;
@@ -75,12 +72,12 @@
 // пригласительных, — сразу видно, на кого они выписаны.
 .guest {
   @include t.gold-text;
-  margin-bottom: 6px;
-  padding-inline: 30px;
-  font-family: t.$font-main;
-  font-size: 20px;
-  font-weight: 600;
-  line-height: 1.15;
+  margin-bottom: 8px;
+  padding-inline: 12px;
+  font-family: t.$font-display;
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1.1;
   letter-spacing: 0.4px;
 }
 
@@ -93,15 +90,17 @@
 }
 
 .cards {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  justify-content: center;
   gap: 10px;
-  margin-top: 18px;
+  margin-top: 16px;
 }
 
 .previewButton {
   position: relative;
+  flex: 1 1 0;
   min-width: 0;
+  max-width: 152px;
   padding: 0;
   border: 0;
   background: none;
@@ -111,7 +110,18 @@
   letter-spacing: 0.45px;
   text-transform: uppercase;
   cursor: zoom-in;
+}
 
+// Превью — тот же CertificateSheet, ужатый по ширине карточки.
+.previewFrame {
+  display: block;
+  container-type: inline-size;
+  width: 100%;
+  aspect-ratio: 360 / 640;
+  overflow: hidden;
+  border: 1px solid rgba(228, 204, 174, 0.62);
+  border-radius: 8px;
+  background: #050403;
 }
 
 .previewLabel {
@@ -144,16 +154,6 @@
     stroke-linecap: round;
     stroke-linejoin: round;
   }
-}
-
-.preview {
-  width: 100%;
-  height: auto;
-  aspect-ratio: 2 / 3;
-  object-fit: cover;
-  border: 1px solid rgba(228, 204, 174, 0.62);
-  border-radius: 8px;
-  background: #050403;
 }
 
 .or {
@@ -194,35 +194,6 @@
 .note { color: rgba(255, 255, 255, 0.55); }
 .error { color: #ef665b; }
 
-.certificateViewer {
-  position: fixed;
-  z-index: 1010;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  padding: 8px;
-  background: rgba(0, 0, 0, 0.97);
-
-  img {
-    display: block;
-    width: auto;
-    max-width: 100%;
-    height: auto;
-    max-height: 100%;
-    object-fit: contain;
-    border: 1px solid t.$gold;
-  }
-}
-
-.viewerClose {
-  position: fixed;
-  top: max(12px, env(safe-area-inset-top));
-  right: 12px;
-  width: 34px;
-  height: 34px;
-  font-size: 24px;
-}
-
 @keyframes fade {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -235,14 +206,14 @@
 
 @media (max-height: 650px) {
   .panel { padding: 14px 12px 12px; }
-  .guest { margin-bottom: 4px; font-size: 17px; }
+  .guest { margin-bottom: 4px; font-size: 24px; }
   .title { font-size: 20px; }
   .subtitle { margin-top: 6px; font-size: 15px; }
   .cards {
     gap: 10px;
     margin: 10px auto 0;
   }
-  .previewButton { font-size: 10px; }
+  .previewButton { max-width: 118px; font-size: 10px; }
   .previewLabel { margin-top: 5px; margin-bottom: 3px; }
   .or { margin-top: 10px; font-size: 11px; }
   .actions { margin-top: 8px; }

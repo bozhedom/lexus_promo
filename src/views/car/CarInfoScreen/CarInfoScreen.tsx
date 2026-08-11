@@ -21,28 +21,29 @@ import {
   carYears,
   fetchCarCatalog,
   isFeaturedBrand,
+  isPopularBrand,
 } from '@/shared/config/car-data'
 import { useFunnel } from '@/shared/lib/funnel'
 import type { CarInfo } from '@/shared/lib/types'
 import { Button, Loader, SelectField, StageLayout, TextField } from '@/shared/ui'
-import { CertificateViewer, type CertificateKind } from '@/widgets/certificate-sheet'
+import {
+  CertificateViewer,
+  certificateFace,
+  isToyota,
+  type CertificateKind,
+} from '@/widgets/certificate-sheet'
 import { validatePlate, validateShortText } from '@/lib/validation'
 import styles from './CarInfoScreen.module.scss'
 
 type UiState = 'loading' | 'found' | 'manual'
 
 /**
- * Подарки на экране найденного автомобиля. Кадр диагностики зависит от марки,
- * поэтому подставляется отдельно.
+ * Подарки на экране найденного автомобиля. Обложка каждого слайда — кадр его
+ * же пригласительного, поэтому берётся из общего описания сертификата.
  */
 const GIFTS = [
-  { kind: 'diagnostics' as const, title: 'Диагностика ходовой части', image: '', amount: '' },
-  {
-    kind: 'gift' as const,
-    title: 'на первую замену масла',
-    image: '/images/redesign/offer-oil.webp',
-    amount: '1 500 ₽',
-  },
+  { kind: 'diagnostics' as const, title: 'Диагностика ходовой части', amount: '' },
+  { kind: 'gift' as const, title: 'на первую замену масла', amount: '1 500 ₽' },
 ]
 
 /** До заполнения формы имя ещё неизвестно: в превью стоит подпись из макета. */
@@ -167,6 +168,15 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
     if (!rail) return
     setGiftIndex(Math.round(rail.scrollLeft / Math.max(1, rail.clientWidth)))
   }
+
+  // Три группы: марки техцентра, ходовые марки, остальной алфавит. Границы
+  // групп отчёркиваются, чтобы список читался как три блока, а не сплошняк.
+  const brandOptions = carBrands(catalog).map((item, index, list) => {
+    const group = isFeaturedBrand(item) ? 0 : isPopularBrand(item) ? 1 : 2
+    const nextItem = list[index + 1]
+    const nextGroup = !nextItem ? group : isFeaturedBrand(nextItem) ? 0 : isPopularBrand(nextItem) ? 1 : 2
+    return { value: item, label: item, featured: group === 0, divider: nextGroup !== group }
+  })
 
   const models = carModels(catalog, brand)
   const needsCustomModel = model === OTHER_OPTION || models.length === 0
@@ -322,10 +332,6 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
   // Логотип марки над карточкой есть только у Lexus: в макетах Toyota идёт
   // набором, а чужие марки логотипом не подписываются вовсе.
   const brandLogo = /^lexus$/i.test(car?.brand ?? '') ? '/images/redesign/lexus-logo.svg' : null
-  // Обложка первого подарка — кадр с подъёмником под марку техцентра.
-  const liftImage = /^toyota$/i.test(car?.brand ?? '')
-    ? '/images/cert-lift-toyota.png'
-    : '/images/cert-lift-lexus.png'
 
   if (ui === 'found' && car) {
     return (
@@ -333,7 +339,9 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
         <p className={styles.foundEyebrow}>Автомобиль успешно найден</p>
 
         <section className={styles.foundPanel}>
-          {brandLogo && (
+          {/* Марка над карточкой: у Lexus логотип, у Toyota — набор, как в
+              макетах и на самом пригласительном. Чужие марки не подписываем. */}
+          {brandLogo ? (
             <Image
               className={styles.brandLogo}
               src={brandLogo}
@@ -342,7 +350,9 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
               height={28}
               priority
             />
-          )}
+          ) : isToyota(car.brand) ? (
+            <p className={styles.brandWordmark}>TOYOTA</p>
+          ) : null}
 
           <h1 className={styles.carName}>
             <span>{car.brand} {car.model}</span>
@@ -362,14 +372,11 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
             </span>
           </div>
 
-          {/* Характер машины и список готовности — про марки техцентра.
-              Чужой марке вместо них одна строка о другом техцентре, а подарки
-              показываются в обоих случаях. */}
+          {/* Список готовности — про марки техцентра. Чужой марке вместо него
+              одна строка о другом техцентре, а подарки показываются в обоих
+              случаях. */}
           {supportedBrand ? (
-            <>
-              <p className={styles.carCharacter}>Брутальный внедорожник</p>
-
-              <ul className={styles.progressList}>
+            <ul className={styles.progressList}>
                 <li>
                   <StepIcon kind="gift" />
                   <span>Персональное<br />приглашение готово</span>
@@ -385,8 +392,7 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
                   <span>Осталось подтвердить<br />владельца</span>
                   <b className={styles.pendingCheck} />
                 </li>
-              </ul>
-            </>
+            </ul>
           ) : (
             <article className={styles.otherBrandNotice}>
               <span className={styles.serviceIcon} aria-hidden>
@@ -423,7 +429,16 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
                 <button
                   type="button"
                   className={styles.giftCard}
-                  style={{ '--gift-image': `url(${gift.kind === 'diagnostics' ? liftImage : gift.image})` } as CSSProperties}
+                  data-frame={
+                    gift.kind === 'diagnostics' && isToyota(car.brand)
+                      ? 'diagnostics-toyota'
+                      : gift.kind
+                  }
+                  style={
+                    {
+                      '--gift-image': `url(${certificateFace(gift.kind, car.brand).photo})`,
+                    } as CSSProperties
+                  }
                   onClick={() => setPreview(gift.kind)}
                   aria-label={`Посмотреть пригласительный: ${gift.title}`}
                 >
@@ -543,11 +558,7 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
               setCustomModel('')
               setErrors({})
             }}
-            options={carBrands(catalog).map((item) => ({
-              value: item,
-              label: item,
-              featured: isFeaturedBrand(item),
-            }))}
+            options={brandOptions}
           />
 
           {!brand ? (

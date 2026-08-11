@@ -6,8 +6,33 @@ export const OTHER_OPTION = 'Другая'
  */
 export const FEATURED_BRANDS = ['Toyota', 'Lexus'] as const
 
+/**
+ * Ходовые марки Приморья. Идут сразу после марок техцентра и в этом порядке:
+ * до алфавита большинство гостей своё авто уже видит и не листает список.
+ */
+export const POPULAR_BRANDS = [
+  'Nissan',
+  'Honda',
+  'Mazda',
+  'Mitsubishi',
+  'Subaru',
+  'Suzuki',
+  'Kia',
+  'Hyundai',
+  'Mercedes-Benz',
+  'BMW',
+  'Volkswagen',
+  'Land Rover',
+] as const
+
+const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase()
+
 export function isFeaturedBrand(brand: string): boolean {
-  return FEATURED_BRANDS.some((item) => item.toLowerCase() === brand.trim().toLowerCase())
+  return FEATURED_BRANDS.some((item) => same(item, brand))
+}
+
+export function isPopularBrand(brand: string): boolean {
+  return POPULAR_BRANDS.some((item) => same(item, brand))
 }
 
 export interface CarCatalogEntry {
@@ -107,24 +132,30 @@ export async function fetchCarCatalog(): Promise<CarCatalogEntry[]> {
   return [...configured, ...DEFAULT_CAR_CATALOG.filter(({ brand }) => !known.has(brand.toLowerCase()))]
 }
 
+const orderIn = (list: readonly string[], brand: string) =>
+  list.findIndex((item) => same(item, brand))
+
 /**
- * Toyota и Lexus всегда сверху и в своём порядке, остальные — по алфавиту.
- * Порядок не зависит от того, пришёл каталог из админки или из кода.
+ * Три группы подряд: марки техцентра (Toyota, Lexus), затем ходовые марки в
+ * своём порядке, затем весь остальной каталог по алфавиту. Порядок не зависит
+ * от того, пришёл каталог из админки или из кода.
  */
 export function carBrands(catalog: CarCatalogEntry[]): string[] {
   const featured: string[] = []
+  const popular: string[] = []
   const rest: string[] = []
-  for (const { brand } of catalog) (isFeaturedBrand(brand) ? featured : rest).push(brand)
-  featured.sort(
-    (a, b) =>
-      FEATURED_BRANDS.findIndex((item) => item.toLowerCase() === a.toLowerCase()) -
-      FEATURED_BRANDS.findIndex((item) => item.toLowerCase() === b.toLowerCase()),
-  )
+  for (const { brand } of catalog) {
+    if (isFeaturedBrand(brand)) featured.push(brand)
+    else if (isPopularBrand(brand)) popular.push(brand)
+    else rest.push(brand)
+  }
+  featured.sort((a, b) => orderIn(FEATURED_BRANDS, a) - orderIn(FEATURED_BRANDS, b))
+  popular.sort((a, b) => orderIn(POPULAR_BRANDS, a) - orderIn(POPULAR_BRANDS, b))
   // Латиница идёт перед кириллицей: иначе «ВАЗ», «ГАЗ» и «УАЗ» встают сразу
-  // под Toyota и Lexus и выглядят как продолжение выделенной группы.
+  // под выделенными группами и выглядят как их продолжение.
   const cyrillic = (brand: string) => (/^[А-Яа-яЁё]/.test(brand) ? 1 : 0)
   rest.sort((a, b) => cyrillic(a) - cyrillic(b) || a.localeCompare(b, 'ru'))
-  return [...featured, ...rest]
+  return [...featured, ...popular, ...rest]
 }
 
 export function carModels(catalog: CarCatalogEntry[], brand: string): string[] {

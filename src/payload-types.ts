@@ -162,6 +162,10 @@ export interface Application {
 export interface Certificate {
   id: string;
   application: string | Application;
+  /**
+   * Both are issued per guest: the pair is unique within an application
+   */
+  kind: 'diagnostics' | 'gift';
   code: string;
   /**
    * Amount is computed server-side only
@@ -446,6 +450,7 @@ export interface ApplicationsSelect<T extends boolean = true> {
  */
 export interface CertificatesSelect<T extends boolean = true> {
   application?: T;
+  kind?: T;
   code?: T;
   amount?: T;
   image?: T;

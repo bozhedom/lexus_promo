@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react'
 
 import {
   isApiError,
+  issueCertificates,
   patchApplication,
 } from '@/shared/api/funnel'
 import { useScreenView } from '@/shared/analytics'
@@ -69,11 +70,21 @@ export function ContactScreen() {
       await patchApplication(data.applicationId, {
         sessionId,
         fullName: name!,
+        consentGiven: true,
       })
+      // Пригласительные выписываются здесь же: с этого шага гость уже не
+      // возвращается назад, и в админке заявка должна лежать с обоими
+      // сертификатами, а не только с именем.
+      const issued = await issueCertificates(data.applicationId, sessionId)
+      const gift = issued.certificates.find((cert) => cert.kind === 'gift')
       update({
         fullName: name!,
         phoneVerificationToken: undefined,
-        status: 'draft_personal',
+        status: 'completed',
+        certificateId: gift?.id,
+        certificateCode: gift?.code,
+        certificateAmount: gift?.amount,
+        certificateExpiresAt: gift?.expiresAt ?? undefined,
       })
       setErrors({})
       setSavedFullName(name!)
@@ -175,8 +186,9 @@ export function ContactScreen() {
           delivery={delivery}
           guestName={savedFullName}
           brand={data.carBrand ?? 'Lexus'}
+          carTitle={[data.carBrand, data.carModel].filter(Boolean).join(' ')}
+          plate={data.plateNumber}
           amount={data.certificateAmount ?? 1500}
-          onClose={() => setCertificatesOpen(false)}
         />
       )}
     </main>
