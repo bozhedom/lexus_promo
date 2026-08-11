@@ -12,7 +12,8 @@
     "e2e": "node tests/e2e/funnel-smoke.mjs",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
-    "migrate": "NODE_OPTIONS='--network-family-autoselection-attempt-timeout=1000' payload migrate"
+    "migrate": "NODE_OPTIONS='--network-family-autoselection-attempt-timeout=1000' payload migrate",
+    "admin:reset": "NODE_OPTIONS='--network-family-autoselection-attempt-timeout=1000' payload run scripts/reset-admin.ts"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "^3.86.0",

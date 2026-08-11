@@ -143,9 +143,13 @@ await claim.waitFor({ timeout: 30000 })
 await claim.getByRole('button', { name: /Открыть:/i }).first().click()
 const certificateViewer = page.getByRole('dialog', { name: 'Пригласительный сертификат' })
 await certificateViewer.waitFor({ timeout: 10000 })
-await certificateViewer.locator('img').waitFor({ state: 'visible', timeout: 10000 })
+// Пригласительный рисуется разметкой: ждём сам кадр и загрузку его картинок.
+await certificateViewer.locator('[class*="CertificateSheet_sheet"]').waitFor({ timeout: 10000 })
 await page.waitForFunction(
-  () => document.querySelector('[aria-label="Пригласительный сертификат"] img')?.naturalWidth > 0,
+  () =>
+    [...document.querySelectorAll('[aria-label="Пригласительный сертификат"] img')].every(
+      (image) => image.complete && image.naturalWidth > 0,
+    ),
   null,
   { timeout: 15000 },
 )

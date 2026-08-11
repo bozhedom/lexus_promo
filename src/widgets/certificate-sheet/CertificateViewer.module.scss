@@ -1,0 +1,57 @@
+@use 'shared/config/tokens' as t;
+
+.overlay {
+  position: fixed;
+  z-index: 1200;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(2, 2, 2, 0.96);
+  animation: fade 0.18s ease both;
+}
+
+.frame {
+  display: flex;
+  animation: rise 0.24s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.close {
+  position: absolute;
+  z-index: 2;
+  top: max(12px, env(safe-area-inset-top));
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid rgba(228, 204, 174, 0.6);
+  border-radius: 50%;
+  background: rgba(8, 7, 6, 0.6);
+  color: t.$gold-light;
+  cursor: pointer;
+
+  svg {
+    width: 17px;
+    height: 17px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+  }
+}
+
+@keyframes fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .frame { animation: none; }
+}

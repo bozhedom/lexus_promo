@@ -145,12 +145,10 @@ $glow-accent: 0 0 20px 0 rgba(216, 47, 47, 0.3);
   cursor: pointer;
   transition: opacity 0.15s ease, background 0.15s ease, box-shadow 0.2s ease;
 
+  // Ни наведение, ни нажатие не перекрашивают кнопку: на тач-экране :hover
+  // после тапа залипает, и золотая кнопка так и оставалась красной.
   &:hover:not(:disabled) {
-    box-shadow: 0 0 18px rgba(216, 47, 47, 0.5);
-  }
-
-  &:hover:not(:disabled) {
-    background: #c02828;
+    filter: brightness(1.06);
   }
   &:active:not(:disabled) {
     opacity: 0.85;
@@ -177,7 +175,7 @@ $glow-accent: 0 0 20px 0 rgba(216, 47, 47, 0.3);
   transition: background 0.15s ease, opacity 0.15s ease;
 
   &:hover:not(:disabled) {
-    background: rgba(239, 0, 42, 0.12);
+    background: rgba(228, 204, 174, 0.12);
   }
   &:active:not(:disabled) {
     opacity: 0.85;

@@ -175,6 +175,8 @@ export function TicketScreen() {
         <CertificatesModal
           delivery={delivery}
           guestName={details.fullName}
+          brand={details.brand}
+          amount={details.amount}
           onClose={() => setModalOpen(false)}
         />
       )}

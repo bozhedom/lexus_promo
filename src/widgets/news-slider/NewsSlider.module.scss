@@ -430,14 +430,16 @@
       --slider-inset: clamp(16px, calc(84.27px - 8.53dvh), 32px);
       height: 100%;
       min-height: 0;
-      padding: 3px 0 5px;
+      // Нижнее поле оставляет точки в кадре: без него фотография упиралась
+      // прямо в край экрана и точки уходили под неё.
+      padding: 3px 0 10px;
       display: grid;
       grid-template-rows: auto minmax(0, 1fr) auto auto;
       overflow: hidden;
     }
 
     .heading {
-      margin: 0 var(--slider-inset) 3px;
+      margin: 0 var(--slider-inset) 8px;
       gap: 6px;
     }
 
@@ -456,11 +458,12 @@
     // Фотография забирает весь остаток экрана под карточкой: жёсткого потолка
     // нет, поэтому на 700–800px внизу не остаётся пустой полосы. Ниже 34px
     // кадр уже не читается, поэтому это единственное ограничение.
+    // Внешний отступ у элемента грида добавляется к его строке, поэтому
+    // здесь его быть не должно: с ним кадр перекрывал ряд точек.
     .viewport {
       width: calc(100% - (2 * var(--slider-inset)));
       min-height: 34px;
       margin-inline: auto;
-      margin-top: 6px;
       align-self: stretch;
       overflow: hidden;
     }
@@ -494,7 +497,7 @@
       line-height: 1.1;
     }
 
-    .dots { margin-top: 1px; gap: 4px; }
+    .dots { margin-top: 6px; gap: 4px; }
     .dot { width: 4px; height: 4px; }
     .dotActive { width: 13px; }
   }
@@ -627,8 +630,8 @@
   }
 
   &:hover {
-    background: t.$accent;
-    border-color: t.$accent;
+    background: rgba(154, 123, 86, 0.55);
+    border-color: t.$gold;
     transform: scale(1.06);
   }
 }

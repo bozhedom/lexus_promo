@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 
+import { CertificateViewer, type CertificateKind } from '@/widgets/certificate-sheet'
+
 import type { useInviteSession } from '../../model/useInviteSession'
 import { MessengerButton } from '../MessengerButton'
 import styles from './CertificatesModal.module.scss'
@@ -10,12 +12,23 @@ interface CertificatesModalProps {
   delivery: ReturnType<typeof useInviteSession>
   /** Имя и отчество гостя: они же напечатаны на самих пригласительных. */
   guestName?: string
+  /** Марка из заявки: от неё зависит оформление развёрнутого пригласительного. */
+  brand?: string
+  amount?: number
   onClose: () => void
 }
 
-export function CertificatesModal({ delivery, guestName, onClose }: CertificatesModalProps) {
+const KINDS: CertificateKind[] = ['diagnostics', 'gift']
+
+export function CertificatesModal({
+  delivery,
+  guestName,
+  brand = 'Lexus',
+  amount,
+  onClose,
+}: CertificatesModalProps) {
   const { session, status, error, opened, openChat } = delivery
-  const [expanded, setExpanded] = useState<string | null>(null)
+  const [expanded, setExpanded] = useState<CertificateKind | null>(null)
   const certificates = session?.certificates ?? []
 
   useEffect(() => {
@@ -72,7 +85,7 @@ export function CertificatesModal({ delivery, guestName, onClose }: Certificates
               type="button"
               className={styles.previewButton}
               key={certificate.id}
-              onClick={() => setExpanded(certificate.image)}
+              onClick={() => setExpanded(KINDS[index] ?? 'diagnostics')}
               aria-label={`Открыть: ${certificate.alt}`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -123,29 +136,15 @@ export function CertificatesModal({ delivery, guestName, onClose }: Certificates
         {message && <p className={status === 'failed' ? styles.error : styles.note}>{message}</p>}
       </section>
 
-      {expanded ? (
-        <div
-          className={styles.certificateViewer}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Пригласительный сертификат"
-          onClick={(event) => {
-            event.stopPropagation()
-            setExpanded(null)
-          }}
-        >
-          <button
-            type="button"
-            className={styles.viewerClose}
-            onClick={() => setExpanded(null)}
-            aria-label="Закрыть сертификат"
-          >
-            ×
-          </button>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={expanded} alt="Пригласительный сертификат" onClick={(event) => event.stopPropagation()} />
-        </div>
-      ) : null}
+      {expanded && (
+        <CertificateViewer
+          kind={expanded}
+          brand={brand}
+          name={guestName ?? ''}
+          amount={amount}
+          onClose={() => setExpanded(null)}
+        />
+      )}
     </div>
   )
 }

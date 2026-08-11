@@ -174,6 +174,8 @@ export function ContactScreen() {
         <CertificatesModal
           delivery={delivery}
           guestName={savedFullName}
+          brand={data.carBrand ?? 'Lexus'}
+          amount={data.certificateAmount ?? 1500}
           onClose={() => setCertificatesOpen(false)}
         />
       )}

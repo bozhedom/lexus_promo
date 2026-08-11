@@ -25,10 +25,28 @@ import {
 import { useFunnel } from '@/shared/lib/funnel'
 import type { CarInfo } from '@/shared/lib/types'
 import { Button, Loader, SelectField, StageLayout, TextField } from '@/shared/ui'
+import { CertificateViewer, type CertificateKind } from '@/widgets/certificate-sheet'
 import { validatePlate, validateShortText } from '@/lib/validation'
 import styles from './CarInfoScreen.module.scss'
 
 type UiState = 'loading' | 'found' | 'manual'
+
+/**
+ * Подарки на экране найденного автомобиля. Кадр диагностики зависит от марки,
+ * поэтому подставляется отдельно.
+ */
+const GIFTS = [
+  { kind: 'diagnostics' as const, title: 'Диагностика ходовой части', image: '', amount: '' },
+  {
+    kind: 'gift' as const,
+    title: 'на первую замену масла',
+    image: '/images/redesign/offer-oil.webp',
+    amount: '1 500 ₽',
+  },
+]
+
+/** До заполнения формы имя ещё неизвестно: в превью стоит подпись из макета. */
+const PREVIEW_NAME = 'Ваше имя'
 
 interface FoundCar {
   brand: string
@@ -142,6 +160,7 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
   const lookupGeneration = useRef(0)
   const giftRailRef = useRef<HTMLUListElement>(null)
   const [giftIndex, setGiftIndex] = useState(0)
+  const [preview, setPreview] = useState<CertificateKind | null>(null)
 
   const onGiftScroll = () => {
     const rail = giftRailRef.current
@@ -313,9 +332,7 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
       <main className={styles.foundScreen}>
         <p className={styles.foundEyebrow}>Автомобиль успешно найден</p>
 
-        {/* У чужой марки нет ни подарков, ни ленты: карточка короче, и держать
-            её на высоту макета с подарками — значит оставить пустое поле. */}
-        <section className={styles.foundPanel} data-compact={!supportedBrand || undefined}>
+        <section className={styles.foundPanel}>
           {brandLogo && (
             <Image
               className={styles.brandLogo}
@@ -345,9 +362,9 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
             </span>
           </div>
 
-          {/* Характер машины, список готовности и подарки — про марки
-              техцентра. Чужой марке всё это не положено: вместо них одна
-              строка о том, что её обслуживает другой техцентр. */}
+          {/* Характер машины и список готовности — про марки техцентра.
+              Чужой марке вместо них одна строка о другом техцентре, а подарки
+              показываются в обоих случаях. */}
           {supportedBrand ? (
             <>
               <p className={styles.carCharacter}>Брутальный внедорожник</p>
@@ -369,53 +386,6 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
                   <b className={styles.pendingCheck} />
                 </li>
               </ul>
-
-              <p className={styles.giftLead}>
-                Для Вашего автомобиля приготовлены
-                <span>персональные подарки в честь знакомства</span>
-              </p>
-
-              {/* Подарки листаются свайпом: в кадр помещается один, второй
-                  выглядывает справа. Точки под лентой показывают, где мы. */}
-              <ul
-                className={styles.giftRail}
-                ref={giftRailRef}
-                onScroll={onGiftScroll}
-                aria-label="Подарки в честь знакомства"
-              >
-                <li className={styles.giftSlide}>
-                  <article
-                    className={styles.giftCard}
-                    style={{ '--gift-image': `url(${liftImage})` } as CSSProperties}
-                    data-cover="right"
-                  >
-                    <div>
-                      <small>Сертификат</small>
-                      <p className={styles.giftTitle}>Диагностика<br />ходовой части</p>
-                      <span>Подробно</span>
-                    </div>
-                  </article>
-                </li>
-                <li className={styles.giftSlide}>
-                  <article
-                    className={styles.giftCard}
-                    style={{ '--gift-image': 'url(/images/redesign/offer-oil.webp)' } as CSSProperties}
-                    data-cover="right"
-                  >
-                    <div>
-                      <small>Сертификат</small>
-                      <strong>1 500 ₽</strong>
-                      <p className={styles.giftTitle}>на первую<br />замену масла</p>
-                      <span>Подробно</span>
-                    </div>
-                  </article>
-                </li>
-              </ul>
-
-              <div className={styles.giftDots} aria-hidden>
-                <i data-active={giftIndex === 0 || undefined} />
-                <i data-active={giftIndex === 1 || undefined} />
-              </div>
             </>
           ) : (
             <article className={styles.otherBrandNotice}>
@@ -435,6 +405,45 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
             </article>
           )}
 
+          <p className={styles.giftLead}>
+            Для Вашего автомобиля приготовлены
+            <span>персональные подарки в честь знакомства</span>
+          </p>
+
+          {/* Подарки листаются свайпом: в кадр помещается один, второй
+              выглядывает справа. Тап открывает сам пригласительный. */}
+          <ul
+            className={styles.giftRail}
+            ref={giftRailRef}
+            onScroll={onGiftScroll}
+            aria-label="Подарки в честь знакомства"
+          >
+            {GIFTS.map((gift) => (
+              <li className={styles.giftSlide} key={gift.kind}>
+                <button
+                  type="button"
+                  className={styles.giftCard}
+                  style={{ '--gift-image': `url(${gift.kind === 'diagnostics' ? liftImage : gift.image})` } as CSSProperties}
+                  onClick={() => setPreview(gift.kind)}
+                  aria-label={`Посмотреть пригласительный: ${gift.title}`}
+                >
+                  <span className={styles.giftCardInner}>
+                    <small>Сертификат</small>
+                    {gift.amount && <strong>{gift.amount}</strong>}
+                    <span className={styles.giftTitle}>{gift.title}</span>
+                    <span className={styles.giftMore}>Подробно</span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          <div className={styles.giftDots} aria-hidden>
+            {GIFTS.map((gift, i) => (
+              <i key={gift.kind} data-active={giftIndex === i || undefined} />
+            ))}
+          </div>
+
           {errors.form && <p className={styles.error}>{errors.form}</p>}
 
           <Button block className={styles.confirmButton} onClick={confirmFound} disabled={submitting}>
@@ -452,6 +461,17 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
             Изменить автомобиль
           </button>
         </section>
+
+        {/* Имени гость ещё не вводил, поэтому в превью стоит «Ваше имя» —
+            так он заранее видит, как будет выглядеть его пригласительный. */}
+        {preview && (
+          <CertificateViewer
+            kind={preview}
+            brand={car.brand}
+            name={PREVIEW_NAME}
+            onClose={() => setPreview(null)}
+          />
+        )}
       </main>
     )
   }
