@@ -178,6 +178,13 @@ export function TicketScreen() {
           brand={details.brand}
           amount={details.amount}
           onClose={() => setModalOpen(false)}
+          // Под модалкой уже лежит готовый экран команды автомобиля: как
+          // только гость ушёл в мессенджер, возвращаем его туда, чтобы из
+          // чата он вернулся на страницу, а не на всплывшее окно.
+          onSent={(channel) => {
+            track('outbound_click', { id: `messenger_${channel}` })
+            setModalOpen(false)
+          }}
         />
       )}
     </main>

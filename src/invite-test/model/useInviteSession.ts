@@ -67,10 +67,11 @@ export function useInviteSession(details: PersonalInviteDetails | null) {
     return () => clearInterval(id)
   }, [status, activeSession])
 
+  /** Возвращает `true`, если мессенджер действительно открылся. */
   const openChat = useCallback(
     (channel: Channel) => {
       const info = activeSession?.channels[channel]
-      if (!info?.chatLink) return
+      if (!info?.chatLink) return false
 
       setOpened(channel)
       if (info.autoDelivery) {
@@ -79,6 +80,7 @@ export function useInviteSession(details: PersonalInviteDetails | null) {
         setStatus('waiting')
       }
       window.open(info.chatLink, '_blank', 'noopener,noreferrer')
+      return true
     },
     [activeSession],
   )

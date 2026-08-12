@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 
 import { CertificateSheet, CertificateViewer, type CertificateKind } from '@/widgets/certificate-sheet'
 
+import type { Channel } from '../../model/types'
 import type { useInviteSession } from '../../model/useInviteSession'
 import { MessengerButton } from '../MessengerButton'
 import styles from './CertificatesModal.module.scss'
@@ -24,6 +25,12 @@ interface CertificatesModalProps {
    * гостя, и обработчик туда не передаётся.
    */
   onClose?: () => void
+  /**
+   * Мессенджер открылся: дальше гость забирает пригласительные в чате. Экран
+   * под модалкой к этому моменту уже готов, поэтому вызывающий закрывает её —
+   * вернувшись из мессенджера, гость попадает сразу на него.
+   */
+  onSent?: (channel: Channel) => void
 }
 
 const CARDS: { kind: CertificateKind; label: string }[] = [
@@ -39,6 +46,7 @@ export function CertificatesModal({
   plate,
   amount,
   onClose,
+  onSent,
 }: CertificatesModalProps) {
   const { session, status, error, opened, openChat } = delivery
   const [expanded, setExpanded] = useState<CertificateKind | null>(null)
@@ -56,6 +64,13 @@ export function CertificatesModal({
       document.body.style.overflow = ''
     }
   }, [expanded, onClose])
+
+  // Мессенджер открывается в соседней вкладке, а модалка уступает место экрану
+  // под собой: гость возвращается из чата уже на готовую страницу, а не на
+  // окно, которое ему нечем закрыть.
+  const send = (channel: Channel) => {
+    if (openChat(channel)) onSent?.(channel)
+  }
 
   const message = (() => {
     if (status === 'sent') return 'Пригласительные отправлены в чат'
@@ -135,20 +150,20 @@ export function CertificatesModal({
             icon="/invite-test/icon-max.png"
             label="MAX"
             disabled={!session?.channels.max.enabled}
-            onClick={() => openChat('max')}
+            onClick={() => send('max')}
           />
           <MessengerButton
             icon="/invite-test/icon-telegram.png"
             label="Telegram"
             disabled={!session?.channels.telegram.enabled}
-            onClick={() => openChat('telegram')}
+            onClick={() => send('telegram')}
           />
           <MessengerButton
             icon="/invite-test/icon-whatsapp.svg"
             label="W"
             ariaLabel="WhatsApp"
             disabled={!session?.channels.whatsapp.enabled}
-            onClick={() => openChat('whatsapp')}
+            onClick={() => send('whatsapp')}
           />
         </div>
 
