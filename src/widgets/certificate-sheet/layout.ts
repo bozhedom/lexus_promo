@@ -69,11 +69,14 @@ export function certificateFace(kind: CertificateKind, brand: string): Certifica
       plate: { x: 439 / 1080, y: 1162 / 1920, w: 197 / 1080 },
     }
   }
+  // Кадр без марки: тот же автомобиль на подъёмнике, что и у остальных, но с
+  // затёртыми шильдиками — на нём стоят рамка знака и стойки в тех же местах,
+  // что у Lexus, поэтому и координаты знака совпадают.
   return {
     photo: '/images/cert/bg-diagnostics-default.webp',
     photoRaster: 'images/cert/bg-diagnostics-default.jpg',
     address: DIAGNOSTICS_ADDRESS,
-    plate: { x: 434 / 1080, y: 1312 / 1920, w: 208 / 1080 },
+    plate: { x: 439 / 1080, y: 1162 / 1920, w: 197 / 1080 },
   }
 }
 

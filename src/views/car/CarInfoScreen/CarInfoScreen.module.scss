@@ -378,7 +378,7 @@
   // Марки без своей обложки берут кадр пригласительного: вырез ставит их
   // автомобиль в правую половину карточки, как на нарисованных обложках.
   &[data-frame='diagnostics-toyota'] { background-position: 82% 64%; background-size: 210% auto; }
-  &[data-frame='diagnostics-default'] { background-position: 78% 66%; background-size: 210% auto; }
+  &[data-frame='diagnostics-default'] { background-position: 82% 64%; background-size: 210% auto; }
 
   &:active { transform: scale(0.985); }
 

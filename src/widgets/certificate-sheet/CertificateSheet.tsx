@@ -7,6 +7,7 @@ import {
   certificateCopy,
   certificateFace,
   formatPlateLine,
+  isLexus,
   isToyota,
   plateParts,
   splitGuestName,
@@ -47,10 +48,15 @@ export function CertificateSheet({
   className,
 }: CertificateSheetProps) {
   const toyota = isToyota(brand)
+  // Марки техцентра две. Пригласительный чужому автомобилю не подписывают ни
+  // логотипом, ни моделью: на кадре у него обычная машина на подъёмнике без
+  // шильдиков, а от гостя остаются только имя и его собственный госномер.
+  const ownBrand = toyota || isLexus(brand)
   const face = certificateFace(kind, brand)
   const copy = certificateCopy(kind, amount)
   const nameLines = splitGuestName(name)
   const onCar = plate ? plateParts(plate) : null
+  const modelLine = ownBrand ? carTitle : null
 
   return (
     <article
@@ -100,15 +106,11 @@ export function CertificateSheet({
 
         <Rule />
 
-        {carTitle && (
+        {(modelLine || plate) && (
           <p className={styles.carLine}>
-            <span>{carTitle}</span>
-            {plate && (
-              <>
-                <i aria-hidden />
-                <span>{formatPlateLine(plate)}</span>
-              </>
-            )}
+            {modelLine && <span>{modelLine}</span>}
+            {modelLine && plate && <i aria-hidden />}
+            {plate && <span>{formatPlateLine(plate)}</span>}
           </p>
         )}
 
@@ -122,15 +124,16 @@ export function CertificateSheet({
       <span className={styles.gapTop} aria-hidden />
 
       <div className={styles.brand}>
-        {toyota ? (
-          <p className={styles.wordmarkToyota}>TOYOTA</p>
-        ) : (
+        {toyota && <p className={styles.wordmarkToyota}>TOYOTA</p>}
+        {!toyota && ownBrand && (
           // Логотип взят из того же фрейма Figma: у копии в /redesign другая
           // пропорция, и в кадре сертификата она была бы уже макетной.
           /* eslint-disable-next-line @next/next/no-img-element */
           <img className={styles.wordmark} src="/images/cert/lexus.svg" alt="Lexus" />
         )}
-        <p className={styles.from}>от «АвтоГарантСити»</p>
+        <p className={ownBrand ? styles.from : styles.house}>
+          {ownBrand ? 'от «АвтоГарантСити»' : '«АвтоГарантСити»'}
+        </p>
       </div>
 
       <span className={styles.gapBrand} aria-hidden />

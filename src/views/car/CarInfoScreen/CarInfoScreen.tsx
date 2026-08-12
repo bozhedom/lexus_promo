@@ -490,12 +490,14 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
         </section>
 
         {/* Имени гость ещё не вводил, поэтому в превью стоит «Ваше имя» —
-            так он заранее видит, как будет выглядеть его пригласительный. */}
+            так он заранее видит, как будет выглядеть его пригласительный.
+            Номер он уже ввёл: его печатаем на кадре автомобиля по-настоящему. */}
         {preview && (
           <CertificateViewer
             kind={preview}
             brand={car.brand}
             name={PREVIEW_NAME}
+            plate={data.plateNumber ?? null}
             onClose={() => setPreview(null)}
           />
         )}

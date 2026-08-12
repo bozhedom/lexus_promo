@@ -260,6 +260,17 @@ $gold-warm: #e0c7a9;
   color: #d82f2f;
 }
 
+// Чужая марка: логотипа над строкой нет, поэтому название техцентра встаёт
+// на место марки и набирается её размером.
+.house {
+  font-size: u(19);
+  line-height: u(20);
+  font-weight: 600;
+  letter-spacing: u(2);
+  text-transform: uppercase;
+  color: $gold-warm;
+}
+
 .from {
   margin-top: u(6);
   font-size: u(9);

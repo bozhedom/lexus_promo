@@ -8,6 +8,7 @@ import {
   certificateCopy,
   certificateFace,
   formatPlateLine,
+  isLexus,
   isToyota,
   plateParts,
   splitGuestName,
@@ -99,6 +100,8 @@ export async function renderCertificate(
   const face = certificateFace(kind, details.brand)
   const copy = certificateCopy(kind, details.amount)
   const toyota = isToyota(details.brand)
+  // См. `CertificateSheet`: чужой марке не ставят ни логотип, ни модель.
+  const ownBrand = toyota || isLexus(details.brand)
 
   const [photo, crown, gift, marker, phone, lexusLogo, forum, condensed, condensedBold] =
     await Promise.all([
@@ -248,7 +251,7 @@ export async function renderCertificate(
 
         <Rule top={u(147)} />
 
-        {details.model || details.plate ? (
+        {ownBrand || details.plate ? (
           <div
             style={{
               position: 'absolute',
@@ -265,19 +268,25 @@ export async function renderCertificate(
               color: GOLD_RULE,
             }}
           >
-            <span style={{ display: 'flex' }}>
-              {[details.brand, details.model].filter(Boolean).join(' ')}
-            </span>
-            <div
-              style={{
-                width: 1,
-                height: u(13),
-                marginLeft: u(9),
-                marginRight: u(9),
-                background: 'rgba(214,204,166,0.75)',
-              }}
-            />
-            <span style={{ display: 'flex' }}>{formatPlateLine(details.plate)}</span>
+            {ownBrand && (
+              <span style={{ display: 'flex' }}>
+                {[details.brand, details.model].filter(Boolean).join(' ')}
+              </span>
+            )}
+            {ownBrand && details.plate && (
+              <div
+                style={{
+                  width: 1,
+                  height: u(13),
+                  marginLeft: u(9),
+                  marginRight: u(9),
+                  background: 'rgba(214,204,166,0.75)',
+                }}
+              />
+            )}
+            {details.plate && (
+              <span style={{ display: 'flex' }}>{formatPlateLine(details.plate)}</span>
+            )}
           </div>
         ) : null}
 
@@ -298,7 +307,7 @@ export async function renderCertificate(
         </div>
 
         {/* марка техцентра */}
-        {toyota ? (
+        {toyota && (
           <div
             style={{
               position: 'absolute',
@@ -317,7 +326,8 @@ export async function renderCertificate(
           >
             TOYOTA
           </div>
-        ) : (
+        )}
+        {!toyota && ownBrand && (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img
             src={lexusLogo}
@@ -328,21 +338,22 @@ export async function renderCertificate(
           />
         )}
 
+        {/* Чужой марке логотипа нет: на его месте стоит сам техцентр. */}
         <div
           style={{
             ...centered,
             position: 'absolute',
-            top: u(253),
+            top: u(ownBrand ? 253 : 227),
             left: 0,
             width: CERT_WIDTH,
-            fontSize: u(9),
+            fontSize: u(ownBrand ? 9 : 19),
             fontWeight: 600,
-            letterSpacing: u(2.75),
+            letterSpacing: u(ownBrand ? 2.75 : 2),
             textTransform: 'uppercase',
             color: GOLD_WARM,
           }}
         >
-          от «АвтоГарантСити»
+          {ownBrand ? 'от «АвтоГарантСити»' : '«АвтоГарантСити»'}
         </div>
 
         {/* панель с подарком: нижний край всегда на одной линии */}
