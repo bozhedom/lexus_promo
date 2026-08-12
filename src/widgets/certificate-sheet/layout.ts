@@ -80,35 +80,14 @@ export function certificateFace(kind: CertificateKind, brand: string): Certifica
   }
 }
 
-/** Какой вырез кадра показывать на слайде подарка: зависит от той же марки. */
-export function certificateFrameName(kind: CertificateKind, brand: string): string {
-  if (kind === 'gift') return 'gift'
-  if (isToyota(brand)) return 'diagnostics-toyota'
-  if (isLexus(brand)) return 'diagnostics-lexus'
-  return 'diagnostics-default'
-}
-
-interface CertificatePreview {
-  /** Обложка слайда: тянется на всю карточку либо режется вырезом `frame`. */
-  photo: string
-  /** Имя выреза для карточек без своей обложки; у готовых обложек — null. */
-  frame: string | null
-}
-
 /**
- * Обложка слайда подарка на экране найденного автомобиля.
+ * Обложка слайда подарка на экране найденного автомобиля (41:3817, 41:3810).
  *
- * Для замены масла и для Lexus в макете нарисованы отдельные кадры — они
- * натягиваются на карточку целиком. Toyota и чужим маркам своей обложки не
- * рисовали: у них слайд по-прежнему показывает кадр самого пригласительного,
- * подрезанный по автомобилю, — иначе владелец чужой машины увидел бы на
- * карточке Lexus.
+ * Кадр один на оба слайда: золотой бант, прижатый к правому краю карточки.
+ * Марка на обложке больше не отыгрывается — она осталась только внутри самого
+ * пригласительного, где на фотографии стоит автомобиль гостя.
  */
-export function certificatePreview(kind: CertificateKind, brand: string): CertificatePreview {
-  if (kind === 'gift') return { photo: '/images/cert/preview-gift.webp', frame: null }
-  if (isLexus(brand)) return { photo: '/images/cert/preview-diagnostics-lexus.webp', frame: null }
-  return { photo: certificateFace(kind, brand).photo, frame: certificateFrameName(kind, brand) }
-}
+export const PREVIEW_COVER = '/images/cert/preview-bow.webp'
 
 interface CertificateCopy {
   eyebrow: string[]

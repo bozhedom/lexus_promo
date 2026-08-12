@@ -84,39 +84,31 @@
 
 
 /**
- * Экран успешно найденного автомобиля — отдельный Figma-фрейм 360×800.
+ * Экран успешно найденного автомобиля — отдельные Figma-фреймы 39:3661 (своя
+ * марка) и 39:3718 (чужая), оба 360×800.
  *
- * Он нарисован до последнего пикселя, и подгонять его блоки по отдельности
- * бессмысленно: весь кадр целиком масштабируется одним множителем `--k`, где
- * 1 — макетный пиксель. Поэтому ниже стоят ровно те числа, что и в Figma
- * (за вычетом 44px системной шапки телефона, которой у страницы нет).
+ * Кадр целиком масштабируется одним множителем `--k`, где 1 — макетный
+ * пиксель, и считается он только по ширине: карточка обязана занимать экран
+ * поперёк, иначе она выглядит узкой полосой посреди чёрного поля.
  *
- * Экран должен помещаться целиком, без прокрутки. Раньше высота окна входила в
- * сам множитель: в браузере с адресной строкой (100dvh около 660px) кадр
- * съезжал до 0.86 макетного пикселя, и карточка становилась заметно уже экрана,
- * а текст внутри — мелким. Теперь высота отыгрывается двумя способами, и оба
- * щадят ширину: `--vk` сжимает вертикальные отступы (сами блоки и шрифты при
- * этом макетные), а `--k` уступает высоте только на совсем низких окнах.
+ * Разницу по высоте отыгрывают зазоры между блоками — распорки `.gap`. Они
+ * делят свободную высоту пропорционально макету, поэтому карточка всегда
+ * дотягивается до низа окна: на высоком экране зазоры макетные, на низком
+ * сжимаются все разом, а сами блоки и шрифты остаются в размерах Figma.
  */
 @function k($n) {
   @return calc(#{$n} * var(--k));
 }
 
-/** Вертикальный отступ: он сжимается первым, когда экрана не хватает. */
-@function kv($n) {
-  @return calc(#{$n} * var(--k) * var(--vk));
-}
-
 .foundScreen {
-  --k: min(calc(min(100vw, 420px) / 360), calc(100dvh / 640));
-  --vk: 1;
+  --k: min(calc(min(100vw, 420px) / 360), calc(100dvh / 620));
   height: 100dvh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: kv(8) 0 kv(16);
-  // Расчёт держит кадр в одном экране; прокрутка остаётся страховкой на
+  padding: k(8) 0 k(12);
+  // Распорки держат кадр в одном экране; прокрутка остаётся страховкой на
   // случай крупного системного шрифта, а не обычным поведением.
   overflow-y: auto;
   background: #000;
@@ -124,12 +116,15 @@
   font-family: t.$font-condensed;
 }
 
-// Пороги подобраны по высоте самого кадра: на 800px он идёт как в Figma, ниже
-// зазоры отдают место блокам, чтобы всё осталось на одном экране.
-@media (max-height: 860px) { .foundScreen { --vk: 0.7; } }
-@media (max-height: 780px) { .foundScreen { --vk: 0.55; } }
-@media (max-height: 700px) { .foundScreen { --vk: 0.4; } }
-@media (max-height: 620px) { .foundScreen { --vk: 0.3; } }
+// Свободная высота делится между распорками в тех же долях, что и в макете, но
+// выше макетного зазора ни одна не поднимается: карточка упирается в 707px.
+.gap {
+  flex-grow: var(--gap);
+  flex-shrink: 1;
+  flex-basis: 0;
+  min-height: 0;
+  max-height: k(var(--gap));
+}
 
 .foundEyebrow {
   flex: 0 0 auto;
@@ -141,79 +136,73 @@
 
 .foundPanel {
   width: k(336);
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   min-height: 0;
-  margin-top: kv(12);
-  padding: kv(16) k(16) kv(25);
+  max-height: k(707);
+  margin-top: k(12);
+  padding-inline: k(16);
   display: flex;
   flex-direction: column;
   align-items: center;
   border: 1px solid t.$gold;
   border-radius: k(16);
-}
 
-.brandLogo {
-  width: k(154);
-  height: k(28);
-  flex: 0 0 auto;
-  object-fit: contain;
-}
-
-.brandWordmark {
-  height: k(28);
-  font-size: k(28);
-  line-height: k(28);
-  font-weight: 700;
-  letter-spacing: k(3);
-  color: #d82f2f;
+  // Блоки карточки высоту не отдают — её отдают только распорки между ними.
+  > :not(.gap) { flex: 0 0 auto; }
 }
 
 .carName {
   width: 100%;
   min-width: 0;
-  margin-top: kv(12);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+// Первая строка — марка, вторая — модель с годом (39:3718).
+.carBrand {
+  max-width: 100%;
+  font-size: k(24);
+  font-weight: 700;
+  line-height: k(34);
+  letter-spacing: k(1.2);
+  overflow-wrap: anywhere;
+  color: #fff;
+}
+
+.carModel {
+  max-width: 100%;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   gap: k(12);
-  font-size: k(24);
-  font-weight: 500;
-  line-height: 1.4;
-  letter-spacing: k(1.2);
+  font-size: k(16);
+  font-weight: 700;
+  line-height: k(22);
+  letter-spacing: k(0.8);
   overflow-wrap: anywhere;
-  text-align: center;
-  text-transform: uppercase;
-  color: #fff;
-
-  > span:first-child {
-    min-width: 0;
-    max-width: 100%;
-  }
+  color: rgba(255, 255, 255, 0.75);
 
   i {
     width: 1px;
-    height: k(20);
-    background: rgba(255, 255, 255, 0.55);
+    height: k(16);
+    background: rgba(255, 255, 255, 0.45);
   }
 
-  &[data-size='m'] { font-size: k(20); }
+  &[data-size='m'] { font-size: k(14); }
 
   &[data-size='s'] {
     gap: k(9);
-    font-size: k(17);
+    font-size: k(12);
   }
-}
-
-// Марка без логотипа: без него строка с названием прижимается к верху рамки.
-.foundPanel > .carName:first-child {
-  margin-top: kv(28);
 }
 
 .staticPlate {
   width: k(280);
   height: k(66);
-  margin-top: kv(8);
   padding: k(4);
   display: grid;
   grid-template-columns: 1fr k(68);
@@ -275,7 +264,6 @@
 
 .progressList {
   width: k(304);
-  margin-top: kv(32);
   list-style: none;
 
   li {
@@ -289,8 +277,8 @@
     text-align: left;
 
     + li {
-      margin-top: kv(6);
-      padding-top: kv(6);
+      margin-top: k(4);
+      padding-top: k(4);
       border-top: 1px solid rgba(154, 123, 86, 0.35);
     }
 
@@ -333,7 +321,6 @@
 }
 
 .giftLead {
-  margin-top: kv(30);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -350,8 +337,8 @@
   width: calc(100% + #{k(32)});
   // Свечение карточек выходит за их рамку, а лента режет всё, что торчит из
   // полосы прокрутки: держим сверху и снизу по 12 макетных пикселей воздуха.
-  margin: kv(4) k(-16) 0;
-  padding: kv(12) k(16);
+  margin-inline: k(-16);
+  padding: k(12) k(16);
   display: flex;
   gap: k(8);
   list-style: none;
@@ -374,9 +361,9 @@
 }
 
 /**
- * Карточка подарка — кнопка: тап разворачивает сам пригласительный. Обложка —
- * отдельный кадр из макета, поэтому она просто натянута на карточку; вырезы
- * остались только у тех марок, для которых своей обложки не нарисовано.
+ * Карточка подарка — кнопка: тап разворачивает сам пригласительный. Обложка на
+ * обоих слайдах одна (41:3817, 41:3810): бант прижат к правому краю и занимает
+ * ровно 232 макетных пикселя из 288 — левая треть остаётся чёрной под текст.
  */
 .giftCard {
   position: relative;
@@ -390,35 +377,12 @@
   overflow: hidden;
   border: 1px solid #ffe8cc;
   border-radius: k(16);
-  background: #010200 var(--gift-image) no-repeat center / cover;
+  background: #010200 url('/images/cert/preview-bow.webp') no-repeat right center / auto 100%;
   box-shadow: inset 0 0 k(12) rgba(255, 159, 5, 0.8), 0 0 k(4) rgba(255, 184, 5, 0.8);
   cursor: pointer;
   transition: transform 0.18s ease;
 
-  // Марки без своей обложки берут кадр пригласительного: вырез ставит их
-  // автомобиль в правую половину карточки, как на нарисованных обложках.
-  &[data-frame='diagnostics-toyota'] { background-position: 4% 57%; background-size: 158% auto; }
-  &[data-frame='diagnostics-default'] { background-position: 4% 56%; background-size: 158% auto; }
-
   &:active { transform: scale(0.985); }
-
-  // Затемнение под текстом: слева плотное, к правому краю сходит на нет.
-  &::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background:
-      linear-gradient(90deg, rgba(0, 0, 0, 0.71) 39.7%, rgba(0, 0, 0, 0) 69.7%),
-      linear-gradient(270deg, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0) 16.5%);
-  }
-
-  // Нарисованные обложки уже затемнены слева, а живой кадр — нет: на светлом
-  // капоте белый текст без этой подложки не читается.
-  &[data-frame]::after {
-    background:
-      linear-gradient(90deg, rgba(0, 0, 0, 0.92) 44%, rgba(0, 0, 0, 0) 82%),
-      linear-gradient(270deg, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0) 16.5%);
-  }
 }
 
 .giftCardInner {
@@ -451,16 +415,18 @@
 .giftTitle {
   color: #fff;
   font-size: k(16);
-  line-height: 1.1;
+  line-height: 1.2;
 }
 
+// В новых макетах кнопка не залита золотом, а обведена им: на бархатном фоне
+// карточки золотая плашка спорила с самим бантом.
 .giftMore {
   position: relative;
   z-index: 1;
-  padding: k(6) k(9);
+  padding: k(6) k(10);
+  border: 1px solid rgba(240, 214, 160, 0.85);
   border-radius: k(8);
-  background: linear-gradient(270deg, #ad8d40, #ffe9ae 51.7%, #895921);
-  color: #000;
+  @include t.gold-text;
   font-size: k(12);
   font-weight: 500;
   line-height: 1.15;
@@ -470,7 +436,6 @@
 
 .giftDots {
   height: k(4);
-  margin-top: kv(12);
   display: flex;
   gap: k(4);
 
@@ -490,52 +455,68 @@
 }
 
 /**
- * Чужая марка: вместо списка готовности одна плашка (36:3547). Она синяя, а не
- * золотая — так чужой автомобиль сразу отделён от фирменных Toyota и Lexus.
+ * Чужая марка: вместо списка готовности одна плашка (39:3718) — 304×160, всё
+ * содержимое по центру. Она синяя, а не золотая: так чужой автомобиль сразу
+ * отделён от фирменных Toyota и Lexus.
  */
 .otherBrandNotice {
   width: k(304);
-  margin-top: kv(32);
-  padding: k(16);
-  display: grid;
-  grid-template-columns: k(38) 1fr;
-  gap: k(8);
-  align-items: start;
+  height: k(160);
+  padding: k(17) k(16);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
   border: 1px solid #e8fffd;
   border-radius: k(16);
   background: #0b0c0d;
   box-shadow: inset 0 0 k(12) rgba(5, 172, 255, 0.8), 0 0 k(4) rgba(5, 172, 255, 0.8);
-  text-align: left;
+  text-align: center;
+}
+
+// Иконка и заголовок стоят одной группой по центру плашки.
+.otherBrandHead {
+  display: flex;
+  align-items: center;
+  gap: k(12);
 
   strong {
-    display: block;
     background: linear-gradient(270deg, #567a9a, #bbdaec 51.7%, #6483b7);
     background-clip: text;
     color: transparent;
     font-size: k(16);
-    font-weight: 400;
-    line-height: 1.2;
+    font-weight: 700;
+    line-height: k(19);
+    text-align: left;
   }
+}
 
-  p {
-    margin-top: k(8);
-    font-size: k(12);
-    line-height: 1.4;
-    color: rgba(255, 255, 255, 0.8);
+.otherBrandNote {
+  font-size: k(12);
+  line-height: k(17);
+  color: rgba(255, 255, 255, 0.8);
+
+  // Марки техцентра выделены золотом прямо в строке — так видно, чем мы
+  // занимаемся, без отдельной плашки с логотипами.
+  b {
+    font-weight: 400;
+    color: #d9a441;
   }
 }
 
 .serviceIcon {
-  width: k(38);
-  height: k(38);
+  flex: 0 0 auto;
+  width: k(56);
+  height: k(56);
   display: grid;
   place-items: center;
   border: 1px solid #567a9a;
   border-radius: 50%;
+  background: radial-gradient(circle at 50% 30%, rgba(86, 122, 154, 0.55), rgba(11, 12, 13, 0.2));
 
   svg {
-    width: k(21);
-    height: k(20);
+    width: k(36);
+    height: k(34);
     fill: none;
     stroke: #bbdaec;
     stroke-width: 1;
@@ -548,25 +529,23 @@
   @include t.gold-button;
   width: k(304);
   min-height: k(48);
-  margin-top: kv(24);
   border-radius: k(8);
   font-size: k(16);
   letter-spacing: k(1.28);
 }
 
 .changeButton {
-  margin-top: kv(20);
   font-size: k(14);
   line-height: 1.15;
   letter-spacing: k(1.12);
 }
 
 /**
- * Совсем низкое окно: одних зазоров уже не хватает, и место отдают самые
+ * Совсем низкое окно: распорки уже сжались до нуля, и место отдают самые
  * рослые блоки — знак, лента подарков и строки списка. Ширина и кегль при
  * этом остаются макетными, поэтому карточка не превращается в узкую полосу.
  */
-@media (max-height: 780px) {
+@media (max-height: 660px) {
   .staticPlate { height: k(58); }
   .staticMain b { font-size: k(31); }
   .staticMain i { font-size: k(40); }
@@ -577,11 +556,12 @@
   .progressList li > b { width: k(25); height: k(25); }
   .giftSlide { height: k(140); }
   .giftCard { padding: k(13); }
-  .brandLogo { height: k(24); }
+  .otherBrandNotice { height: k(146); }
+  .serviceIcon { width: k(48); height: k(48); }
   .confirmButton { min-height: k(44); }
 }
 
-@media (max-height: 700px) {
+@media (max-height: 600px) {
   .staticPlate { height: k(54); }
   .giftSlide { height: k(128); }
   .giftCardInner small { font-size: k(11); }
@@ -589,10 +569,10 @@
   .giftLead { font-size: k(15); }
 }
 
-// Свободную высоту (широкий экран, планшет) отдаём зазорам, а не растягиваем
+// Свободную высоту (широкий экран, планшет) отдаём распоркам, а не растягиваем
 // рамку: макет рассчитан на телефон.
 @media (min-width: 769px) {
   .foundScreen {
-    --k: min(calc(420 / 360), calc(100dvh / 640));
+    --k: min(calc(420 / 360), calc(100dvh / 620));
   }
 }

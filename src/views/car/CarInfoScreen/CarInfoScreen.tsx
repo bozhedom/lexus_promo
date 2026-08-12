@@ -26,20 +26,16 @@ import {
 import { useFunnel } from '@/shared/lib/funnel'
 import type { CarInfo } from '@/shared/lib/types'
 import { Button, Loader, SelectField, StageLayout, TextField } from '@/shared/ui'
-import {
-  CertificateViewer,
-  certificatePreview,
-  isToyota,
-  type CertificateKind,
-} from '@/widgets/certificate-sheet'
+import { CertificateViewer, type CertificateKind } from '@/widgets/certificate-sheet'
 import { validatePlate, validateShortText } from '@/lib/validation'
 import styles from './CarInfoScreen.module.scss'
 
 type UiState = 'loading' | 'found' | 'manual'
 
 /**
- * Подарки на экране найденного автомобиля. Обложка каждого слайда — кадр его
- * же пригласительного, поэтому берётся из общего описания сертификата.
+ * Подарки на экране найденного автомобиля. Обложка у слайдов общая — золотой
+ * бант из макетов 41:3817 и 41:3810; марка отыгрывается только внутри самого
+ * пригласительного, которое открывается по тапу.
  */
 const GIFTS = [
   {
@@ -144,14 +140,23 @@ function StepIcon({ kind }: { kind: 'gift' | 'letter' | 'mask' }) {
 }
 
 /**
- * Насколько ужать заголовок с маркой. В макете «Lexus RX 350 | 2022» — 24px и
- * одна строка; считаем по числу знаков вместе с годом и разделителем.
+ * Насколько ужать строку модели. В макете «RANGE ROVER | 2022» — 16px и одна
+ * строка; считаем по числу знаков вместе с годом и разделителем.
  */
-function carNameSize(car: FoundCar): 'm' | 's' | undefined {
-  const length = `${car.brand} ${car.model}`.length + (car.year ? 7 : 0)
+function modelSize(car: FoundCar): 'm' | 's' | undefined {
+  const length = car.model.length + (car.year ? 7 : 0)
   if (length > 26) return 's'
   if (length > 20) return 'm'
   return undefined
+}
+
+/**
+ * Зазор между блоками карточки. Высота у него не своя: свободную высоту экрана
+ * зазоры делят между собой пропорционально макету (39:3661), поэтому карточка
+ * всегда занимает окно целиком, а не оставляет пустое место снизу.
+ */
+function Gap({ size }: { size: number }) {
+  return <span className={styles.gap} style={{ '--gap': size } as CSSProperties} aria-hidden />
 }
 
 // Галочка выполненного шага: в макете тёмная на золотом круге.
@@ -359,9 +364,6 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
   const plateShown = formatPlate(data.plateNumber ?? '')
   const plateMain = splitPlate(data.plateNumber ?? '').main
   const supportedBrand = /^(toyota|lexus)$/i.test(car?.brand ?? '')
-  // Логотип марки над карточкой есть только у Lexus: в макетах Toyota идёт
-  // набором, а чужие марки логотипом не подписываются вовсе.
-  const brandLogo = /^lexus$/i.test(car?.brand ?? '') ? '/images/redesign/lexus-logo.svg' : null
 
   if (ui === 'found' && car) {
     return (
@@ -369,28 +371,19 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
         <p className={styles.foundEyebrow}>Автомобиль успешно найден</p>
 
         <section className={styles.foundPanel}>
-          {/* Марка над карточкой: у Lexus логотип, у Toyota — набор, как в
-              макетах и на самом пригласительном. Чужие марки не подписываем. */}
-          {brandLogo ? (
-            <Image
-              className={styles.brandLogo}
-              src={brandLogo}
-              alt={car.brand}
-              width={154}
-              height={28}
-              priority
-            />
-          ) : isToyota(car.brand) ? (
-            <p className={styles.brandWordmark}>TOYOTA</p>
-          ) : null}
+          <Gap size={24} />
 
-          {/* «Lexus RX 350 | 2022» стоит в макете одной строкой. Длинные имена
-              вроде «Toyota Land Cruiser» в 24px туда не влезают и разрывают
-              строку прямо на разделителе, поэтому шрифт для них мельче. */}
-          <h1 className={styles.carName} data-size={carNameSize(car)}>
-            <span>{car.brand} {car.model}</span>
-            {car.year ? <><i /> <span>{car.year}</span></> : null}
+          {/* Марка отдельной строкой, под ней модель с годом (39:3661, 39:3718).
+              Логотипов над карточкой больше нет ни у одной марки. */}
+          <h1 className={styles.carName}>
+            <span className={styles.carBrand}>{car.brand}</span>
+            <span className={styles.carModel} data-size={modelSize(car)}>
+              <span>{car.model}</span>
+              {car.year ? <><i /><span>{car.year}</span></> : null}
+            </span>
           </h1>
+
+          <Gap size={8} />
 
           <div className={styles.staticPlate} aria-label={`Госномер ${plateShown.main} ${plateShown.region}`}>
             {/* На настоящем знаке цифры крупнее букв — в макете так же */}
@@ -404,6 +397,8 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
               <Image src="/images/plate-rus-flag.svg" alt="RUS" width={48} height={12} />
             </span>
           </div>
+
+          <Gap size={supportedBrand ? 44 : 24} />
 
           {/* Список готовности — про марки техцентра. Чужой марке вместо него
               одна строка о другом техцентре, а подарки показываются в обоих
@@ -430,25 +425,33 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
             <article className={styles.otherBrandNotice}>
               {/* Иконка и обводка плашки синие, а не золотые: в макете чужая
                   марка отделена от фирменного золота техцентра. */}
-              <span className={styles.serviceIcon} aria-hidden>
-                <svg viewBox="0 0 21 20">
-                  <path d="M16.5 19.5V8.5a1 1 0 0 0-1-1h-10a1 1 0 0 0-1 1v11M4.5 11.5h12M4.5 15.5h12M20.5 17.5a2 2 0 0 1-2 2h-16a2 2 0 0 1-2-2v-11a2 2 0 0 1 1.13-1.8l7.95-3.98a2 2 0 0 1 1.84 0l7.95 3.98a2 2 0 0 1 1.13 1.8Z" />
-                </svg>
-              </span>
-              <div>
-                <strong>Ваш автомобиль обслуживается в другом техцентре</strong>
-                <p>
-                  Мы специализируемся на Toyota и Lexus. Для Вашего автомобиля у нас есть
-                  отдельный специализированный техцентр
-                </p>
-              </div>
+              <p className={styles.otherBrandHead}>
+                <span className={styles.serviceIcon} aria-hidden>
+                  <svg viewBox="0 0 21 20">
+                    <path d="M16.5 19.5V8.5a1 1 0 0 0-1-1h-10a1 1 0 0 0-1 1v11M4.5 11.5h12M4.5 15.5h12M20.5 17.5a2 2 0 0 1-2 2h-16a2 2 0 0 1-2-2v-11a2 2 0 0 1 1.13-1.8l7.95-3.98a2 2 0 0 1 1.84 0l7.95 3.98a2 2 0 0 1 1.13 1.8Z" />
+                  </svg>
+                </span>
+                <strong>Ваш автомобиль<br />обслуживается<br />в другом техцентре</strong>
+              </p>
+              <p className={styles.otherBrandNote}>
+                Мы специализируемся на <b>Toyota</b> и <b>Lexus</b>.
+              </p>
+              <p className={styles.otherBrandNote}>
+                Для Вашего автомобиля у нас есть отдельный
+                <br />
+                специализированный техцентр
+              </p>
             </article>
           )}
+
+          <Gap size={supportedBrand ? 32 : 20} />
 
           <p className={styles.giftLead}>
             Для Вашего автомобиля приготовлены
             <span>персональные подарки в честь знакомства</span>
           </p>
+
+          <Gap size={4} />
 
           {/* Подарки листаются свайпом: в кадр помещается один, второй
               выглядывает справа. Тап открывает сам пригласительный. */}
@@ -463,12 +466,6 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
                 <button
                   type="button"
                   className={styles.giftCard}
-                  data-frame={certificatePreview(gift.kind, car.brand).frame ?? undefined}
-                  style={
-                    {
-                      '--gift-image': `url(${certificatePreview(gift.kind, car.brand).photo})`,
-                    } as CSSProperties
-                  }
                   onClick={() => setPreview(gift.kind)}
                   aria-label={`Посмотреть пригласительный: ${gift.title}`}
                 >
@@ -493,9 +490,14 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
 
           {errors.form && <p className={styles.error}>{errors.form}</p>}
 
+          <Gap size={8} />
+
           <Button block className={styles.confirmButton} onClick={confirmFound} disabled={submitting}>
             {submitting ? <Loader label="Сохраняем" /> : 'Это мой автомобиль'}
           </Button>
+
+          <Gap size={20} />
+
           <button
             type="button"
             className={styles.changeButton}
@@ -507,6 +509,8 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
           >
             Изменить автомобиль
           </button>
+
+          <Gap size={25} />
         </section>
 
         {/* Имени гость ещё не вводил, поэтому в превью стоит «Ваше имя» —
