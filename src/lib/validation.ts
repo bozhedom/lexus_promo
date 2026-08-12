@@ -65,17 +65,17 @@ export function validateEmail(raw: unknown): string | null {
 const NAME_WORD = /^[А-ЯЁA-Z][а-яёa-z]*(?:[-'][А-ЯЁA-Zа-яёa-z][а-яёa-z]*)*$/i
 
 /**
- * Имя и отчество. Минимум два слова по 2 буквы, каждое слово только из букв,
- * дефисов и апострофов. Отсекает вставленный скрипт, цифры и набор из одной
- * буквы вроде «аааааа».
+ * Имя, отчество по желанию. Слова по 2 буквы, каждое только из букв, дефисов и
+ * апострофов. Отсекает вставленный скрипт, цифры и набор из одной буквы вроде
+ * «аааааа». Отчество необязательно: одного имени достаточно.
  */
 export function validateFullName(raw: unknown): string | null {
   if (typeof raw !== 'string') return null
   const name = raw.trim().replace(/\s+/g, ' ')
-  if (name.length < 5 || name.length > 60) return null
+  if (name.length < 2 || name.length > 60) return null
 
   const words = name.split(' ')
-  if (words.length < 2 || words.length > 4) return null
+  if (words.length > 4) return null
   for (const word of words) {
     if (word.length < 2 || word.length > 25) return null
     if (!NAME_WORD.test(word)) return null

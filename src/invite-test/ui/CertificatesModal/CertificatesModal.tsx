@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 
 import { CertificateSheet, CertificateViewer, type CertificateKind } from '@/widgets/certificate-sheet'
 
@@ -33,9 +33,24 @@ interface CertificatesModalProps {
   onSent?: (channel: Channel) => void
 }
 
-const CARDS: { kind: CertificateKind; label: string }[] = [
-  { kind: 'diagnostics', label: 'Диагностика ходовой части' },
-  { kind: 'gift', label: 'Замена масла' },
+/**
+ * Подписи под превью. Перенос проставлен вручную: у диагностики строка длиннее
+ * карточки, и автоперенос ронял «части» третьей строкой — от этого пара
+ * пригласительных вставала на разной высоте.
+ */
+const CARDS: { kind: CertificateKind; label: ReactNode; title: string }[] = [
+  {
+    kind: 'diagnostics',
+    label: (
+      <>
+        Диагностика
+        <br />
+        ходовой части
+      </>
+    ),
+    title: 'Диагностика ходовой части',
+  },
+  { kind: 'gift', label: 'Замена масла', title: 'Замена масла' },
 ]
 
 export function CertificatesModal({
@@ -117,7 +132,7 @@ export function CertificatesModal({
               className={styles.previewButton}
               key={card.kind}
               onClick={() => setExpanded(card.kind)}
-              aria-label={`Открыть пригласительный: ${card.label}`}
+              aria-label={`Открыть пригласительный: ${card.title}`}
             >
               <span className={styles.previewFrame}>
                 <CertificateSheet

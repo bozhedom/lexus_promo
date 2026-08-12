@@ -27,8 +27,16 @@ type Phase = 'loading' | 'ready' | 'error'
 export function TicketScreen() {
   const router = useRouter()
   const { go } = useStageTransition()
+  // Пригласительные выписывает шаг личных данных, и оттуда гость приходит сюда
+  // уже с готовой заявкой. Старый путь с подтверждением телефона тоже работает:
+  // тогда сертификат оформляется прямо здесь.
   const show = useFunnelGuard(
-    (d) => Boolean(d.applicationId && d.fullName && d.phone && d.phoneVerificationToken),
+    (d) =>
+      Boolean(
+        d.applicationId &&
+          d.fullName &&
+          (d.certificateCode || (d.phone && d.phoneVerificationToken)),
+      ),
     '/personal',
   )
   const { data, sessionId, update, track } = useFunnel()
@@ -40,9 +48,13 @@ export function TicketScreen() {
   const [modalOpen, setModalOpen] = useState(false)
   const assetsReady = useSceneAssets(TICKET_ASSETS)
 
+  // Заявка уже завершена: сертификат оформлять нечего, экран собирается по
+  // данным воронки. Показываем его сразу, без запроса.
+  const completed = Boolean(data.certificateCode)
+
   // идемпотентно создаём сертификат
   useEffect(() => {
-    if (!show || !data.applicationId) return
+    if (!show || !data.applicationId || completed) return
     // стартовое состояние и так 'loading': лишний сброс только плодит рендеры
     let active = true
     completeApplication(data.applicationId, sessionId, data.phoneVerificationToken ?? '')
@@ -66,7 +78,11 @@ export function TicketScreen() {
       active = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [show, data.applicationId])
+  }, [show, data.applicationId, completed])
+
+  useEffect(() => {
+    if (show && completed) setPhase('ready')
+  }, [show, completed])
 
   // Данные для персональных сертификатов. Сессию заводим заранее, пока человек
   // рассматривает экран: к моменту открытия модалки картинки уже готовы.
@@ -133,15 +149,15 @@ export function TicketScreen() {
         </div>
       )}
 
-      {phase === 'ready' && result && assetsReady && (
+      {phase === 'ready' && assetsReady && (
         <div className={styles.reveal}>
           <TicketCard
-            fullName={result.application.fullName ?? data.fullName ?? ''}
-            brand={result.application.carBrand ?? data.carBrand ?? ''}
-            model={result.application.carModel ?? data.carModel ?? ''}
-            year={result.application.carYear ?? data.carYear ?? null}
-            plate={result.application.plateNumber ?? data.plateNumber ?? ''}
-            amount={result.certificate.amount}
+            fullName={result?.application.fullName ?? data.fullName ?? ''}
+            brand={result?.application.carBrand ?? data.carBrand ?? ''}
+            model={result?.application.carModel ?? data.carModel ?? ''}
+            year={result?.application.carYear ?? data.carYear ?? null}
+            plate={result?.application.plateNumber ?? data.plateNumber ?? ''}
+            amount={result?.certificate.amount ?? data.certificateAmount ?? 1500}
             onMeet={() => {
               track('outbound_click', { id: 'meet_team' })
               go('/links')

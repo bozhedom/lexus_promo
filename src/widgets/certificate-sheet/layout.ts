@@ -58,7 +58,7 @@ export function certificateFace(kind: CertificateKind, brand: string): Certifica
       photoRaster: 'images/cert/bg-diagnostics-toyota.jpg',
       address: DIAGNOSTICS_ADDRESS,
       // на кадре Land Cruiser вместо номера шильд: рамка ниже и чуть уже
-      plate: { x: 448 / 1080, y: 1236 / 1920, w: 171 / 1080 },
+      plate: { x: 451 / 1080, y: 1148 / 1920, w: 182 / 1080 },
     }
   }
   if (isLexus(brand)) {
@@ -66,7 +66,7 @@ export function certificateFace(kind: CertificateKind, brand: string): Certifica
       photo: '/images/cert/bg-diagnostics-lexus.webp',
       photoRaster: 'images/cert/bg-diagnostics-lexus.jpg',
       address: DIAGNOSTICS_ADDRESS,
-      plate: { x: 439 / 1080, y: 1162 / 1920, w: 197 / 1080 },
+      plate: { x: 440 / 1080, y: 1163 / 1920, w: 195 / 1080 },
     }
   }
   // Кадр без марки: тот же автомобиль на подъёмнике, что и у остальных, но с
@@ -76,7 +76,7 @@ export function certificateFace(kind: CertificateKind, brand: string): Certifica
     photo: '/images/cert/bg-diagnostics-default.webp',
     photoRaster: 'images/cert/bg-diagnostics-default.jpg',
     address: DIAGNOSTICS_ADDRESS,
-    plate: { x: 439 / 1080, y: 1162 / 1920, w: 197 / 1080 },
+    plate: { x: 440 / 1080, y: 1163 / 1920, w: 195 / 1080 },
   }
 }
 
@@ -136,13 +136,14 @@ export function certificateCopy(kind: CertificateKind, amount: number): Certific
 }
 
 /**
- * Имя и отчество ставятся в две строки, как в макете. Короткая подпись
- * («Ваше имя») остаётся одной строкой: в две она выглядит как обрывок.
+ * Имя и отчество ставятся в две строки, как в макете (34:2516). Отчество не
+ * обязательно: одно имя остаётся одной строкой (34:2612), а подпись-заглушка
+ * «Ваше имя» разбивается по словам, как её нарисовали в 34:2566.
  */
 export function splitGuestName(name: string): string[] {
   const words = name.trim().split(/\s+/).filter(Boolean)
-  const whole = words.join(' ')
-  if (words.length < 2 || whole.length <= 13) return [whole || 'Ваше имя']
+  if (words.length === 0) return ['Ваше', 'имя']
+  if (words.length === 1) return [words[0]!]
   return [words[0]!, words.slice(1).join(' ')]
 }
 

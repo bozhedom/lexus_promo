@@ -59,9 +59,14 @@ describe('validateFullName', () => {
     expect(validateFullName('Иван Александрович Петров')).toBe('Иван Александрович Петров')
   })
 
-  it('требует минимум два слова', () => {
-    expect(validateFullName('Иван')).toBeNull()
+  it('принимает имя без отчества', () => {
+    expect(validateFullName('Иван')).toBe('Иван')
+    expect(validateFullName('  Анна-Мария  ')).toBe('Анна-Мария')
+  })
+
+  it('требует хотя бы две буквы', () => {
     expect(validateFullName('И')).toBeNull()
+    expect(validateFullName('')).toBeNull()
   })
 
   it('отклоняет цифры, разметку и мусор', () => {

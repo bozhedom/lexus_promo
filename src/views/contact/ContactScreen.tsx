@@ -11,6 +11,7 @@ import {
 import { useScreenView } from '@/shared/analytics'
 import { useFunnel, useFunnelGuard } from '@/shared/lib/funnel'
 import { useSceneAssets } from '@/shared/lib/useSceneAssets'
+import { useStageTransition } from '@/widgets/curtain-transition'
 import { Button, Checkbox, Loader } from '@/shared/ui'
 import { validateFullName } from '@/lib/validation'
 import { CertificatesModal } from '@/invite-test/ui/CertificatesModal'
@@ -28,6 +29,7 @@ const CONTACT_ASSETS = [
 export function ContactScreen() {
   const show = useFunnelGuard((d) => Boolean(d.applicationId && d.carBrand), '/car-number')
   const { data, sessionId, update, track } = useFunnel()
+  const { go } = useStageTransition()
   useScreenView('personal')
 
   const savedName = (data.fullName ?? '').trim().split(/\s+/)
@@ -58,8 +60,9 @@ export function ContactScreen() {
 
   const submitName = async () => {
     const next: Record<string, string> = {}
-    const name = validateFullName(`${firstName} ${patronymic}`)
-    if (!name) next.fullName = 'Укажите имя и отчество, только буквы'
+    // Отчество необязательно: достаточно имени.
+    const name = validateFullName(`${firstName} ${patronymic}`.trim())
+    if (!name) next.fullName = 'Укажите имя, только буквы'
     if (!consent) next.consent = 'Нужно согласие на обработку персональных данных'
     setErrors(next)
     if (Object.keys(next).length > 0) return
@@ -121,7 +124,7 @@ export function ContactScreen() {
               />
             </label>
             <label className={styles.field}>
-              <span>Отчество</span>
+              <span>Отчество <i>по желанию</i></span>
               <input
                 placeholder="Иванович"
                 maxLength={30}
@@ -191,6 +194,13 @@ export function ContactScreen() {
           carTitle={[data.carBrand, data.carModel].filter(Boolean).join(' ')}
           plate={data.plateNumber}
           amount={data.certificateAmount ?? 1500}
+          // Пригласительные гость забирает в мессенджере, а на сайте идёт
+          // дальше — знакомиться с командой автомобиля. Переход делаем сразу по
+          // клику, чтобы, вернувшись из чата, он попал уже на этот экран.
+          onSent={(channel) => {
+            track('outbound_click', { id: `messenger_${channel}` })
+            go('/certificate')
+          }}
         />
       )}
     </main>

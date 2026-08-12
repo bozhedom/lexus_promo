@@ -104,6 +104,14 @@
     line-height: 1;
     letter-spacing: 0.6px;
     text-transform: uppercase;
+
+    // «по желанию» у отчества: та же строка, но заметно тише подписи поля.
+    i {
+      font-size: 10px;
+      font-style: normal;
+      letter-spacing: 0.4px;
+      color: rgba(255, 255, 255, 0.45);
+    }
   }
 
   input {
