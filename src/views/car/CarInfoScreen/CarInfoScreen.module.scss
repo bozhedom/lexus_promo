@@ -395,8 +395,7 @@
   gap: k(2);
   text-align: left;
 
-  small,
-  strong { @include t.gold-text; }
+  small { @include t.gold-text; }
 
   small {
     font-size: k(12);
@@ -405,10 +404,12 @@
     text-transform: uppercase;
   }
 
+  // Сумма в новом макете белая, золотом набрано только слово «сертификат».
   strong {
     font-size: k(24);
     font-weight: 600;
     line-height: 1.15;
+    color: #fff;
   }
 }
 

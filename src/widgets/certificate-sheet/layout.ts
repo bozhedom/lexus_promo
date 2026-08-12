@@ -80,15 +80,6 @@ export function certificateFace(kind: CertificateKind, brand: string): Certifica
   }
 }
 
-/**
- * Обложка слайда подарка на экране найденного автомобиля (41:3817, 41:3810).
- *
- * Кадр один на оба слайда: золотой бант, прижатый к правому краю карточки.
- * Марка на обложке больше не отыгрывается — она осталась только внутри самого
- * пригласительного, где на фотографии стоит автомобиль гостя.
- */
-export const PREVIEW_COVER = '/images/cert/preview-bow.webp'
-
 interface CertificateCopy {
   eyebrow: string[]
   title: string[]
