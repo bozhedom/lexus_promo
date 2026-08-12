@@ -43,15 +43,20 @@ export function ExistingCertificateScreen() {
     <main className={styles.screen}>
       <span className={styles.stage} aria-hidden />
       <section className={styles.card}>
-        <p className={styles.eyebrow}>С возвращением</p>
+        {/* Шапка по макету 36:3481: приветствие и имя одной группой, ниже
+            заголовок и строка с номером. */}
+        <header className={styles.head}>
+          <p className={styles.greeting}>
+            <span>С возвращением,</span>
+            {data.fullName && <span>{data.fullName}</span>}
+          </p>
 
-        {data.fullName && <p className={styles.guest}>{data.fullName}</p>}
+          <h1>Ваши пригласительные<br />уже готовы</h1>
 
-        <h1>Ваши пригласительные<br />уже готовы</h1>
-
-        <p className={styles.lead}>
-          Мы нашли их по номеру {formatPlateLine(data.plateNumber ?? '')}
-        </p>
+          <p className={styles.lead}>
+            Мы нашли их по номеру {formatPlateLine(data.plateNumber ?? '')}
+          </p>
+        </header>
 
         <div className={styles.cards}>
           {CARDS.map((card) => (
@@ -77,22 +82,29 @@ export function ExistingCertificateScreen() {
           ))}
         </div>
 
-        <p className={styles.note}>
-          Повторно оформлять приглашение не нужно: пригласительные уже закреплены за этим
-          автомобилем. Покажите код {data.certificateCode} администратору автоцентра.
-        </p>
+        <div className={styles.notes}>
+          <p>
+            Повторно оформлять пригласительные не нужно, они уже закреплены за Вашим
+            автомобилем
+          </p>
+          <p>
+            Покажите код <b>{data.certificateCode}</b> администратору автоцентра
+          </p>
+        </div>
 
-        <Button block onClick={() => router.push('/links')}>Продолжить</Button>
-        <button
-          type="button"
-          className={styles.newButton}
-          onClick={() => {
-            reset()
-            router.push('/car-number')
-          }}
-        >
-          Ввести другой автомобиль
-        </button>
+        <div className={styles.actions}>
+          <Button block onClick={() => router.push('/links')}>Продолжить</Button>
+          <button
+            type="button"
+            className={styles.newButton}
+            onClick={() => {
+              reset()
+              router.push('/car-number')
+            }}
+          >
+            Ввести другой автомобиль
+          </button>
+        </div>
       </section>
 
       {expanded && (

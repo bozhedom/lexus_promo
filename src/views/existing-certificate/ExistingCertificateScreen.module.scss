@@ -23,131 +23,152 @@
   opacity: 0.5;
 }
 
+/**
+ * Окно «пригласительные уже готовы» — макет 36:3481: карточка 344px, шапка,
+ * пара превью и две кнопки. Все размеры взяты оттуда же.
+ */
 .card {
   position: relative;
   z-index: 1;
-  width: min(100%, 380px);
-  padding: 22px 12px 20px;
-  border: 1px solid t.$gold;
-  border-radius: 14px;
-  background: rgba(0, 0, 0, 0.78);
+  width: min(100%, 344px);
+  padding: 32px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  border: 1px solid #f3d7af;
+  border-radius: 12px;
+  background: #0d0b0c;
   box-shadow: 0 18px 60px rgba(0, 0, 0, 0.72), 0 0 28px rgba(228, 204, 174, 0.12);
   backdrop-filter: blur(14px);
 
-  > button:first-of-type {
-    @include t.gold-button;
-    min-height: 48px;
-    margin-top: 16px;
-    font-size: 16px;
-  }
-
   h1 {
     @include t.gold-text;
-    margin-top: 4px;
     font-family: t.$font-display;
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 400;
-    line-height: 1.08;
-    letter-spacing: 0.8px;
+    line-height: 1.15;
+    letter-spacing: 1px;
     text-transform: uppercase;
   }
 }
 
-.eyebrow {
-  font-size: 12px;
-  letter-spacing: 1.4px;
-  text-transform: uppercase;
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-// Имя стоит там же, где и в окне выдачи: гость узнаёт свой пригласительный.
-.guest {
-  @include t.gold-text;
-  margin-top: 6px;
-  padding-inline: 12px;
-  font-family: t.$font-display;
-  font-size: 30px;
-  font-weight: 400;
-  line-height: 1.1;
-  letter-spacing: 0.4px;
+// Приветствие и имя — одной группой обычным кеглем, как в макете: крупным
+// золотом набран сам заголовок, а не имя.
+.greeting {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 2px;
+  font-size: 14px;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .lead {
-  margin-top: 8px;
-  font-size: 13px;
-  line-height: 1.4;
+  font-size: 14px;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .cards {
   display: flex;
+  align-items: flex-start;
   justify-content: center;
-  gap: 10px;
-  margin-top: 16px;
+  gap: 16px;
 }
 
 .previewButton {
   position: relative;
-  flex: 1 1 0;
+  flex: 0 1 120px;
   min-width: 0;
-  max-width: 152px;
   padding: 0;
   border: 0;
   background: none;
-  color: t.$gold-light;
   font-family: inherit;
-  font-size: 11px;
-  letter-spacing: 0.45px;
-  text-transform: uppercase;
   cursor: zoom-in;
 }
 
-// Превью — тот же CertificateSheet, ужатый по ширине карточки.
+// Превью — тот же CertificateSheet. Своей рамки у него нет: она уже нарисована
+// внутри кадра, и вторая обводка вокруг выглядела как лишняя коробка.
 .previewFrame {
   display: block;
   container-type: inline-size;
   width: 100%;
   aspect-ratio: 360 / 640;
   overflow: hidden;
-  border: 1px solid rgba(228, 204, 174, 0.62);
   border-radius: 8px;
   background: #050403;
 }
 
+// Две строки зарезервированы всегда: на узком экране «в честь знакомства»
+// переносится, и без запаса эта карточка вставала выше соседней.
 .previewLabel {
+  @include t.gold-text;
   display: block;
-  margin-top: 7px;
+  min-height: 2.4em;
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.2;
+  text-transform: uppercase;
 }
 
-.note {
-  margin-top: 14px;
-  color: rgba(255, 255, 255, 0.66);
-  font-size: 12px;
-  line-height: 1.4;
+.notes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 14px;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.8);
+
+  b {
+    font-weight: 400;
+    color: #f9bf6f;
+  }
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+
+  > button:first-child {
+    @include t.gold-button;
+    min-height: 48px;
+    border-radius: 8px;
+    font-size: 16px;
+    letter-spacing: 1.28px;
+  }
 }
 
 .newButton {
-  margin-top: 13px;
   border: 0;
   background: none;
-  color: rgba(255, 255, 255, 0.72);
+  color: rgba(255, 255, 255, 0.8);
   font: inherit;
-  font-size: 12px;
+  font-size: 14px;
+  letter-spacing: 1.12px;
   text-decoration: underline;
   text-underline-offset: 3px;
   text-transform: uppercase;
   cursor: pointer;
 }
 
-@media (max-height: 650px) {
+@media (max-height: 700px) {
   .screen { padding-block: 8px; }
-  .card { padding: 12px 12px; }
-  .eyebrow { font-size: 11px; }
-  .guest { margin-top: 2px; font-size: 22px; }
+  .card { gap: 18px; padding: 20px 16px 16px; }
   .card h1 { font-size: 18px; }
-  .lead { margin-top: 4px; font-size: 12px; }
-  .cards { margin-top: 9px; }
-  .previewButton { max-width: 112px; font-size: 10px; }
-  .previewLabel { margin-top: 5px; }
-  .note { margin-top: 8px; font-size: 11px; line-height: 1.3; }
-  .card > button:first-of-type { margin-top: 9px; min-height: 42px; }
-  .newButton { margin-top: 8px; }
+  .greeting,
+  .lead,
+  .notes { font-size: 13px; }
+  .previewButton { flex-basis: 104px; }
+  .notes { gap: 8px; }
+  .actions { gap: 12px; }
+  .actions > button:first-child { min-height: 42px; }
 }
