@@ -35,17 +35,22 @@
   --stage-room: calc(var(--car-top) - var(--brand-h) - 12px);
   --stage-shift: clamp(0px, min(max(var(--stage-need), 16px), var(--stage-room)), 140px);
   --car-bottom: calc(var(--car-raw) - var(--stage-shift));
-  // Фары стоят на 36.8% высоты кадра и на 20.5%/79.5% его ширины. Кадр
-  // отцентрован по горизонтали и поднят на --stage-shift, поэтому свет
-  // пересчитывается теми же двумя величинами, что и сам автомобиль.
+  // Оптика стоит на 36.8% высоты кадра; по горизонтали центр фары у Lexus на
+  // 22.2% ширины, у Land Cruiser — на 20.5%. Кадр отцентрован и поднят на
+  // --stage-shift, поэтому свет пересчитывается теми же двумя величинами, что
+  // и сам автомобиль.
   --lamp-y: calc(var(--stage-h) * 0.368 - var(--stage-shift));
-  --lamp-dx: calc(var(--stage-w) * 0.295);
+  --lamp-dx: calc(var(--stage-w) * 0.278);
+  // Габариты самой фары в кадре: по ним же строится и ореол вокруг неё.
+  --lamp-w: calc(var(--stage-w) * 0.115);
+  --lamp-h: calc(var(--stage-h) * 0.022);
   // Оттенок света: у Lexus фары тёплые, у Land Cruiser — холодные диодные.
   --lamp-tint: 255, 238, 205;
 
   &[data-ready='false'] {
 
     .stage,
+    .lamps,
     .content {
       opacity: 0;
       visibility: hidden;
@@ -59,6 +64,14 @@
       opacity: 1;
       visibility: visible;
       transition: opacity 0.18s ease;
+    }
+
+    // Свет разгорается уже после кадра: сначала появляется автомобиль, и
+    // только потом в фарах включается оптика.
+    .lamps {
+      opacity: 1;
+      visibility: visible;
+      transition: opacity 0.5s ease 0.22s;
     }
   }
 }
@@ -271,50 +284,57 @@
   pointer-events: none;
 }
 
-// Каждая фара — два слоя: плотное ядро на самой оптике и широкий ореол,
-// который уходит в темноту. Они дышат в одном такте, но с разным размахом,
-// поэтому свет не выглядит равномерно мигающим.
+/**
+ * Одна фара — три слоя, и все построены от габаритов самой оптики, а не от
+ * произвольного круга рядом:
+ *  - сам элемент: горячая нить внутри фары, вытянутая по её форме;
+ *  - `::before`: ореол вокруг лампы, тоже плоский и широкий;
+ *  - `::after`: отсвет, уходящий вниз и в сторону.
+ */
 .lamp {
   position: absolute;
   top: var(--lamp-y);
-  width: calc(var(--stage-w) * 0.62);
-  height: calc(var(--stage-h) * 0.2);
+  width: var(--lamp-w);
+  height: var(--lamp-h);
   transform: translate(-50%, -50%);
+  border-radius: 50%;
   background: radial-gradient(closest-side ellipse,
-      rgba(var(--lamp-tint), 0.3),
-      rgba(var(--lamp-tint), 0.13) 32%,
-      rgba(var(--lamp-tint), 0.04) 58%,
-      transparent 78%);
-  animation: lamp-halo 6.4s ease-in-out infinite;
-  will-change: opacity, transform;
+      rgba(var(--lamp-tint), 0.9),
+      rgba(var(--lamp-tint), 0.5) 38%,
+      rgba(var(--lamp-tint), 0.16) 68%,
+      transparent 100%);
+  filter: blur(2px);
+  animation: lamp-core 6.4s ease-in-out infinite;
+  will-change: opacity;
 
-  // Ядро: узкая горячая полоса ровно по оптике.
+  // Ореол: вчетверо шире фары и лишь немногим выше — свет ложится вдоль
+  // оптики, а не растекается шаром.
   &::before {
     content: '';
     position: absolute;
     left: 50%;
     top: 50%;
-    width: calc(var(--stage-w) * 0.2);
-    height: calc(var(--stage-h) * 0.035);
-    border-radius: 50%;
+    width: calc(var(--lamp-w) * 4.2);
+    height: calc(var(--lamp-h) * 3.6);
     background: radial-gradient(closest-side ellipse,
-        rgba(var(--lamp-tint), 0.72),
-        rgba(var(--lamp-tint), 0.28) 45%,
-        transparent 100%);
+        rgba(var(--lamp-tint), 0.34),
+        rgba(var(--lamp-tint), 0.12) 42%,
+        transparent 82%);
     transform: translate(-50%, -50%);
-    animation: lamp-core 6.4s ease-in-out infinite;
+    animation: lamp-halo 6.4s ease-in-out infinite;
   }
 
-  // Луч: свет уходит вниз и в сторону, как от фары в дыму сцены.
+  // Отсвет на полу и в занавесе: расходится от фары наружу и вниз.
   &::after {
     content: '';
     position: absolute;
     left: 50%;
     top: 50%;
-    width: calc(var(--stage-w) * 0.34);
-    height: calc(var(--stage-h) * 0.13);
-    background: linear-gradient(180deg, rgba(var(--lamp-tint), 0.16), transparent 72%);
-    filter: blur(10px);
+    width: calc(var(--lamp-w) * 2.6);
+    height: calc(var(--lamp-h) * 7);
+    background: linear-gradient(180deg, rgba(var(--lamp-tint), 0.17), transparent 76%);
+    filter: blur(9px);
+    // Только прозрачность: `transform` у отсвета занят наклоном.
     animation: lamp-core 6.4s ease-in-out infinite;
   }
 }
@@ -323,7 +343,7 @@
   left: calc(50% - var(--lamp-dx));
 
   &::after {
-    transform: translate(-50%, 0) skewX(16deg);
+    transform: translate(-50%, 0) skewX(14deg);
   }
 }
 
@@ -339,7 +359,17 @@
   }
 
   &::after {
-    transform: translate(-50%, 0) skewX(-16deg);
+    transform: translate(-50%, 0) skewX(-14deg);
+  }
+}
+
+// Анимация запускается только вместе с готовой сценой: иначе свет успевал
+// разгореться на ещё пустом экране и въезжал в кадр раньше автомобиля.
+.screen[data-ready='false'] .lamp {
+  &,
+  &::before,
+  &::after {
+    animation: none;
   }
 }
 
@@ -347,13 +377,13 @@
 
   0%,
   100% {
-    opacity: 0.62;
-    transform: translate(-50%, -50%) scale(0.94);
+    opacity: 0.6;
+    transform: translate(-50%, -50%) scale(0.93);
   }
 
   50% {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1.06);
+    transform: translate(-50%, -50%) scale(1.07);
   }
 }
 
@@ -361,7 +391,7 @@
 
   0%,
   100% {
-    opacity: 0.7;
+    opacity: 0.72;
   }
 
   46% {
@@ -369,13 +399,16 @@
   }
 
   62% {
-    opacity: 0.86;
+    opacity: 0.88;
   }
 }
 
-// Холодная диодная оптика Land Cruiser против тёплой у Lexus.
+// Диодная оптика Land Cruiser: холоднее, уже и стоит чуть ближе к краю кадра.
 .screen[data-brand='toyota'] {
   --lamp-tint: 222, 240, 255;
+  --lamp-dx: calc(var(--stage-w) * 0.295);
+  --lamp-w: calc(var(--stage-w) * 0.095);
+  --lamp-h: calc(var(--stage-h) * 0.016);
 }
 
 // Высота колонки жёсткая, а не минимальная: только так безопасная зона может
