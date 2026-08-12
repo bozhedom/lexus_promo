@@ -31,10 +31,21 @@ $gold-warm: #e0c7a9;
   contain: paint;
 }
 
+// Обрезка по золотой рамке: кадр автомобиля не должен вылезать ни за неё, ни
+// за скруглённые углы самого сертификата.
+.photoClip {
+  position: absolute;
+  inset: u(8);
+  overflow: hidden;
+  border-radius: u(10);
+}
+
 .photo {
   position: absolute;
-  left: 0;
-  right: 0;
+  // Кадр по-прежнему ровно 360 макетных пикселей шириной, просто обрезка
+  // забирает у него по 8 с каждой стороны: доли рамки госномера не сдвигаются.
+  left: u(-8);
+  width: u(360);
   top: 50%;
   transform: translateY(-50%);
   aspect-ratio: 360 / 640;
@@ -74,7 +85,12 @@ $gold-warm: #e0c7a9;
   // пропорция реального знака с регионом
   aspect-ratio: 4.64;
   display: flex;
-  align-items: center;
+  // На настоящем знаке буквы мельче цифр, но стоят на одной с ними базовой
+  // линии. Выравнивание по центру поднимало их над цифрами: у мелкого кегля
+  // строчный бокс ниже, и середины боксов не совпадают с середин букв.
+  align-items: baseline;
+  padding-top: u(calc(0.03 * var(--plate-width)));
+  box-sizing: border-box;
   justify-content: center;
   gap: u(calc(0.012 * var(--plate-width)));
   border-radius: u(calc(0.012 * var(--plate-width)));

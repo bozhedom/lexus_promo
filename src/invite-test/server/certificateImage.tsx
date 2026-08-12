@@ -138,15 +138,29 @@ export async function renderCertificate(
           fontFamily: 'RobotoCondensed',
         }}
       >
-        {/* Кадр автомобиля. next/image внутри ImageResponse не работает */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={photo}
-          alt=""
-          width={CERT_WIDTH}
-          height={CERT_HEIGHT}
-          style={{ position: 'absolute', top: 0, left: 0 }}
-        />
+        {/* Кадр автомобиля, обрезанный по золотой рамке, — как в экранном
+            `CertificateSheet`. next/image внутри ImageResponse не работает */}
+        <div
+          style={{
+            position: 'absolute',
+            top: u(8),
+            left: u(8),
+            width: CERT_WIDTH - u(16),
+            height: CERT_HEIGHT - u(16),
+            display: 'flex',
+            overflow: 'hidden',
+            borderRadius: u(10),
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={photo}
+            alt=""
+            width={CERT_WIDTH}
+            height={CERT_HEIGHT}
+            style={{ position: 'absolute', top: -u(8), left: -u(8) }}
+          />
+        </div>
 
         {/* настоящий номер гостя поверх знака на кадре */}
         {onCar && face.plate && (
@@ -158,8 +172,12 @@ export async function renderCertificate(
               width: plateW,
               height: plateH,
               display: 'flex',
-              alignItems: 'center',
+              // Буквы мельче цифр, но стоят с ними на одной базовой линии: по
+              // центру строчные боксы разного кегля не совпадают и буквы
+              // поднимаются над цифрами.
+              alignItems: 'baseline',
               justifyContent: 'center',
+              paddingTop: plateH * 0.1,
               gap: Math.round(plateW * 0.012),
               borderRadius: Math.round(plateW * 0.012),
               background: '#f1f1ee',
@@ -174,7 +192,7 @@ export async function renderCertificate(
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                height: plateH * 0.74,
+                height: plateH * 0.62,
                 marginLeft: plateW * 0.02,
                 paddingLeft: plateW * 0.025,
                 borderLeft: '1px solid rgba(16,16,16,0.55)',

@@ -63,31 +63,34 @@ export function CertificateSheet({
       className={`${styles.sheet}${className ? ` ${className}` : ''}`}
       style={{ '--sheet-photo': `url(${face.photo})` } as CSSProperties}
     >
-      {/* Кадр лежит отдельным слоем со своей пропорцией: когда сертификат
-          растянут по высоте, номер должен ехать вместе с фотографией, а не с
-          рамкой сертификата. */}
-      <div className={styles.photo} aria-hidden>
-        {onCar && face.plate && (
-          <span
-            className={styles.carPlate}
-            // Слой кадра ровно 360×640 макетных пикселей, поэтому доли рамки
-            // знака переводим в те же единицы, что и вся остальная вёрстка.
-            style={
-              {
-                '--plate-left': face.plate.x * CERT_LAYOUT.width,
-                '--plate-top': face.plate.y * CERT_LAYOUT.height,
-                '--plate-width': face.plate.w * CERT_LAYOUT.width,
-              } as CSSProperties
-            }
-          >
-            <b>{onCar.first}</b>
-            <i>{onCar.digits}</i>
-            <b>{onCar.last}</b>
-            <u>{onCar.region}</u>
-          </span>
-        )}
+      {/* Фотография обрезана ровно по золотой рамке: за неё кадр не выходит ни
+          в превью, ни в раскрытом сертификате. Внутри обрезки кадр лежит
+          отдельным слоем со своей пропорцией — когда сертификат растянут по
+          высоте, номер едет вместе с фотографией, а не с рамкой. */}
+      <div className={styles.photoClip} aria-hidden>
+        <div className={styles.photo}>
+          {onCar && face.plate && (
+            <span
+              className={styles.carPlate}
+              // Слой кадра ровно 360×640 макетных пикселей, поэтому доли рамки
+              // знака переводим в те же единицы, что и вся остальная вёрстка.
+              style={
+                {
+                  '--plate-left': face.plate.x * CERT_LAYOUT.width,
+                  '--plate-top': face.plate.y * CERT_LAYOUT.height,
+                  '--plate-width': face.plate.w * CERT_LAYOUT.width,
+                } as CSSProperties
+              }
+            >
+              <b>{onCar.first}</b>
+              <i>{onCar.digits}</i>
+              <b>{onCar.last}</b>
+              <u>{onCar.region}</u>
+            </span>
+          )}
+        </div>
+        <div className={styles.veil} />
       </div>
-      <div className={styles.veil} aria-hidden />
       <div className={styles.border} aria-hidden />
 
       <header className={styles.top}>
