@@ -42,8 +42,27 @@ type UiState = 'loading' | 'found' | 'manual'
  * же пригласительного, поэтому берётся из общего описания сертификата.
  */
 const GIFTS = [
-  { kind: 'diagnostics' as const, title: 'Профессиональная диагностика ходовой части', amount: '' },
-  { kind: 'gift' as const, title: 'на первую замену масла', amount: '1 500 ₽' },
+  {
+    kind: 'diagnostics' as const,
+    // Перенос проставлен вручную: автоперенос ронял «части» третьей строкой.
+    text: (
+      <>
+        Профессиональная
+        <br />
+        диагностика
+        <br />
+        ходовой части
+      </>
+    ),
+    title: 'Профессиональная диагностика ходовой части',
+    amount: '',
+  },
+  {
+    kind: 'gift' as const,
+    text: 'на первую замену масла',
+    title: 'на первую замену масла',
+    amount: '1 500 ₽',
+  },
 ]
 
 /** До заполнения формы имя ещё неизвестно: в превью стоит подпись из макета. */
@@ -409,17 +428,18 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
             </ul>
           ) : (
             <article className={styles.otherBrandNotice}>
+              {/* Иконка и обводка плашки синие, а не золотые: в макете чужая
+                  марка отделена от фирменного золота техцентра. */}
               <span className={styles.serviceIcon} aria-hidden>
-                <svg viewBox="0 0 32 32">
-                  <path d="M5 14.5 16 5l11 9.5v12H5z" />
-                  <path d="M12 26.5v-8h8v8M3 15.5 16 4l13 11.5" />
+                <svg viewBox="0 0 21 20">
+                  <path d="M16.5 19.5V8.5a1 1 0 0 0-1-1h-10a1 1 0 0 0-1 1v11M4.5 11.5h12M4.5 15.5h12M20.5 17.5a2 2 0 0 1-2 2h-16a2 2 0 0 1-2-2v-11a2 2 0 0 1 1.13-1.8l7.95-3.98a2 2 0 0 1 1.84 0l7.95 3.98a2 2 0 0 1 1.13 1.8Z" />
                 </svg>
               </span>
               <div>
                 <strong>Ваш автомобиль обслуживается в другом техцентре</strong>
                 <p>
-                  Мы специализируемся на Toyota и Lexus. Для вашего автомобиля у нас есть
-                  отдельный специализированный техцентр.
+                  Мы специализируемся на Toyota и Lexus. Для Вашего автомобиля у нас есть
+                  отдельный специализированный техцентр
                 </p>
               </div>
             </article>
@@ -457,7 +477,7 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
                   <span className={styles.giftCardInner}>
                     <small>Сертификат</small>
                     {gift.amount && <strong>{gift.amount}</strong>}
-                    <span className={styles.giftTitle}>{gift.title}</span>
+                    <span className={styles.giftTitle}>{gift.text}</span>
                   </span>
                   <span className={styles.giftMore}>Подробно</span>
                 </button>
