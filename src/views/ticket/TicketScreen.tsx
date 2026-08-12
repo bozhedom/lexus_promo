@@ -42,15 +42,16 @@ export function TicketScreen() {
   const { data, sessionId, update, track } = useFunnel()
   useScreenView('certificate')
 
-  const [phase, setPhase] = useState<Phase>('loading')
+  const [requested, setRequested] = useState<Phase>('loading')
   const [result, setResult] = useState<CompleteResult | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const assetsReady = useSceneAssets(TICKET_ASSETS)
 
   // Заявка уже завершена: сертификат оформлять нечего, экран собирается по
-  // данным воронки. Показываем его сразу, без запроса.
+  // данным воронки и показывается сразу, без запроса.
   const completed = Boolean(data.certificateCode)
+  const phase: Phase = completed ? 'ready' : requested
 
   // идемпотентно создаём сертификат
   useEffect(() => {
@@ -67,22 +68,18 @@ export function TicketScreen() {
           certificateAmount: res.certificate.amount,
         })
         track('certificate_created', { code: res.certificate.code })
-        setPhase('ready')
+        setRequested('ready')
       })
       .catch((e) => {
         if (!active) return
         setErrorMsg(isApiError(e) ? e.message : 'Не удалось оформить пригласительный')
-        setPhase('error')
+        setRequested('error')
       })
     return () => {
       active = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [show, data.applicationId, completed])
-
-  useEffect(() => {
-    if (show && completed) setPhase('ready')
-  }, [show, completed])
 
   // Данные для персональных сертификатов. Сессию заводим заранее, пока человек
   // рассматривает экран: к моменту открытия модалки картинки уже готовы.
