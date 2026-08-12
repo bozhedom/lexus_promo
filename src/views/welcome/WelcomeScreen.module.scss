@@ -1,7 +1,7 @@
 @use 'shared/config/tokens' as t;
 @use 'shared/config/fluid' as f;
 
-// Первый экран собирается по вертикали как гибкая колонка, а не по фиксированным
+// Пе  рвый экран собирается по вертикали как гибкая колонка, а не по фиксированным
 // координатам макета: между шапкой и блоком приглашения стоит распорка, которая
 // съедает всю свободную высоту. На 800px раскладка совпадает с Figma, на 568px
 // сжимается до читаемого минимума и никуда не уезжает.
@@ -13,13 +13,18 @@
   color: rgba(255, 255, 255, 0.8);
   font-family: t.$font-condensed;
 
+  // Размер кадра на экране после cover: по ширине сцены, а на узком и высоком
+  // экране — по высоте. От этих двух величин считается всё остальное, поэтому
+  // они заданы явно, а не выведены из отдельных коэффициентов.
+  --stage-w: max(min(100vw, 480px), calc(100svh * 0.45));
+  --stage-h: max(calc(min(100vw, 480px) / 0.45), 100svh);
   // Где на экране заканчивается автомобиль — от этой отметки считается всё
-  // остальное. Кадр приколот к верхнему краю, cover масштабирует его по
-  // ширине сцены (или по высоте, если экран выше кадра), а нижняя кромка
-  // машины в исходнике стоит на 49.625%.
-  --car-raw: max(calc(min(100vw, 480px) * 1.1028), 49.625svh);
-  // Верхняя кромка капота в том же кадре — 26.5%.
-  --car-top: calc(var(--car-raw) * 0.534);
+  // остальное. Кадр приколот к верхнему краю, а нижняя кромка машины в новых
+  // кадрах (Lexus с опущенными руками и Land Cruiser) стоит на 50.5%; 50.75%
+  // оставляет ту же тонкую полоску воздуха, что была у прошлых кадров.
+  --car-raw: calc(var(--stage-h) * 0.5075);
+  // Верхняя кромка капота в том же кадре — 28.4%.
+  --car-top: calc(var(--stage-h) * 0.284);
   // Высота шапки: та же линейная привязка, что и у её собственных размеров.
   --brand-h: #{f.vh(145, 171)};
   // Сколько кадра нужно увести за верхний край, чтобы под машиной поместилась
@@ -30,6 +35,13 @@
   --stage-room: calc(var(--car-top) - var(--brand-h) - 12px);
   --stage-shift: clamp(0px, min(max(var(--stage-need), 16px), var(--stage-room)), 140px);
   --car-bottom: calc(var(--car-raw) - var(--stage-shift));
+  // Фары стоят на 36.8% высоты кадра и на 20.5%/79.5% его ширины. Кадр
+  // отцентрован по горизонтали и поднят на --stage-shift, поэтому свет
+  // пересчитывается теми же двумя величинами, что и сам автомобиль.
+  --lamp-y: calc(var(--stage-h) * 0.368 - var(--stage-shift));
+  --lamp-dx: calc(var(--stage-w) * 0.295);
+  // Оттенок света: у Lexus фары тёплые, у Land Cruiser — холодные диодные.
+  --lamp-tint: 255, 238, 205;
 
   &[data-ready='false'] {
 
@@ -107,8 +119,10 @@
 
   &::after {
     background-position: left top;
-    clip-path: polygon(0 28%, 31% 29%, 57% 34%, 53% 42%, 20% 44%, 0 42%);
-    mask-image: radial-gradient(ellipse 42% 13% at 27% 36%, #000 25%, transparent 82%);
+    // Руки в новых кадрах опущены под фары: вырез и маска сдвинуты вниз на
+    // те же 4.5% кадра, на которые уехали перчатки.
+    clip-path: polygon(0 32.5%, 31% 33.5%, 57% 38.5%, 53% 46.5%, 20% 48.5%, 0 46.5%);
+    mask-image: radial-gradient(ellipse 42% 13% at 27% 40.5%, #000 25%, transparent 82%);
     transform: translateX(54%);
   }
 }
@@ -121,8 +135,8 @@
 
   &::after {
     background-position: right top;
-    clip-path: polygon(100% 28%, 69% 29%, 43% 34%, 47% 42%, 80% 44%, 100% 42%);
-    mask-image: radial-gradient(ellipse 42% 13% at 73% 36%, #000 25%, transparent 82%);
+    clip-path: polygon(100% 32.5%, 69% 33.5%, 43% 38.5%, 47% 46.5%, 80% 48.5%, 100% 46.5%);
+    mask-image: radial-gradient(ellipse 42% 13% at 73% 40.5%, #000 25%, transparent 82%);
     transform: translateX(-54%);
   }
 }
@@ -241,6 +255,127 @@
     background: radial-gradient(circle at 50% 45%, rgba(228, 204, 174, 0.09), transparent 35%);
     animation: welcome-light 7s ease-in-out infinite alternate;
   }
+}
+
+// Свет из фар. В новых кадрах вокруг фар специально оставлено пустое место, и
+// свечение рисуется поверх фотографии в режиме screen: чёрный фон он не
+// осветляет, а хром решётки и складки занавеса — да.
+.lamps {
+  position: absolute;
+  inset: 0;
+  left: 50%;
+  right: auto;
+  width: min(100%, 480px);
+  transform: translateX(-50%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+// Каждая фара — два слоя: плотное ядро на самой оптике и широкий ореол,
+// который уходит в темноту. Они дышат в одном такте, но с разным размахом,
+// поэтому свет не выглядит равномерно мигающим.
+.lamp {
+  position: absolute;
+  top: var(--lamp-y);
+  width: calc(var(--stage-w) * 0.62);
+  height: calc(var(--stage-h) * 0.2);
+  transform: translate(-50%, -50%);
+  background: radial-gradient(closest-side ellipse,
+      rgba(var(--lamp-tint), 0.3),
+      rgba(var(--lamp-tint), 0.13) 32%,
+      rgba(var(--lamp-tint), 0.04) 58%,
+      transparent 78%);
+  animation: lamp-halo 6.4s ease-in-out infinite;
+  will-change: opacity, transform;
+
+  // Ядро: узкая горячая полоса ровно по оптике.
+  &::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: calc(var(--stage-w) * 0.2);
+    height: calc(var(--stage-h) * 0.035);
+    border-radius: 50%;
+    background: radial-gradient(closest-side ellipse,
+        rgba(var(--lamp-tint), 0.72),
+        rgba(var(--lamp-tint), 0.28) 45%,
+        transparent 100%);
+    transform: translate(-50%, -50%);
+    animation: lamp-core 6.4s ease-in-out infinite;
+  }
+
+  // Луч: свет уходит вниз и в сторону, как от фары в дыму сцены.
+  &::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: calc(var(--stage-w) * 0.34);
+    height: calc(var(--stage-h) * 0.13);
+    background: linear-gradient(180deg, rgba(var(--lamp-tint), 0.16), transparent 72%);
+    filter: blur(10px);
+    animation: lamp-core 6.4s ease-in-out infinite;
+  }
+}
+
+.lampLeft {
+  left: calc(50% - var(--lamp-dx));
+
+  &::after {
+    transform: translate(-50%, 0) skewX(16deg);
+  }
+}
+
+.lampRight {
+  left: calc(50% + var(--lamp-dx));
+  // Правая фара светит в противофазе на полтакта: пара перестаёт выглядеть
+  // одной мигающей лампой на две стороны.
+  animation-delay: -2.1s;
+
+  &::before,
+  &::after {
+    animation-delay: -2.1s;
+  }
+
+  &::after {
+    transform: translate(-50%, 0) skewX(-16deg);
+  }
+}
+
+@keyframes lamp-halo {
+
+  0%,
+  100% {
+    opacity: 0.62;
+    transform: translate(-50%, -50%) scale(0.94);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.06);
+  }
+}
+
+@keyframes lamp-core {
+
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+
+  46% {
+    opacity: 1;
+  }
+
+  62% {
+    opacity: 0.86;
+  }
+}
+
+// Холодная диодная оптика Land Cruiser против тёплой у Lexus.
+.screen[data-brand='toyota'] {
+  --lamp-tint: 222, 240, 255;
 }
 
 // Высота колонки жёсткая, а не минимальная: только так безопасная зона может
@@ -638,7 +773,10 @@
   .stage::before,
   .spark::after,
   .benefits svg,
-  .cta {
+  .cta,
+  .lamp,
+  .lamp::before,
+  .lamp::after {
     animation: none;
   }
 }

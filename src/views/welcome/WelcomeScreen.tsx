@@ -54,6 +54,14 @@ export function WelcomeScreen({ brand = 'both' }: { brand?: BrandVariant }) {
 
       <div className={styles.stage} aria-hidden />
 
+      {/* Свет из фар живёт отдельным слоем: у кадра он выключен, а на экране
+          дышит поверх фотографии. Позиции считаются от размеров кадра, так что
+          свет не отрывается от оптики при любом обрезе cover. */}
+      <div className={styles.lamps} aria-hidden>
+        <span className={`${styles.lamp} ${styles.lampLeft}`} />
+        <span className={`${styles.lamp} ${styles.lampRight}`} />
+      </div>
+
       <div className={styles.content}>
         <header className={styles.brand}>
           <Image
