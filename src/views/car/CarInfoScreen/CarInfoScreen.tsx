@@ -28,8 +28,7 @@ import type { CarInfo } from '@/shared/lib/types'
 import { Button, Loader, SelectField, StageLayout, TextField } from '@/shared/ui'
 import {
   CertificateViewer,
-  certificateFace,
-  certificateFrameName,
+  certificatePreview,
   isToyota,
   type CertificateKind,
 } from '@/widgets/certificate-sheet'
@@ -43,7 +42,7 @@ type UiState = 'loading' | 'found' | 'manual'
  * же пригласительного, поэтому берётся из общего описания сертификата.
  */
 const GIFTS = [
-  { kind: 'diagnostics' as const, title: 'Диагностика ходовой части', amount: '' },
+  { kind: 'diagnostics' as const, title: 'Профессиональная диагностика ходовой части', amount: '' },
   { kind: 'gift' as const, title: 'на первую замену масла', amount: '1 500 ₽' },
 ]
 
@@ -123,6 +122,17 @@ function StepIcon({ kind }: { kind: 'gift' | 'letter' | 'mask' }) {
       <path d="M6.6 9.2c1.6-.4 3 .5 3.6 2M21.4 9.2c-1.6-.4-3 .5-3.6 2" />
     </svg>
   )
+}
+
+/**
+ * Насколько ужать заголовок с маркой. В макете «Lexus RX 350 | 2022» — 24px и
+ * одна строка; считаем по числу знаков вместе с годом и разделителем.
+ */
+function carNameSize(car: FoundCar): 'm' | 's' | undefined {
+  const length = `${car.brand} ${car.model}`.length + (car.year ? 7 : 0)
+  if (length > 26) return 's'
+  if (length > 20) return 'm'
+  return undefined
 }
 
 // Галочка выполненного шага: в макете тёмная на золотом круге.
@@ -355,7 +365,10 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
             <p className={styles.brandWordmark}>TOYOTA</p>
           ) : null}
 
-          <h1 className={styles.carName}>
+          {/* «Lexus RX 350 | 2022» стоит в макете одной строкой. Длинные имена
+              вроде «Toyota Land Cruiser» в 24px туда не влезают и разрывают
+              строку прямо на разделителе, поэтому шрифт для них мельче. */}
+          <h1 className={styles.carName} data-size={carNameSize(car)}>
             <span>{car.brand} {car.model}</span>
             {car.year ? <><i /> <span>{car.year}</span></> : null}
           </h1>
@@ -430,21 +443,23 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
                 <button
                   type="button"
                   className={styles.giftCard}
-                  data-frame={certificateFrameName(gift.kind, car.brand)}
+                  data-frame={certificatePreview(gift.kind, car.brand).frame ?? undefined}
                   style={
                     {
-                      '--gift-image': `url(${certificateFace(gift.kind, car.brand).photo})`,
+                      '--gift-image': `url(${certificatePreview(gift.kind, car.brand).photo})`,
                     } as CSSProperties
                   }
                   onClick={() => setPreview(gift.kind)}
                   aria-label={`Посмотреть пригласительный: ${gift.title}`}
                 >
+                  {/* Текст прижат к верху карточки, кнопка — к низу: между ними
+                      распорка `justify-content`, как в макете. */}
                   <span className={styles.giftCardInner}>
                     <small>Сертификат</small>
                     {gift.amount && <strong>{gift.amount}</strong>}
                     <span className={styles.giftTitle}>{gift.title}</span>
-                    <span className={styles.giftMore}>Подробно</span>
                   </span>
+                  <span className={styles.giftMore}>Подробно</span>
                 </button>
               </li>
             ))}

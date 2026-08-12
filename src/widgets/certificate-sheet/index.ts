@@ -5,6 +5,7 @@ export {
   certificateCopy,
   certificateFace,
   certificateFrameName,
+  certificatePreview,
   formatPlateLine,
   isLexus,
   isToyota,

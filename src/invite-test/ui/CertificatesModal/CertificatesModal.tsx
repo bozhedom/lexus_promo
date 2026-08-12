@@ -27,8 +27,8 @@ interface CertificatesModalProps {
 }
 
 const CARDS: { kind: CertificateKind; label: string }[] = [
-  { kind: 'diagnostics', label: 'Диагностика' },
-  { kind: 'gift', label: 'В честь знакомства' },
+  { kind: 'diagnostics', label: 'Диагностика ходовой части' },
+  { kind: 'gift', label: 'Замена масла' },
 ]
 
 export function CertificatesModal({

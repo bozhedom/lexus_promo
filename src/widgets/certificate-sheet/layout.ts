@@ -85,6 +85,28 @@ export function certificateFrameName(kind: CertificateKind, brand: string): stri
   return 'diagnostics-default'
 }
 
+interface CertificatePreview {
+  /** Обложка слайда: тянется на всю карточку либо режется вырезом `frame`. */
+  photo: string
+  /** Имя выреза для карточек без своей обложки; у готовых обложек — null. */
+  frame: string | null
+}
+
+/**
+ * Обложка слайда подарка на экране найденного автомобиля.
+ *
+ * Для замены масла и для Lexus в макете нарисованы отдельные кадры — они
+ * натягиваются на карточку целиком. Toyota и чужим маркам своей обложки не
+ * рисовали: у них слайд по-прежнему показывает кадр самого пригласительного,
+ * подрезанный по автомобилю, — иначе владелец чужой машины увидел бы на
+ * карточке Lexus.
+ */
+export function certificatePreview(kind: CertificateKind, brand: string): CertificatePreview {
+  if (kind === 'gift') return { photo: '/images/cert/preview-gift.webp', frame: null }
+  if (isLexus(brand)) return { photo: '/images/cert/preview-diagnostics-lexus.webp', frame: null }
+  return { photo: certificateFace(kind, brand).photo, frame: certificateFrameName(kind, brand) }
+}
+
 interface CertificateCopy {
   eyebrow: string[]
   title: string[]

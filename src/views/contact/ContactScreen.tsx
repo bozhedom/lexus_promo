@@ -104,7 +104,7 @@ export function ContactScreen() {
 
       <div className={styles.content}>
         <header className={styles.heading}>
-          <h1>На кого выписать<br />пригласительные и подарки</h1>
+          <h1>На кого выписать<br />пригласительные</h1>
         </header>
 
         <div className={styles.form}>
