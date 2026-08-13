@@ -33,7 +33,7 @@ async function setupGreen(channel: Channel) {
     describe(() => green.getState(channel)),
     describe(() => green.configureWebhook(channel, greenWebhook())),
   ])
-  return { state, webhook, phone: (await green.accountPhone(channel)) || null }
+  return { state, webhook, account: await green.accountIdentity(channel) }
 }
 
 // POST /api/invite-test/setup?key=...: разово прописывает вебхуки

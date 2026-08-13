@@ -126,27 +126,45 @@ export const getState = (channel: Channel) =>
 export const getSettings = (channel: Channel) =>
   call<{ wid?: string; webhookUrl?: string }>(channel, 'getSettings')
 
+export interface GreenAccount {
+  /** Номер, на который авторизован инстанс. */
+  phone: string
+  /** @username того же аккаунта, если он у него есть. */
+  username: string
+}
+
 /**
- * Номер аккаунта инстанса — из него собирается ссылка на диалог. Кэшируем на
- * процесс: номер не меняется, а ссылка нужна на каждую выдачу кода.
+ * Аккаунт, к которому привязан инстанс. Ссылку на диалог собираем именно по
+ * нему: писать гость должен тому, кто слушает вебхук, иначе сообщение с кодом
+ * уйдёт в чужой чат и пригласительные не придут.
+ *
+ * Кэшируем на процесс: аккаунт не меняется, а ссылка нужна на каждую выдачу.
  */
-const store = globalThis as typeof globalThis & { __greenAccountPhones?: Map<string, string> }
-const phones: Map<string, string> = (store.__greenAccountPhones ??= new Map())
+const store = globalThis as typeof globalThis & { __greenAccounts?: Map<string, GreenAccount> }
+const accounts: Map<string, GreenAccount> = (store.__greenAccounts ??= new Map())
 
-export async function accountPhone(channel: Channel): Promise<string> {
+const EMPTY: GreenAccount = { phone: '', username: '' }
+
+export async function accountIdentity(channel: Channel): Promise<GreenAccount> {
   const green = greenCredentials(channel)
-  if (!green) return ''
+  if (!green) return EMPTY
 
-  const cached = phones.get(green.instanceId)
+  const cached = accounts.get(green.instanceId)
   if (cached !== undefined) return cached
 
   try {
-    const settings = await getSettings(channel)
-    const phone = (settings.wid ?? '').split('@')[0]?.replace(/\D/g, '') ?? ''
-    phones.set(green.instanceId, phone)
-    return phone
+    const settings = await call<{ phone?: string; username?: string }>(
+      channel,
+      'getAccountSettings',
+    )
+    const account: GreenAccount = {
+      phone: (settings.phone ?? '').replace(/\D/g, ''),
+      username: (settings.username ?? '').replace(/^@/, ''),
+    }
+    accounts.set(green.instanceId, account)
+    return account
   } catch {
-    return ''
+    return EMPTY
   }
 }
 

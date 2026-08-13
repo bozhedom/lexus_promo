@@ -27,13 +27,13 @@ describe('GREEN-API: три канала одним клиентом', () => {
     vi.stubEnv('INVITE_TEST_TG_GREEN_API_URL', 'https://4100.api.greenapi.test')
     vi.stubEnv('INVITE_TEST_GREEN_WEBHOOK_TOKEN', 'webhook-test-token')
     vi.stubEnv('NEXT_PUBLIC_SITE_URL', 'https://promo.test')
-    delete (globalThis as { __greenAccountPhones?: unknown }).__greenAccountPhones
+    delete (globalThis as { __greenAccounts?: unknown }).__greenAccounts
   })
 
   afterEach(() => {
     vi.unstubAllEnvs()
     vi.restoreAllMocks()
-    delete (globalThis as { __greenAccountPhones?: unknown }).__greenAccountPhones
+    delete (globalThis as { __greenAccounts?: unknown }).__greenAccounts
   })
 
   it('канал определяется по идентификатору инстанса', async () => {
@@ -107,19 +107,23 @@ describe('GREEN-API: три канала одним клиентом', () => {
     )
   })
 
-  it('номер аккаунта берётся из getSettings и спрашивается один раз', async () => {
+  it('аккаунт инстанса берётся из getAccountSettings и спрашивается один раз', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(
       async () =>
-        new Response(JSON.stringify({ wid: '79140773596@c.us' }), {
+        new Response(JSON.stringify({ phone: '79084481616', username: '@autogarantcity' }), {
           status: 200,
           headers: { 'content-type': 'application/json' },
         }),
     )
     const green = await import('../src/invite-test/server/green')
 
-    expect(await green.accountPhone('telegram')).toBe('79140773596')
-    expect(await green.accountPhone('telegram')).toBe('79140773596')
+    const account = { phone: '79084481616', username: 'autogarantcity' }
+    expect(await green.accountIdentity('telegram')).toEqual(account)
+    expect(await green.accountIdentity('telegram')).toEqual(account)
     expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetchMock.mock.calls[0]![0]).toBe(
+      'https://4100.api.greenapi.test/waInstance4100000000/getAccountSettings/tg-token',
+    )
   })
 
   it('вебхук настраивается на общий адрес с токеном', async () => {
