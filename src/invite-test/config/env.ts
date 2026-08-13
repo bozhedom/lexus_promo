@@ -3,7 +3,35 @@
 
 const read = (key: string): string => (process.env[key] ?? '').trim()
 
+/**
+ * Реквизиты инстанса GREEN-API. Одинаковые для WhatsApp, Telegram и MAX:
+ * продукты разные, REST один. Инстанс привязан к личному аккаунту менеджера,
+ * поэтому пригласительные приходят из его диалога, а не от бота.
+ */
+export interface GreenCredentials {
+  instanceId: string
+  apiToken: string
+  apiUrl: string
+}
+
+const green = (prefix: string): GreenCredentials => ({
+  instanceId: read(`INVITE_TEST_${prefix}_GREEN_INSTANCE_ID`),
+  apiToken: read(`INVITE_TEST_${prefix}_GREEN_API_TOKEN`),
+  apiUrl: read(`INVITE_TEST_${prefix}_GREEN_API_URL`),
+})
+
 export const inviteTestEnv = {
+  green: {
+    whatsapp: green('WA'),
+    telegram: green('TG'),
+    max: green('MAX'),
+    /**
+     * Общий на все инстансы: GREEN-API передаёт его как Bearer в Authorization
+     * вебхука. Старое имя переменной поддержано, чтобы не переписывать .env.
+     */
+    webhookToken:
+      read('INVITE_TEST_GREEN_WEBHOOK_TOKEN') || read('INVITE_TEST_WA_GREEN_WEBHOOK_TOKEN'),
+  },
   telegram: {
     /** Бот нужен только как ключ к API: в переписке его не видно. */
     botToken: read('INVITE_TEST_TG_BOT_TOKEN'),
@@ -25,21 +53,18 @@ export const inviteTestEnv = {
      * Как и в Telegram, обычно пустой: достаётся из `me` по токену.
      */
     botUsername: read('INVITE_TEST_MAX_BOT_USERNAME'),
-    /** Личный username менеджера: бот показывает ссылку после сертификатов. */
+    /** Личный username менеджера в MAX: к нему ведёт кнопка канала. */
     managerUsername: read('INVITE_TEST_MAX_MANAGER'),
     botToken: read('INVITE_TEST_MAX_BOT_TOKEN'),
     webhookSecret: read('INVITE_TEST_MAX_WEBHOOK_SECRET'),
     apiUrl: read('INVITE_TEST_MAX_API_URL') || 'https://platform-api2.max.ru',
   },
   whatsapp: {
-    /** Номер менеджера в международном формате без плюса, для ссылки wa.me. */
+    /**
+     * Номер менеджера без плюса для ссылки wa.me. Обычно пустой: номер
+     * инстанса отдаёт сам GREEN-API (`getSettings.wid`).
+     */
     phone: read('INVITE_TEST_WA_PHONE'),
-    /** Данные QR-инстанса GREEN-API. API URL уникален для инстанса. */
-    instanceId: read('INVITE_TEST_WA_GREEN_INSTANCE_ID'),
-    apiToken: read('INVITE_TEST_WA_GREEN_API_TOKEN'),
-    apiUrl: read('INVITE_TEST_WA_GREEN_API_URL'),
-    /** GREEN-API передаёт его как Bearer в Authorization webhook-запроса. */
-    webhookToken: read('INVITE_TEST_WA_GREEN_WEBHOOK_TOKEN'),
   },
   setupKey: read('INVITE_TEST_SETUP_KEY'),
   siteUrl: read('NEXT_PUBLIC_SITE_URL') || 'http://localhost:3000',
@@ -50,9 +75,9 @@ export const isTelegramReady = (): boolean =>
   Boolean(inviteTestEnv.telegram.manager || inviteTestEnv.telegram.botUsername)
 
 /**
- * Автоответ возможен двумя способами: от имени менеджера через подключённого
- * бизнес-бота либо от самого бота в его диалоге. Первый способ требует ещё и
- * подключения, поэтому проверяется отдельно, уже с `getBusinessId`.
+ * Автоответ через бота: от имени менеджера с подключённым бизнес-ботом либо от
+ * самого бота в его диалоге. Первый способ требует ещё и подключения, поэтому
+ * проверяется отдельно, уже с `getBusinessId`.
  */
 export const isTelegramAutoReady = (): boolean =>
   Boolean(inviteTestEnv.telegram.botToken && isTelegramReady())
@@ -63,19 +88,4 @@ export const isTelegramAutoReady = (): boolean =>
  */
 export const isTelegramBotReady = (): boolean => Boolean(inviteTestEnv.telegram.botToken)
 
-export const isMaxReady = (): boolean =>
-  Boolean(inviteTestEnv.max.botToken || inviteTestEnv.max.botUsername)
-
-/** MAX передаёт код из диплинка в bot_started, после чего бот может ответить. */
-export const isMaxAutoReady = (): boolean => Boolean(inviteTestEnv.max.botToken)
-
-export const isWhatsappReady = (): boolean => Boolean(inviteTestEnv.whatsapp.phone)
-
-/** Автоответ требует авторизованного QR-инстанса GREEN-API. */
-export const isWhatsappAutoReady = (): boolean =>
-  Boolean(
-    inviteTestEnv.whatsapp.instanceId &&
-      inviteTestEnv.whatsapp.apiToken &&
-      inviteTestEnv.whatsapp.apiUrl &&
-      isWhatsappReady(),
-  )
+export const isMaxBotReady = (): boolean => Boolean(inviteTestEnv.max.botToken)

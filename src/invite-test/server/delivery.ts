@@ -1,13 +1,15 @@
 import { claimSession, getBusinessId, setStatus } from './store'
+import * as green from './green'
 import * as max from './max'
 import * as telegram from './telegram'
-import * as whatsapp from './whatsapp'
 
 export type Target =
-  /** `business` — диалог клиента с менеджером, туда отвечаем от его имени. */
-  | { channel: 'telegram'; chatId: number | string; business: boolean }
-  | { channel: 'whatsapp'; phone: string }
-  | { channel: 'max'; userId: number | string }
+  /** Личный аккаунт менеджера через инстанс GREEN-API — так работают все три. */
+  | { channel: 'whatsapp' | 'telegram' | 'max'; via: 'green'; chatId: string }
+  /** Запасной путь Telegram: `business` — диалог с менеджером, иначе диалог бота. */
+  | { channel: 'telegram'; via: 'bot'; chatId: number | string; business: boolean }
+  /** Запасной путь MAX: официальный бот организации. */
+  | { channel: 'max'; via: 'bot'; userId: number | string }
 
 /**
  * Отправляет сертификаты в диалог с менеджером и запоминает результат, чтобы
@@ -19,7 +21,14 @@ export async function deliver(code: string, target: Target): Promise<void> {
   if (!session) return
 
   try {
-    if (target.channel === 'telegram') {
+    if (target.via === 'green') {
+      await green.sendCertificates(
+        target.channel,
+        target.chatId,
+        session.certificates,
+        session.deliveryText,
+      )
+    } else if (target.channel === 'telegram') {
       const businessId = target.business ? getBusinessId() : ''
       if (target.business && !businessId) {
         throw new Error('Бот не подключён к аккаунту менеджера')
@@ -33,8 +42,6 @@ export async function deliver(code: string, target: Target): Promise<void> {
       // В своём диалоге бот заканчивает разговор ссылкой на менеджера: в
       // бизнес-диалоге менеджер и так на другом конце.
       if (!businessId) await telegram.sendManagerLink(target.chatId)
-    } else if (target.channel === 'whatsapp') {
-      await whatsapp.sendCertificates(target.phone, session.certificates, session.deliveryText)
     } else {
       await max.sendCertificates(target.userId, session.certificates, session.deliveryText)
     }

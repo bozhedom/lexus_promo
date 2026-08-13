@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
 
   if (update?.update_type === 'bot_started' && code && userId != null) {
     try {
-      await deliver(code, { channel: 'max', userId })
+      await deliver(code, { channel: 'max', via: 'bot', userId })
     } catch {
       // MAX повторит вебхук при не-200; бизнес-ошибку уже сохранили в статусе.
     }

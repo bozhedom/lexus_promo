@@ -1,19 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import { openingText } from '@/invite-test/config/certificates'
-import {
-  inviteTestEnv,
-  isMaxAutoReady,
-  isMaxReady,
-  isTelegramAutoReady,
-  isTelegramBotReady,
-  isWhatsappAutoReady,
-  isWhatsappReady,
-} from '@/invite-test/config/env'
 import type { PersonalInviteDetails, SessionResponse } from '@/invite-test/model/types'
-import { maxBotUsername, telegramBotUsername } from '@/invite-test/server/botIdentity'
 import { storeCertificateImages } from '@/invite-test/server/certificateStore'
-import { createSession, getBusinessId } from '@/invite-test/server/store'
+import { resolveChannels } from '@/invite-test/server/channels'
+import { createSession } from '@/invite-test/server/store'
 import { getClientIp, jsonError, readJsonBody } from '@/lib/http'
 import { rateLimit } from '@/lib/rateLimit'
 import { validateSessionId } from '@/lib/validation'
@@ -52,51 +42,11 @@ export async function POST(req: NextRequest) {
       : null
 
   const created = createSession(fullName, stored ? { certificates: stored } : undefined, details)
-  const { code } = created
-  const { telegram, whatsapp } = inviteTestEnv
-  const openingMessage = encodeURIComponent(openingText(code))
-  // Ответ от имени менеджера возможен, только когда он подключил бизнес-бота.
-  const businessDelivery =
-    isTelegramAutoReady() && Boolean(telegram.manager) && Boolean(getBusinessId())
-
-  // Username ботов спрашиваем у самих платформ по токену: в настройке от нас
-  // требуется только токен.
-  const [telegramBot, maxBot] = await Promise.all([
-    isTelegramBotReady() && !businessDelivery ? telegramBotUsername() : Promise.resolve(''),
-    isMaxReady() ? maxBotUsername() : Promise.resolve(''),
-  ])
-
-  const managerChat = telegram.manager
-    ? `https://t.me/${telegram.manager}?text=${openingMessage}`
-    : null
 
   const response: SessionResponse = {
-    code,
+    code: created.code,
     certificates: created.certificates,
-    channels: {
-      telegram: {
-        enabled: Boolean(managerChat || telegramBot),
-        // Пока менеджер не подключил бизнес-бота, кнопка ведёт в диалог с самим
-        // ботом: там он отвечает сертификатами сразу, как в MAX. С подключением
-        // всё возвращается к диалогу с менеджером — сертификаты приходят от него.
-        chatLink: businessDelivery
-          ? managerChat
-          : telegramBot
-            ? `https://t.me/${telegramBot}?start=${encodeURIComponent(code)}`
-            : managerChat,
-        autoDelivery: businessDelivery || Boolean(telegramBot),
-      },
-      whatsapp: {
-        enabled: isWhatsappReady(),
-        chatLink: isWhatsappReady() ? `https://wa.me/${whatsapp.phone}?text=${openingMessage}` : null,
-        autoDelivery: isWhatsappAutoReady(),
-      },
-      max: {
-        enabled: Boolean(maxBot),
-        chatLink: maxBot ? `https://max.ru/${maxBot}?start=${encodeURIComponent(code)}` : null,
-        autoDelivery: Boolean(maxBot) && isMaxAutoReady(),
-      },
-    },
+    channels: await resolveChannels(created.code),
   }
 
   return NextResponse.json(response)

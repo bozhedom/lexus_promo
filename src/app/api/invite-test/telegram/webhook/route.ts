@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      await deliver(code, { channel: 'telegram', chatId, business })
+      await deliver(code, { channel: 'telegram', via: 'bot', chatId, business })
     } catch {
       // клиенту ничего не пишем: он в диалоге с живым менеджером, тот ответит
     }
