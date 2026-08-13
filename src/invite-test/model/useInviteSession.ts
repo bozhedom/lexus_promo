@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { fetchCarPhotos } from '@/shared/lib/useCarPhotos'
 import { preloadSceneAssets } from '@/shared/lib/useSceneAssets'
 import { certificateFace } from '@/widgets/certificate-sheet'
 
@@ -29,9 +30,11 @@ export function useInviteSession(details: PersonalInviteDetails | null) {
       .then(async (data) => {
         // Кадры пригласительных догружаем до показа модалки: сами карточки
         // рисуются разметкой, и без фотографии они мигнули бы чёрным.
+        const car = { brand: details.brand, model: details.model, year: details.year }
+        const photos = await fetchCarPhotos()
         await preloadSceneAssets([
-          certificateFace('diagnostics', details.brand).photo,
-          certificateFace('gift', details.brand).photo,
+          certificateFace('diagnostics', car, photos).photo,
+          certificateFace('gift', car, photos).photo,
         ])
         if (alive) {
           setResolvedKey(detailsKey)

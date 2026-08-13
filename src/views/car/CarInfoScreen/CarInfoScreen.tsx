@@ -13,6 +13,7 @@ import {
 } from '@/features/plate-lookup'
 import { createApplication, isApiError, lookupCar, patchApplication } from '@/shared/api/funnel'
 import { useScreenView } from '@/shared/analytics'
+import { brandLogo } from '@/shared/config/brand-logos'
 import {
   DEFAULT_CAR_CATALOG,
   OTHER_OPTION,
@@ -371,6 +372,7 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
   const plateShown = formatPlate(data.plateNumber ?? '')
   const plateMain = splitPlate(data.plateNumber ?? '').main
   const supportedBrand = /^(toyota|lexus)$/i.test(car?.brand ?? '')
+  const logo = car ? brandLogo(car.brand) : null
 
   if (ui === 'found' && car) {
     return (
@@ -381,9 +383,16 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
           <Gap size={24} />
 
           {/* Марка отдельной строкой, под ней модель с годом (39:3661, 39:3718).
-              Логотипов над карточкой больше нет ни у одной марки. */}
+              Слева от названия — логотип марки, если он у нас есть; для
+              остальных марок строка выглядит ровно как раньше. */}
           <h1 className={styles.carName}>
-            <span className={styles.carBrand}>{car.brand}</span>
+            <span className={styles.carBrand}>
+              {logo && (
+                // Логотип чисто декоративный: марка тут же написана словом.
+                <Image className={styles.brandLogo} src={logo} alt="" width={56} height={56} />
+              )}
+              <span>{car.brand}</span>
+            </span>
             <span className={styles.carModel} data-size={modelSize(car)}>
               <span>{car.model}</span>
               {car.year ? <><i /><span>{car.year}</span></> : null}
@@ -434,14 +443,12 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
                   марка отделена от фирменного золота техцентра. */}
               <p className={styles.otherBrandHead}>
                 <span className={styles.serviceIcon} aria-hidden>
-                  <svg viewBox="0 0 21 20">
-                    <path d="M16.5 19.5V8.5a1 1 0 0 0-1-1h-10a1 1 0 0 0-1 1v11M4.5 11.5h12M4.5 15.5h12M20.5 17.5a2 2 0 0 1-2 2h-16a2 2 0 0 1-2-2v-11a2 2 0 0 1 1.13-1.8l7.95-3.98a2 2 0 0 1 1.84 0l7.95 3.98a2 2 0 0 1 1.13 1.8Z" />
-                  </svg>
+                  <Image src="/images/car-service.svg" alt="" width={36} height={36} />
                 </span>
-                <strong>Ваш автомобиль<br />обслуживается<br />в другом техцентре</strong>
+                <strong>Ваш автомобиль<br />обслуживается<br />в нашем другом техцентре</strong>
               </p>
               <p className={styles.otherBrandNote}>
-                Мы специализируемся на <b>Toyota</b> и <b>Lexus</b>.
+                Мы специализируемся на Toyota и Lexus.
               </p>
               <p className={styles.otherBrandNote}>
                 Для Вашего автомобиля у нас есть отдельный
@@ -454,7 +461,7 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
           <Gap size={supportedBrand ? 32 : 20} />
 
           <p className={styles.giftLead}>
-            Для Вашего автомобиля приготовлены
+            Для Вашего автомобиля мы приготовили
             <span>персональные подарки в честь знакомства</span>
           </p>
 
@@ -489,11 +496,7 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
             ))}
           </ul>
 
-          <div className={styles.giftDots} aria-hidden>
-            {GIFTS.map((gift, i) => (
-              <i key={gift.kind} data-active={giftIndex === i || undefined} />
-            ))}
-          </div>
+          
 
           {errors.form && <p className={styles.error}>{errors.form}</p>}
 
@@ -527,6 +530,8 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
           <CertificateViewer
             kind={preview}
             brand={car.brand}
+            model={car.model}
+            year={car.year}
             name={PREVIEW_NAME}
             plate={data.plateNumber ?? null}
             onClose={() => setPreview(null)}

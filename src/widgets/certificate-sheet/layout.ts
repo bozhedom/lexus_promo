@@ -1,7 +1,12 @@
+import { matchCarPhoto, type CarPhoto, type CarQuery, type PlateBox } from '@/shared/config/car-photos'
+
 export type CertificateKind = 'diagnostics' | 'gift'
 
 export const isToyota = (brand: string) => /toyota|тойота/i.test(brand)
 export const isLexus = (brand: string) => /lexus|лексус/i.test(brand)
+
+/** Марки самого техцентра: только им пригласительный обещает «новый техцентр». */
+export const isOwnBrand = (brand: string) => isToyota(brand) || isLexus(brand)
 
 /**
  * Общие константы пригласительного. Живут отдельно от разметки, потому что по
@@ -17,13 +22,6 @@ export const CERT_LAYOUT = {
   phone: '+7 (423) 2222-999',
 } as const
 
-/** Рамка госномера на кадре автомобиля — доли от размеров фотографии. */
-interface PlateBox {
-  x: number
-  y: number
-  w: number
-}
-
 interface CertificateFace {
   photo: string
   /** Тот же кадр в JPEG: satori в серверной картинке не читает webp. */
@@ -36,48 +34,44 @@ const DIAGNOSTICS_ADDRESS = ['Снеговая, 1', '«Таксопарк»']
 const GIFT_ADDRESS = ['Шилкинская, 32а']
 
 /**
- * Кадр и адрес пригласительного. У диагностики фотография зависит от марки: на
- * ней стоит автомобиль гостя, и поверх печатается его настоящий госномер.
- *
- * Марок техцентра две, а приезжают на любых: для всех остальных берётся кадр
- * без марки — обычный автомобиль в студии, чтобы пригласительный не обещал
- * чужому владельцу Lexus.
+ * Кадр и адрес пригласительного. У диагностики фотография зависит от самого
+ * автомобиля: подбором занимается каталог кадров (`shared/config/car-photos`),
+ * сюда он приходит вторым аргументом — встроенные кадры плюс загруженные в
+ * админку. Поверх кадра печатается настоящий госномер гостя.
  */
-export function certificateFace(kind: CertificateKind, brand: string): CertificateFace {
+export function certificateFace(
+  kind: CertificateKind,
+  car: CarQuery,
+  photos: CarPhoto[] = [],
+): CertificateFace {
   if (kind === 'gift') {
     return {
       photo: '/images/cert/bg-gift.webp',
-      photoRaster: 'images/cert/bg-gift.jpg',
+      photoRaster: 'public/images/cert/bg-gift.jpg',
       address: GIFT_ADDRESS,
       plate: null,
     }
   }
-  if (isToyota(brand)) {
-    return {
-      photo: '/images/cert/bg-diagnostics-toyota.webp',
-      photoRaster: 'images/cert/bg-diagnostics-toyota.jpg',
-      address: DIAGNOSTICS_ADDRESS,
-      // на кадре Land Cruiser вместо номера шильд: рамка ниже и чуть уже
-      plate: { x: 451 / 1080, y: 1148 / 1920, w: 182 / 1080 },
-    }
-  }
-  if (isLexus(brand)) {
-    return {
-      photo: '/images/cert/bg-diagnostics-lexus.webp',
-      photoRaster: 'images/cert/bg-diagnostics-lexus.jpg',
-      address: DIAGNOSTICS_ADDRESS,
-      plate: { x: 440 / 1080, y: 1163 / 1920, w: 195 / 1080 },
-    }
-  }
-  // Кадр без марки: тот же автомобиль на подъёмнике, что и у остальных, но с
-  // затёртыми шильдиками — на нём стоят рамка знака и стойки в тех же местах,
-  // что у Lexus, поэтому и координаты знака совпадают.
+
+  const matched = matchCarPhoto(photos, car)
   return {
-    photo: '/images/cert/bg-diagnostics-default.webp',
-    photoRaster: 'images/cert/bg-diagnostics-default.jpg',
+    photo: matched.photo,
+    photoRaster: matched.photoRaster,
     address: DIAGNOSTICS_ADDRESS,
-    plate: { x: 440 / 1080, y: 1163 / 1920, w: 195 / 1080 },
+    plate: matched.plate,
   }
+}
+
+/**
+ * «Приглашаем Вас в новый специализированный техцентр» — только для Toyota и
+ * Lexus: новый техцентр открыт под них. Владельцу любой другой марки техцентр
+ * не новый, а просто специализированный, поэтому слово «новый» уходит.
+ */
+export function inviteLines(brand: string): [string, string] {
+  return [
+    isOwnBrand(brand) ? 'приглашаем Вас в новый' : 'приглашаем Вас в',
+    'специализированный техцентр',
+  ]
 }
 
 interface CertificateCopy {

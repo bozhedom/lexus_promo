@@ -3,12 +3,14 @@ import path from 'node:path'
 
 import { ImageResponse } from 'next/og'
 
+import type { CarPhoto } from '@/shared/config/car-photos'
 import {
   CERT_LAYOUT,
   certificateCopy,
   certificateFace,
   formatPlateLine,
-  isLexus,
+  inviteLines,
+  isOwnBrand,
   isToyota,
   plateParts,
   splitGuestName,
@@ -32,7 +34,9 @@ export type { CertificateKind }
 /** Размер из макета в пикселях картинки. */
 const u = (value: number) => value * CERT_SCALE
 
-const asset = (relative: string) => path.join(process.cwd(), 'public', relative)
+/** Пути каталога кадров считаются от корня проекта: кадр из админки лежит не
+ *  в `public`, а рядом с остальными загрузками Payload. */
+const asset = (relative: string) => path.join(process.cwd(), relative)
 
 const dataUrl = async (relative: string, mime: string) => {
   const file = await readFile(asset(relative))
@@ -96,24 +100,32 @@ export async function renderCertificate(
   kind: CertificateKind,
   details: PersonalInviteDetails,
   fileName: string,
+  /** Кадры из админки: они перекрывают встроенные, см. `matchCarPhoto`. */
+  photos: CarPhoto[] = [],
 ) {
-  const face = certificateFace(kind, details.brand)
+  const face = certificateFace(
+    kind,
+    { brand: details.brand, model: details.model, year: details.year },
+    photos,
+  )
   const copy = certificateCopy(kind, details.amount)
   const toyota = isToyota(details.brand)
-  // См. `CertificateSheet`: чужой марке не ставят ни логотип, ни модель.
-  const ownBrand = toyota || isLexus(details.brand)
+  // См. `CertificateSheet`: логотип марки ставится только маркам техцентра.
+  const ownBrand = isOwnBrand(details.brand)
+  const invite = inviteLines(details.brand)
+  const carLine = [details.brand, details.model].filter(Boolean).join(' ')
 
   const [photo, crown, gift, marker, phone, lexusLogo, forum, condensed, condensedBold] =
     await Promise.all([
       dataUrl(face.photoRaster, 'image/jpeg'),
-      dataUrl('images/cert/crown.svg', 'image/svg+xml'),
-      dataUrl('images/cert/gift.svg', 'image/svg+xml'),
-      dataUrl('images/cert/marker.svg', 'image/svg+xml'),
-      dataUrl('images/cert/phone.svg', 'image/svg+xml'),
-      dataUrl('images/cert/lexus.svg', 'image/svg+xml'),
-      readFile(asset('fonts/forum.ttf')),
-      readFile(asset('fonts/roboto-condensed-400.ttf')),
-      readFile(asset('fonts/roboto-condensed-700.ttf')),
+      dataUrl('public/images/cert/crown.svg', 'image/svg+xml'),
+      dataUrl('public/images/cert/gift.svg', 'image/svg+xml'),
+      dataUrl('public/images/cert/marker.svg', 'image/svg+xml'),
+      dataUrl('public/images/cert/phone.svg', 'image/svg+xml'),
+      dataUrl('public/images/cert/lexus.svg', 'image/svg+xml'),
+      readFile(asset('public/fonts/forum.ttf')),
+      readFile(asset('public/fonts/roboto-condensed-400.ttf')),
+      readFile(asset('public/fonts/roboto-condensed-700.ttf')),
     ])
 
   const nameLines = splitGuestName(details.fullName)
@@ -269,7 +281,7 @@ export async function renderCertificate(
 
         <Rule top={u(147)} />
 
-        {ownBrand || details.plate ? (
+        {carLine || details.plate ? (
           <div
             style={{
               position: 'absolute',
@@ -286,12 +298,8 @@ export async function renderCertificate(
               color: GOLD_RULE,
             }}
           >
-            {ownBrand && (
-              <span style={{ display: 'flex' }}>
-                {[details.brand, details.model].filter(Boolean).join(' ')}
-              </span>
-            )}
-            {ownBrand && details.plate && (
+            {carLine && <span style={{ display: 'flex' }}>{carLine}</span>}
+            {carLine && details.plate && (
               <div
                 style={{
                   width: 1,
@@ -320,8 +328,8 @@ export async function renderCertificate(
             color: 'rgba(255,255,255,0.84)',
           }}
         >
-          <span style={{ display: 'flex' }}>приглашаем Вас в новый</span>
-          <span style={{ display: 'flex' }}>специализированный техцентр</span>
+          <span style={{ display: 'flex' }}>{invite[0]}</span>
+          <span style={{ display: 'flex' }}>{invite[1]}</span>
         </div>
 
         {/* марка техцентра */}

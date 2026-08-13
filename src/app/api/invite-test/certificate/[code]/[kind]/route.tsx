@@ -1,5 +1,6 @@
 import { renderCertificate, type CertificateKind } from '@/invite-test/server/certificateImage'
 import { getSession } from '@/invite-test/server/store'
+import { loadCarPhotos } from '@/lib/carPhotos'
 
 export const runtime = 'nodejs'
 
@@ -17,5 +18,10 @@ export async function GET(_request: Request, context: RouteContext) {
     return new Response('Сертификат не найден', { status: 404 })
   }
 
-  return renderCertificate(kind, session.details, `${kind}-${session.code}.png`)
+  return renderCertificate(
+    kind,
+    session.details,
+    `${kind}-${session.code}.png`,
+    await loadCarPhotos(),
+  )
 }

@@ -15,6 +15,7 @@ import { Events } from "./collections/Events";
 import { PromoSlides } from "./collections/PromoSlides";
 import { CertificateRules } from "./collections/CertificateRules";
 import { CarCatalog } from "./collections/CarCatalog";
+import { CarPhotos } from "./collections/CarPhotos";
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
@@ -42,6 +43,7 @@ export default buildConfig({
     PromoSlides,
     CertificateRules,
     CarCatalog,
+    CarPhotos,
     Events,
     Users,
     Media,

@@ -72,6 +72,7 @@ export interface Config {
     'promo-slides': PromoSlide;
     'certificate-rules': CertificateRule;
     'car-catalog': CarCatalog;
+    'car-photos': CarPhoto;
     events: Event;
     users: User;
     media: Media;
@@ -87,6 +88,7 @@ export interface Config {
     'promo-slides': PromoSlidesSelect<false> | PromoSlidesSelect<true>;
     'certificate-rules': CertificateRulesSelect<false> | CertificateRulesSelect<true>;
     'car-catalog': CarCatalogSelect<false> | CarCatalogSelect<true>;
+    'car-photos': CarPhotosSelect<false> | CarPhotosSelect<true>;
     events: EventsSelect<false> | EventsSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
@@ -279,6 +281,71 @@ export interface CarCatalog {
   createdAt: string;
 }
 /**
+ * Car frames for the certificates, matched by brand, model and year.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "car-photos".
+ */
+export interface CarPhoto {
+  id: string;
+  /**
+   * Admin list label only.
+   */
+  title?: string | null;
+  /**
+   * As it comes from the lookup: Toyota, Lexus, Subaru…
+   */
+  brand: string;
+  /**
+   * Empty matches any model of the brand.
+   */
+  model?: string | null;
+  /**
+   * Empty matches any year
+   */
+  yearFrom?: number | null;
+  yearTo?: number | null;
+  /**
+   * Where the guest plate is printed, in percent of the photo size.
+   */
+  plate?: {
+    hidden?: boolean | null;
+    x?: number | null;
+    y?: number | null;
+    width?: number | null;
+  };
+  active: boolean;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {
+    raster?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    thumbnail?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "events".
  */
@@ -367,6 +434,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'car-catalog';
         value: string | CarCatalog;
+      } | null)
+    | ({
+        relationTo: 'car-photos';
+        value: string | CarPhoto;
       } | null)
     | ({
         relationTo: 'events';
@@ -510,6 +581,61 @@ export interface CarCatalogSelect<T extends boolean = true> {
   active?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "car-photos_select".
+ */
+export interface CarPhotosSelect<T extends boolean = true> {
+  title?: T;
+  brand?: T;
+  model?: T;
+  yearFrom?: T;
+  yearTo?: T;
+  plate?:
+    | T
+    | {
+        hidden?: T;
+        x?: T;
+        y?: T;
+        width?: T;
+      };
+  active?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+  sizes?:
+    | T
+    | {
+        raster?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        thumbnail?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+      };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

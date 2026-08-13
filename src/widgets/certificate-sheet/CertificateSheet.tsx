@@ -2,12 +2,15 @@
 
 import type { CSSProperties } from 'react'
 
+import { useCarPhotos } from '@/shared/lib/useCarPhotos'
+
 import {
   CERT_LAYOUT,
   certificateCopy,
   certificateFace,
   formatPlateLine,
-  isLexus,
+  inviteLines,
+  isOwnBrand,
   isToyota,
   plateParts,
   splitGuestName,
@@ -19,9 +22,12 @@ export interface CertificateSheetProps {
   kind: CertificateKind
   /** Марка из заявки: от неё зависят и кадр, и надпись над автомобилем. */
   brand: string
+  /** Модель и год: вместе с маркой по ним подбирается кадр автомобиля. */
+  model?: string | null
+  year?: number | null
   /** Имя и отчество гостя. На превью до заполнения формы — «Ваше имя». */
   name: string
-  /** «Lexus RX»: марка с моделью над строкой номера. На превью не показывается. */
+  /** «Lexus RX» над строкой номера. По умолчанию — марка с моделью из заявки. */
   carTitle?: string | null
   /** Госномер гостя: печатается и в подписи, и прямо на кадре автомобиля. */
   plate?: string | null
@@ -41,6 +47,8 @@ export interface CertificateSheetProps {
 export function CertificateSheet({
   kind,
   brand,
+  model,
+  year,
   name,
   carTitle,
   plate,
@@ -48,19 +56,25 @@ export function CertificateSheet({
   className,
 }: CertificateSheetProps) {
   const toyota = isToyota(brand)
-  // Марки техцентра две. Пригласительный чужому автомобилю не подписывают ни
-  // логотипом, ни моделью: на кадре у него обычная машина на подъёмнике без
-  // шильдиков, а от гостя остаются только имя и его собственный госномер.
-  const ownBrand = toyota || isLexus(brand)
-  const face = certificateFace(kind, brand)
+  // Марки техцентра две. Логотип марки над названием техцентра ставится только
+  // им: чужому автомобилю пригласительный не обещает фирменный сервис.
+  const ownBrand = isOwnBrand(brand)
+  const photos = useCarPhotos()
+  const face = certificateFace(kind, { brand, model, year }, photos)
   const copy = certificateCopy(kind, amount)
   const nameLines = splitGuestName(name)
   const onCar = plate ? plateParts(plate) : null
-  const modelLine = ownBrand ? carTitle : null
+  // Автомобиль уже определён, поэтому марку с моделью подписываем любому гостю
+  // — как и на пригласительном для марок техцентра.
+  const modelLine = carTitle ?? [brand, model].filter(Boolean).join(' ')
+  const invite = inviteLines(brand)
 
   return (
     <article
       className={`${styles.sheet}${className ? ` ${className}` : ''}`}
+      // Без логотипа марки блок техцентра ниже на строку: чтобы под ним не
+      // повисал пустой кусок кадра, лишнюю высоту забирает зазор перед панелью.
+      data-own={ownBrand ? 'yes' : 'no'}
       style={{ '--sheet-photo': `url(${face.photo})` } as CSSProperties}
     >
       {/* Фотография обрезана ровно по золотой рамке: за неё кадр не выходит ни
@@ -118,9 +132,9 @@ export function CertificateSheet({
         )}
 
         <p className={styles.invite}>
-          приглашаем Вас в новый
+          {invite[0]}
           <br />
-          специализированный техцентр
+          {invite[1]}
         </p>
       </header>
 

@@ -189,6 +189,9 @@ export function TicketScreen() {
           delivery={delivery}
           guestName={details.fullName}
           brand={details.brand}
+          model={details.model}
+          year={details.year}
+          plate={details.plate}
           amount={details.amount}
           onClose={() => setModalOpen(false)}
           // Под модалкой уже лежит готовый экран команды автомобиля: как

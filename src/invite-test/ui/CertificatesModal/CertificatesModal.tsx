@@ -15,6 +15,9 @@ interface CertificatesModalProps {
   guestName?: string
   /** Марка из заявки: от неё зависит оформление пригласительного. */
   brand?: string
+  /** Модель и год: по ним подбирается кадр автомобиля на пригласительном. */
+  model?: string | null
+  year?: number | null
   /** «Lexus RX»: подпись над номером на самом пригласительном. */
   carTitle?: string | null
   plate?: string | null
@@ -57,6 +60,8 @@ export function CertificatesModal({
   delivery,
   guestName,
   brand = 'Lexus',
+  model,
+  year,
   carTitle,
   plate,
   amount,
@@ -138,6 +143,8 @@ export function CertificatesModal({
                 <CertificateSheet
                   kind={card.kind}
                   brand={brand}
+                  model={model}
+                  year={year}
                   name={guestName ?? ''}
                   carTitle={carTitle}
                   plate={plate}
@@ -189,6 +196,8 @@ export function CertificatesModal({
         <CertificateViewer
           kind={expanded}
           brand={brand}
+          model={model}
+          year={year}
           name={guestName ?? ''}
           carTitle={carTitle}
           plate={plate}

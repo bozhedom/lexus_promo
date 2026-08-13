@@ -18,14 +18,16 @@
   gap: 16px;
   @include tabs.tab-panel;
 
-  > button:last-child {
+  >button:last-child {
     @include t.gold-button;
     min-height: 48px;
     font-size: 16px;
   }
 }
 
-.manualPanel { align-items: stretch; }
+.manualPanel {
+  align-items: stretch;
+}
 
 .tabs {
   @include tabs.tabs;
@@ -101,7 +103,9 @@
 }
 
 .foundScreen {
-  --k: min(calc(min(100vw, 420px) / 360), calc(100dvh / 620));
+  // На 360×600 сохраняем макетную ширину 1:1. Вертикальный коэффициент
+  // включается только ниже 600px, когда одних компактных высот уже мало.
+  --k: min(calc(min(100vw, 420px) / 360), calc(100dvh / 600));
   height: 100dvh;
   display: flex;
   flex-direction: column;
@@ -148,7 +152,9 @@
   border-radius: k(16);
 
   // Блоки карточки высоту не отдают — её отдают только распорки между ними.
-  > :not(.gap) { flex: 0 0 auto; }
+  > :not(.gap) {
+    flex: 0 0 auto;
+  }
 }
 
 .carName {
@@ -164,12 +170,26 @@
 // Первая строка — марка, вторая — модель с годом (39:3718).
 .carBrand {
   max-width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: k(10);
   font-size: k(24);
   font-weight: 700;
   line-height: k(34);
   letter-spacing: k(1.2);
   overflow-wrap: anywhere;
   color: #fff;
+}
+
+// Логотип марки слева от названия. Высоту берёт от строки, ширину — по кадру
+// логотипа: широкие марки не должны растаскивать строку в стороны.
+.brandLogo {
+  flex: 0 0 auto;
+  width: auto;
+  height: k(28);
+  max-width: k(52);
+  object-fit: contain;
 }
 
 .carModel {
@@ -192,7 +212,9 @@
     background: rgba(255, 255, 255, 0.45);
   }
 
-  &[data-size='m'] { font-size: k(14); }
+  &[data-size='m'] {
+    font-size: k(14);
+  }
 
   &[data-size='s'] {
     gap: k(9);
@@ -224,7 +246,7 @@
 
 // Как на настоящем знаке: цифры крупнее букв, символы по базовой линии.
 .staticMain {
-  align-items: baseline;
+  // align-items: baseline;
   gap: k(2);
   font-weight: 600;
   line-height: 1;
@@ -276,13 +298,13 @@
     line-height: 1.3;
     text-align: left;
 
-    + li {
+    +li {
       margin-top: k(4);
       padding-top: k(4);
       border-top: 1px solid rgba(154, 123, 86, 0.35);
     }
 
-    > b {
+    >b {
       width: k(28);
       height: k(28);
       display: grid;
@@ -327,7 +349,9 @@
   font-size: k(16);
   line-height: 1.4;
 
-  span { @include t.gold-text; }
+  span {
+    @include t.gold-text;
+  }
 }
 
 // Лента подарков: один слайд в кадре, следующий выглядывает справа — как в
@@ -349,13 +373,19 @@
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
 
-  &::-webkit-scrollbar { display: none; }
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .giftSlide {
   flex: 0 0 k(288);
   max-width: k(288);
-  height: k(156);
+  // При ширине больше макетных 360px весь кадр растёт вместе с `--k`. Если
+  // высота окна за этим ростом не успевает (как на Galaxy A55 с панелями
+  // браузера), часть дефицита отдаёт слайд. На свободном по высоте экране
+  // выражение внутри clamp равно нулю и остаются исходные 156px.
+  height: calc(#{k(156)} - clamp(0px, calc(#{k(380)} - 50dvh), #{k(16)}));
   scroll-snap-align: start;
   scroll-snap-stop: always;
 }
@@ -369,11 +399,15 @@
   position: relative;
   width: 100%;
   height: 100%;
-  padding: k(16);
+  // На низком экране слайд отдаёт до 16 макетных пикселей высоты (см.
+  // `.giftSlide`), и текст подарка упирался в кнопку «Подробно». Поля ужаты, а
+  // `gap` держит между ними зазор, даже когда карточке тесно.
+  padding: k(13) k(16);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   justify-content: space-between;
+  gap: k(4);
   overflow: hidden;
   border: 1px solid #ffe8cc;
   border-radius: k(16);
@@ -382,7 +416,9 @@
   cursor: pointer;
   transition: transform 0.18s ease;
 
-  &:active { transform: scale(0.985); }
+  &:active {
+    transform: scale(0.985);
+  }
 }
 
 .giftCardInner {
@@ -395,7 +431,9 @@
   gap: k(2);
   text-align: left;
 
-  small { @include t.gold-text; }
+  small {
+    @include t.gold-text;
+  }
 
   small {
     font-size: k(12);
@@ -408,15 +446,15 @@
   strong {
     font-size: k(24);
     font-weight: 600;
-    line-height: 1.15;
+    line-height: 1.1;
     color: #fff;
   }
 }
 
 .giftTitle {
   color: #fff;
-  font-size: k(16);
-  line-height: 1.2;
+  font-size: k(15);
+  line-height: 1.18;
 }
 
 // В новых макетах кнопка не залита золотом, а обведена им: на бархатном фоне
@@ -462,16 +500,18 @@
  */
 .otherBrandNotice {
   width: k(304);
-  height: k(160);
-  padding: k(17) k(16);
+  // Вместе со слайдом и кнопкой плавно возвращает место распоркам, но только
+  // когда высота окна меньше высоты масштабированного макетного кадра.
+  height: calc(#{k(160)} - clamp(0px, calc(#{k(304)} - 40dvh), #{k(14)}));
+  padding: k(11) k(13);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  border: 1px solid #e8fffd;
+  border: 1px solid #8ACDFE;
   border-radius: k(16);
   background: #0b0c0d;
-  box-shadow: inset 0 0 k(12) rgba(5, 172, 255, 0.8), 0 0 k(4) rgba(5, 172, 255, 0.8);
+  box-shadow: 0px 0px 35.4px 0px #0586FFAD inset;
   text-align: center;
 }
 
@@ -482,7 +522,7 @@
   gap: k(12);
 
   strong {
-    background: linear-gradient(270deg, #567a9a, #bbdaec 51.7%, #6483b7);
+    background: white;
     background-clip: text;
     color: transparent;
     font-size: k(16);
@@ -515,21 +555,16 @@
   border-radius: 50%;
   background: radial-gradient(circle at 50% 30%, rgba(86, 122, 154, 0.55), rgba(11, 12, 13, 0.2));
 
-  svg {
+  img {
     width: k(36);
-    height: k(34);
-    fill: none;
-    stroke: #bbdaec;
-    stroke-width: 1;
-    stroke-linecap: round;
-    stroke-linejoin: round;
+    height: k(36);
   }
 }
 
 .confirmButton {
   @include t.gold-button;
   width: k(304);
-  min-height: k(48);
+  min-height: calc(#{k(48)} - clamp(0px, calc(#{k(76)} - 10dvh), #{k(4)}));
   border-radius: k(8);
   font-size: k(16);
   letter-spacing: k(1.28);
@@ -547,27 +582,128 @@
  * этом остаются макетными, поэтому карточка не превращается в узкую полосу.
  */
 @media (max-height: 660px) {
-  .staticPlate { height: k(58); }
-  .staticMain b { font-size: k(31); }
-  .staticMain i { font-size: k(40); }
-  .staticRegion strong { font-size: k(21); }
-  .staticRegion img { width: k(36); }
-  .progressList li { min-height: k(28); }
-  .stepIcon { height: k(21); }
-  .progressList li > b { width: k(25); height: k(25); }
-  .giftSlide { height: k(140); }
-  .giftCard { padding: k(13); }
-  .otherBrandNotice { height: k(146); }
-  .serviceIcon { width: k(48); height: k(48); }
-  .confirmButton { min-height: k(44); }
+  .staticPlate {
+    height: k(58);
+  }
+
+  .staticMain b {
+    font-size: k(31);
+  }
+
+  .staticMain i {
+    font-size: k(40);
+  }
+
+  .staticRegion strong {
+    font-size: k(21);
+  }
+
+  .staticRegion img {
+    width: k(36);
+  }
+
+  .progressList li {
+    min-height: k(28);
+  }
+
+  .stepIcon {
+    height: k(21);
+  }
+
+  .progressList li>b {
+    width: k(25);
+    height: k(25);
+  }
+
+  .giftSlide {
+    height: k(140);
+  }
+
+  .giftCard {
+    padding: k(13);
+  }
+
+  .otherBrandNotice {
+    height: k(146);
+  }
+
+  .serviceIcon {
+    width: k(48);
+    height: k(48);
+  }
+
+  .confirmButton {
+    min-height: k(44);
+  }
 }
 
 @media (max-height: 600px) {
-  .staticPlate { height: k(54); }
-  .giftSlide { height: k(128); }
-  .giftCardInner small { font-size: k(11); }
-  .giftTitle { font-size: k(15); }
-  .giftLead { font-size: k(15); }
+  .staticPlate {
+    height: k(50);
+  }
+
+  .giftSlide {
+    height: k(116);
+  }
+
+  .giftRail {
+    padding-block: k(8);
+  }
+
+  .giftCard {
+    padding: k(10);
+  }
+
+  .giftCardInner small {
+    font-size: k(11);
+  }
+
+  .giftCardInner strong {
+    font-size: k(20);
+  }
+
+  .giftTitle {
+    font-size: k(14);
+    line-height: 1.1;
+  }
+
+  .giftMore {
+    padding: k(4) k(8);
+  }
+
+  .giftLead {
+    font-size: k(14);
+  }
+
+  .otherBrandNotice {
+    height: k(130);
+    padding: k(10) k(14);
+  }
+
+  .otherBrandHead strong {
+    font-size: k(15);
+    line-height: k(17);
+  }
+
+  .otherBrandNote {
+    font-size: k(11);
+    line-height: k(15);
+  }
+
+  .serviceIcon {
+    width: k(44);
+    height: k(44);
+
+    img {
+      width: k(29);
+      height: k(29);
+    }
+  }
+
+  .confirmButton {
+    min-height: k(40);
+    padding-block: k(8);
+  }
 }
 
 // Свободную высоту (широкий экран, планшет) отдаём распоркам, а не растягиваем
