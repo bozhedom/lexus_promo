@@ -84,14 +84,19 @@ export function TicketScreen() {
   // Данные для персональных сертификатов. Сессию заводим заранее, пока человек
   // рассматривает экран: к моменту открытия модалки картинки уже готовы.
   const details = useMemo<PersonalInviteDetails | null>(() => {
-    const fullName = (result?.application.fullName ?? data.fullName ?? '').trim()
+    // Пустую строку из ответа берём как «не заполнено»: `??` её пропускает, и
+    // модель терялась — на пригласительном оказывался кадр марки вообще.
+    const text = (...values: (string | null | undefined)[]) =>
+      values.map((value) => value?.trim()).find(Boolean) ?? ''
+
+    const fullName = text(result?.application.fullName, data.fullName)
     if (phase !== 'ready' || !fullName) return null
     return {
       fullName,
-      brand: (result?.application.carBrand ?? data.carBrand ?? 'Lexus').trim(),
-      model: (result?.application.carModel ?? data.carModel ?? '').trim(),
+      brand: text(result?.application.carBrand, data.carBrand) || 'Lexus',
+      model: text(result?.application.carModel, data.carModel),
       year: result?.application.carYear ?? data.carYear ?? null,
-      plate: (result?.application.plateNumber ?? data.plateNumber ?? '').trim().toUpperCase(),
+      plate: text(result?.application.plateNumber, data.plateNumber).toUpperCase(),
       amount: result?.certificate.amount ?? data.certificateAmount ?? 1500,
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
