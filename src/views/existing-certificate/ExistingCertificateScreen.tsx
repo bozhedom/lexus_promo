@@ -1,11 +1,13 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState, ReactNode } from 'react'
+import { useMemo, useState, ReactNode } from 'react'
 
+import { useInviteSession } from '@/invite-test/model/useInviteSession'
+import type { Channel, PersonalInviteDetails } from '@/invite-test/model/types'
+import { MessengerButton } from '@/invite-test/ui/MessengerButton'
 import { useScreenView } from '@/shared/analytics'
 import { useFunnel, useFunnelGuard } from '@/shared/lib/funnel'
-import { Button } from '@/shared/ui'
 import { CertificateSheet, CertificateViewer, type CertificateKind } from '@/widgets/certificate-sheet'
 import styles from './ExistingCertificateScreen.module.scss'
 
@@ -32,11 +34,9 @@ export function ExistingCertificateScreen() {
     (data) => Boolean(data.plateNumber && data.certificateCode),
     '/car-number',
   )
-  const { data, reset } = useFunnel()
+  const { data, track } = useFunnel()
   useScreenView('certificate')
   const [expanded, setExpanded] = useState<CertificateKind | null>(null)
-
-  if (!show) return null
 
   const brand = data.carBrand ?? 'Lexus'
   // Модель и год нужны не только подписи: по ним подбирается кадр автомобиля,
@@ -45,6 +45,48 @@ export function ExistingCertificateScreen() {
   const year = data.carYear ?? null
   const carTitle = [data.carBrand, data.carModel].filter(Boolean).join(' ')
   const amount = data.certificateAmount ?? 1500
+
+  // Заявка осталась в прошлом заходе: её идентификатор сюда не приезжает, и
+  // сохранённые в админке картинки этой сессии не принадлежат. Пригласительные
+  // рисуются по запросу — по коду выданной сессии.
+  const details = useMemo<PersonalInviteDetails | null>(() => {
+    const fullName = (data.fullName ?? '').trim()
+    if (!show || !fullName) return null
+    return {
+      fullName,
+      brand,
+      model: model ?? '',
+      year,
+      plate: (data.plateNumber ?? '').toUpperCase(),
+      amount,
+    }
+  }, [show, data.fullName, brand, model, year, data.plateNumber, amount])
+
+  const delivery = useInviteSession(details)
+
+  if (!show) return null
+
+  // Мессенджер открывается в соседней вкладке, а гость уходит дальше по
+  // воронке: вернувшись из чата, он попадает на экран команды автомобиля.
+  const send = (channel: Channel) => {
+    if (!delivery.openChat(channel)) return
+    track('outbound_click', { id: `messenger_${channel}` })
+    router.push('/links')
+  }
+
+  const message = (() => {
+    const { status, error, opened, session } = delivery
+    if (status === 'sent') return 'Пригласительные отправлены в чат'
+    if (status === 'failed') return error ?? 'Менеджер отправит приглашения вручную'
+    if (status === 'waiting') return 'Отправьте сообщение в чате — приглашения придут в ответ'
+    if (opened === 'max' && session && !session.channels.max.autoDelivery) {
+      return `Для автоматической отправки настройте бота MAX. Код: ${session.code}`
+    }
+    if (opened === 'whatsapp' && session && !session.channels.whatsapp.autoDelivery) {
+      return `Отправьте сообщение менеджеру в WhatsApp. Код: ${session.code}`
+    }
+    return null
+  })()
 
   return (
     <main className={styles.screen}>
@@ -99,19 +141,41 @@ export function ExistingCertificateScreen() {
           они уже закреплены за Вашим автомобилем
         </p>
 
-        <div className={styles.actions}>
-          <Button block onClick={() => router.push('/links')}>Продолжить</Button>
-          <button
-            type="button"
-            className={styles.newButton}
-            onClick={() => {
-              reset()
-              router.push('/car-number')
-            }}
-          >
-            Ввести другой автомобиль
-          </button>
+        {/* Забрать пригласительные вернувшийся гость может там же, где и все
+            остальные — в своём мессенджере. Отдельной кнопки «продолжить»
+            больше нет: ушёл в чат — под ним открывается тот же экран команды,
+            что и у гостя, который только что прошёл воронку. */}
+        <p className={styles.or}>
+          <span />
+          отправить в мессенджер
+          <span />
+        </p>
+
+        <div className={styles.messengers}>
+          <MessengerButton
+            icon="/invite-test/icon-max.png"
+            label="MAX"
+            disabled={!delivery.session?.channels.max.enabled}
+            onClick={() => send('max')}
+          />
+          <MessengerButton
+            icon="/invite-test/icon-telegram.png"
+            label="Telegram"
+            disabled={!delivery.session?.channels.telegram.enabled}
+            onClick={() => send('telegram')}
+          />
+          <MessengerButton
+            icon="/invite-test/icon-whatsapp.svg"
+            label="W"
+            ariaLabel="WhatsApp"
+            disabled={!delivery.session?.channels.whatsapp.enabled}
+            onClick={() => send('whatsapp')}
+          />
         </div>
+
+        {message && (
+          <p className={delivery.status === 'failed' ? styles.error : styles.hint}>{message}</p>
+        )}
       </section>
 
       {expanded && (
