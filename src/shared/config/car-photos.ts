@@ -204,14 +204,16 @@ function score(photo: CarPhoto, query: CarQuery): number | null {
 }
 
 /**
- * Кадр для автомобиля гостя. Записи из админки идут первым аргументом и при
- * равном счёте выигрывают у встроенных.
+ * Кадр для автомобиля гостя. Каталог ведётся в админке, и кадры оттуда —
+ * единственный источник: иначе удалённый менеджером кадр возвращался бы из
+ * кода, а правка «на месте» не работала бы. Встроенный список подставляется,
+ * только когда админка пуста — раздел ещё не заполнен или база недоступна.
  */
 export function matchCarPhoto(managed: CarPhoto[], query: CarQuery): CarPhoto {
-  const all = [
-    ...managed.map((photo) => ({ ...photo, managed: true })),
-    ...BUILTIN_CAR_PHOTOS,
-  ]
+  const all =
+    managed.length > 0
+      ? managed.map((photo) => ({ ...photo, managed: true }))
+      : BUILTIN_CAR_PHOTOS
 
   let best: CarPhoto | null = null
   let bestScore = -1

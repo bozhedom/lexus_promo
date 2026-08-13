@@ -76,6 +76,16 @@ describe('matchCarPhoto', () => {
     expect(matchCarPhoto(photos, { brand: 'Toyota', model: 'RAV4' }).photo).toBe('/from-admin.webp')
   })
 
+  it('раз админка заполнена — встроенный список молчит', () => {
+    // Каталог ведётся в админке: удалённый менеджером кадр не должен
+    // возвращаться из кода. Встроенные — только когда админка пуста.
+    const photos = [managed({ brand: 'Toyota', model: 'Camry' })]
+    expect(matchCarPhoto(photos, { brand: 'Lexus', model: 'RX 350' })).toBe(FALLBACK_CAR_PHOTO)
+    expect(matchCarPhoto([], { brand: 'Lexus', model: 'RX 350' }).photo).toBe(
+      '/images/cert/cars/lexus-rx-350.webp',
+    )
+  })
+
   it('кадр с годами выигрывает у кадра без годов', () => {
     const photos = [
       managed({ model: 'Camry', photo: '/any-year.webp', yearFrom: null, yearTo: null }),

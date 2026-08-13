@@ -5,6 +5,7 @@ import * as migration_20260806_024013_promo_slides_and_certificate_rules from '.
 import * as migration_20260810_120000_car_catalog from './20260810_120000_car_catalog';
 import * as migration_20260811_140000_certificate_kind from './20260811_140000_certificate_kind';
 import * as migration_20260813_024329_car_photos from './20260813_024329_car_photos';
+import * as migration_20260813_190000_car_photos_seed from './20260813_190000_car_photos_seed';
 
 export const migrations = [
   {
@@ -41,5 +42,10 @@ export const migrations = [
     up: migration_20260813_024329_car_photos.up,
     down: migration_20260813_024329_car_photos.down,
     name: '20260813_024329_car_photos'
+  },
+  {
+    up: migration_20260813_190000_car_photos_seed.up,
+    down: migration_20260813_190000_car_photos_seed.down,
+    name: '20260813_190000_car_photos_seed',
   },
 ];
