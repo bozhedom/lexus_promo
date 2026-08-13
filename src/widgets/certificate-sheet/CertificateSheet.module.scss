@@ -190,6 +190,10 @@ $gold-warm: #e0c7a9;
   display: flex;
   flex-direction: column;
   align-items: center;
+  // Отчество не обязательно, а место под имя отведено одно и то же: одна
+  // строка встаёт по центру, а не жмётся к верхней черте, оставляя провал.
+  justify-content: center;
+  height: u(64);
   font-family: t.$font-display;
   font-weight: 400;
   font-size: u(40);

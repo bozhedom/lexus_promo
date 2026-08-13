@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import path from 'node:path'
 
 import { getPayload } from 'payload'
@@ -5,7 +6,8 @@ import config from '@payload-config'
 
 import { loadCarPhotos } from '@/lib/carPhotos'
 import type { Media } from '@/payload-types'
-import type { CertificateKind } from '@/widgets/certificate-sheet/layout'
+import type { CarPhoto } from '@/shared/config/car-photos'
+import { certificateFace, type CertificateKind } from '@/widgets/certificate-sheet/layout'
 
 import type { Certificate, PersonalInviteDetails } from '../model/types'
 import { renderCertificate } from './certificateImage'
@@ -39,17 +41,35 @@ const asCertificate = (kind: CertificateKind, media: Media): Certificate | null 
   }
 }
 
+/**
+ * Отпечаток данных, из которых нарисована картинка: имя, автомобиль, номер,
+ * сумма и подобранный под них кадр. Он же стоит в имени файла — иначе картинка
+ * рисуется один раз и навсегда, и загруженный менеджером кадр не доезжает до
+ * гостя, которому пригласительные уже выписали.
+ */
+function fingerprint(
+  kind: CertificateKind,
+  details: PersonalInviteDetails,
+  photos: CarPhoto[],
+): string {
+  const face = certificateFace(
+    kind,
+    { brand: details.brand, model: details.model, year: details.year },
+    photos,
+  )
+  return createHash('sha1')
+    .update(JSON.stringify([kind, details, face.photoRaster, face.plate]))
+    .digest('hex')
+    .slice(0, 10)
+}
+
 async function renderPng(
   kind: CertificateKind,
   details: PersonalInviteDetails,
   code: string,
+  photos: CarPhoto[],
 ): Promise<Buffer> {
-  const image = await renderCertificate(
-    kind,
-    details,
-    `${kind}-${code}.png`,
-    await loadCarPhotos(),
-  )
+  const image = await renderCertificate(kind, details, `${kind}-${code}.png`, photos)
   return Buffer.from(await image.arrayBuffer())
 }
 
@@ -79,25 +99,28 @@ export async function storeCertificateImages(
       depth: 1,
     })
 
+    const photos = await loadCarPhotos()
     const result: Certificate[] = []
     for (const kind of KINDS) {
       const row = issued.docs.find((doc) => doc.kind === kind)
       if (!row) continue
 
+      const stamp = fingerprint(kind, details, photos)
       const existing = typeof row.image === 'object' && row.image ? row.image : null
-      const ready = existing ? asCertificate(kind, existing) : null
+      // Картинка сохранена и нарисована по тем же данным — берём её.
+      const ready = existing?.filename?.includes(`-${stamp}.`) ? asCertificate(kind, existing) : null
       if (ready) {
         result.push(ready)
         continue
       }
 
-      const png = await renderPng(kind, details, row.code)
+      const png = await renderPng(kind, details, row.code, photos)
       const media = await payload.create({
         collection: 'media',
         data: { alt: `Пригласительный ${row.code}` },
         file: {
           data: png,
-          name: `certificate-${row.code}.png`,
+          name: `certificate-${row.code}-${stamp}.png`,
           mimetype: 'image/png',
           size: png.byteLength,
         },
@@ -107,6 +130,13 @@ export async function storeCertificateImages(
         id: row.id,
         data: { image: media.id },
       })
+      // Прежняя картинка больше ни на что не ссылается: в админке от неё
+      // осталась бы только строка в списке загрузок.
+      if (existing?.id) {
+        await payload
+          .delete({ collection: 'media', id: existing.id })
+          .catch(() => undefined)
+      }
 
       const saved = asCertificate(kind, media)
       if (saved) result.push(saved)

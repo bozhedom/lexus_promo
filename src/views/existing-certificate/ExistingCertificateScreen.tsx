@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, ReactNode } from 'react'
 
 import { useScreenView } from '@/shared/analytics'
 import { useFunnel, useFunnelGuard } from '@/shared/lib/funnel'
@@ -9,9 +9,17 @@ import { Button } from '@/shared/ui'
 import { CertificateSheet, CertificateViewer, type CertificateKind } from '@/widgets/certificate-sheet'
 import styles from './ExistingCertificateScreen.module.scss'
 
-const CARDS: { kind: CertificateKind; label: string }[] = [
-  { kind: 'diagnostics', label: 'Диагностика' },
-  { kind: 'gift', label: 'В честь знакомства' },
+const CARDS: { kind: CertificateKind; label: ReactNode }[] = [
+  {
+    kind: 'diagnostics', label: (
+      <>
+        Диагностика
+        <br />
+        ходовой части
+      </>
+    ),
+  },
+  { kind: 'gift', label: 'Замена масла' },
 ]
 
 /**
@@ -31,6 +39,10 @@ export function ExistingCertificateScreen() {
   if (!show) return null
 
   const brand = data.carBrand ?? 'Lexus'
+  // Модель и год нужны не только подписи: по ним подбирается кадр автомобиля,
+  // и без них вернувшийся гость видел на пригласительном чужую машину.
+  const model = data.carModel ?? null
+  const year = data.carYear ?? null
   const carTitle = [data.carBrand, data.carModel].filter(Boolean).join(' ')
   const amount = data.certificateAmount ?? 1500
 
@@ -38,16 +50,7 @@ export function ExistingCertificateScreen() {
     <main className={styles.screen}>
       <span className={styles.stage} aria-hidden />
       <section className={styles.card} role="dialog" aria-modal="true">
-        <button
-          type="button"
-          className={styles.close}
-          onClick={() => router.push('/links')}
-          aria-label="Закрыть"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden>
-            <path d="M16.5 7.5 7.5 16.5M7.5 7.5l9 9" />
-          </svg>
-        </button>
+        
 
         {/* Шапка по макету 39:3585: приветствие, имя золотом и строка о том,
             что пригласительные уже выписаны. */}
@@ -70,6 +73,8 @@ export function ExistingCertificateScreen() {
                 <CertificateSheet
                   kind={card.kind}
                   brand={brand}
+                  model={model}
+                  year={year}
                   name={data.fullName ?? ''}
                   carTitle={carTitle || null}
                   plate={data.plateNumber}
@@ -113,6 +118,8 @@ export function ExistingCertificateScreen() {
         <CertificateViewer
           kind={expanded}
           brand={brand}
+          model={model}
+          year={year}
           name={data.fullName ?? ''}
           carTitle={carTitle || null}
           plate={data.plateNumber}

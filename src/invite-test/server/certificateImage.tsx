@@ -257,6 +257,9 @@ export async function renderCertificate(
 
         <Rule top={u(63)} />
 
+        {/* Место под имя отведено одно и то же, с отчеством и без: одна строка
+            встаёт по центру, а не жмётся к верхней черте — см. `.name` в
+            CertificateSheet.module.scss. */}
         <div
           style={{
             ...centered,
@@ -264,6 +267,8 @@ export async function renderCertificate(
             top: u(72),
             left: u(15),
             width: CERT_WIDTH - u(30),
+            height: u(72),
+            justifyContent: 'center',
             fontFamily: 'Forum',
             fontSize: nameSize,
             lineHeight: 0.89,
