@@ -10,6 +10,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "e2e": "node tests/e2e/funnel-smoke.mjs",
+    "tunnel": "cloudflared tunnel --url http://localhost:3000 --no-autoupdate",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "migrate": "NODE_OPTIONS='--network-family-autoselection-attempt-timeout=1000' payload migrate",
