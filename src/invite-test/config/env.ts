@@ -9,6 +9,12 @@ export const inviteTestEnv = {
     botToken: read('INVITE_TEST_TG_BOT_TOKEN'),
     /** @username менеджера, к нему ведёт кнопка. */
     manager: read('INVITE_TEST_TG_MANAGER'),
+    /**
+     * Username самого бота. Нужен, пока менеджер не подключил бизнес-бота: без
+     * подключения бот умеет отвечать только в собственном диалоге, и кнопка
+     * ведёт в него — как в MAX.
+     */
+    botUsername: read('INVITE_TEST_TG_BOT_USERNAME'),
     /** Подставляется, если не хочется ждать апдейт business_connection. */
     businessId: read('INVITE_TEST_TG_BUSINESS_ID'),
     webhookSecret: read('INVITE_TEST_TG_WEBHOOK_SECRET'),
@@ -37,12 +43,21 @@ export const inviteTestEnv = {
   siteUrl: read('NEXT_PUBLIC_SITE_URL') || 'http://localhost:3000',
 }
 
-/** Кнопка ведёт в диалог с менеджером, для этого хватает его username. */
-export const isTelegramReady = (): boolean => Boolean(inviteTestEnv.telegram.manager)
+/** Кнопка ведёт либо в диалог с менеджером, либо в диалог с ботом. */
+export const isTelegramReady = (): boolean =>
+  Boolean(inviteTestEnv.telegram.manager || inviteTestEnv.telegram.botUsername)
 
-/** Автоответ возможен только через бота, подключённого к аккаунту менеджера. */
+/**
+ * Автоответ возможен двумя способами: от имени менеджера через подключённого
+ * бизнес-бота либо от самого бота в его диалоге. Первый способ требует ещё и
+ * подключения, поэтому проверяется отдельно, уже с `getBusinessId`.
+ */
 export const isTelegramAutoReady = (): boolean =>
   Boolean(inviteTestEnv.telegram.botToken && isTelegramReady())
+
+/** Диплинк в бота: он отвечает сам, подключение к менеджеру не нужно. */
+export const isTelegramBotReady = (): boolean =>
+  Boolean(inviteTestEnv.telegram.botToken && inviteTestEnv.telegram.botUsername)
 
 export const isMaxReady = (): boolean => Boolean(inviteTestEnv.max.botUsername)
 

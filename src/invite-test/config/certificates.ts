@@ -30,7 +30,11 @@ export const personalCertificates = (code: string): Certificate[] => [
 export const openingText = (code: string): string =>
   `Здравствуйте! Даю согласие на отправку мне двух пригласительных. Код: ${code}`
 
-const CODE_PATTERN = /Код:\s*([A-Z0-9]{10})(?![A-Z0-9])/i
+/**
+ * Код приходит двумя путями: в тексте, который клиент отправляет менеджеру, и
+ * параметром диплинка — Telegram и MAX присылают его как `/start КОД`.
+ */
+const CODE_PATTERN = /(?:Код:\s*|^\/start(?:@\S+)?\s+)([A-Z0-9]{10})(?![A-Z0-9])/i
 
 export const extractCode = (text: string): string | null =>
   text.match(CODE_PATTERN)?.[1]?.toUpperCase() ?? null

@@ -12,7 +12,12 @@ import type { Channel, DeliveryStatus, PersonalInviteDetails, SessionResponse } 
 const POLL_MS = 2500
 const POLL_LIMIT_MS = 120_000
 
-export function useInviteSession(details: PersonalInviteDetails | null) {
+export interface InviteOwner {
+  applicationId?: string | null
+  sessionId?: string | null
+}
+
+export function useInviteSession(details: PersonalInviteDetails | null, owner?: InviteOwner) {
   const [session, setSession] = useState<SessionResponse | null>(null)
   const [resolvedKey, setResolvedKey] = useState('')
   const [status, setStatus] = useState<DeliveryStatus>('idle')
@@ -26,7 +31,7 @@ export function useInviteSession(details: PersonalInviteDetails | null) {
     if (!details?.fullName) return
     let alive = true
     api
-      .createSession(details)
+      .createSession(details, owner)
       .then(async (data) => {
         // Кадры пригласительных догружаем до показа модалки: сами карточки
         // рисуются разметкой, и без фотографии они мигнули бы чёрным.
@@ -45,6 +50,9 @@ export function useInviteSession(details: PersonalInviteDetails | null) {
     return () => {
       alive = false
     }
+    // `owner` не в зависимостях намеренно: заявка у экрана одна, а новый
+    // объект на каждый рендер перезапускал бы выдачу кода.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [details, detailsKey])
 
   // Пока клиент в диалоге с менеджером, спрашиваем сервер, дошли ли сертификаты

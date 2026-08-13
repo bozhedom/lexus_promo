@@ -32,7 +32,17 @@ function certResponse(cert: Certificate, app: Application, created: boolean) {
   )
 }
 
-// POST /api/applications/:id/complete: идемпотентно создаёт сертификат
+/**
+ * Гость получает пару пригласительных — диагностику и подарок в честь
+ * знакомства. В воронке ведущим остаётся первое: его код лежит в сессии
+ * браузера с тех пор, когда пригласительное было одно.
+ */
+const KINDS = ['diagnostics', 'gift'] as const
+
+const primary = (docs: Certificate[]): Certificate =>
+  docs.find((doc) => doc.kind === 'diagnostics') ?? docs[0]!
+
+// POST /api/applications/:id/complete: идемпотентно создаёт пару сертификатов
 export async function POST(
   req: NextRequest,
   ctx: RouteContext<'/api/applications/[id]/complete'>,
@@ -63,7 +73,7 @@ export async function POST(
     depth: 0,
   })
   if (existing.docs.length > 0) {
-    return certResponse(existing.docs[0]!, app, false)
+    return certResponse(primary(existing.docs), app, false)
   }
 
   // заявка должна быть заполнена
@@ -91,39 +101,45 @@ export async function POST(
   const transactionID = await payload.db.beginTransaction()
   const txReq = transactionID != null ? { transactionID } : undefined
   try {
-    let cert: Certificate | null = null
-    // код уникальный; на случай коллизии: несколько попыток
-    for (let attempt = 0; attempt < 5; attempt++) {
-      try {
-        cert = await payload.create({
-          collection: 'certificates',
-          data: {
-            application: app.id,
-            kind: 'diagnostics',
-            code: generateCertificateCode(),
-            amount,
-          },
-          req: txReq,
-        })
-        break
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : ''
-        // уникальный индекс по application сработал: параллельный запрос успел раньше
-        if (msg.includes('application')) {
-          if (transactionID != null) await payload.db.rollbackTransaction(transactionID)
-          const race = await payload.find({
+    const created: Certificate[] = []
+    for (const kind of KINDS) {
+      let cert: Certificate | null = null
+      // код уникальный; на случай коллизии: несколько попыток
+      for (let attempt = 0; attempt < 5; attempt++) {
+        try {
+          cert = await payload.create({
             collection: 'certificates',
-            where: { application: { equals: app.id } },
-            limit: 1,
-            depth: 0,
+            data: {
+              application: app.id,
+              kind,
+              code: generateCertificateCode(),
+              amount,
+            },
+            req: txReq,
           })
-          if (race.docs.length > 0) return certResponse(race.docs[0]!, app, false)
-          return jsonError(500, 'Не удалось создать сертификат')
+          break
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : ''
+          // уникальный индекс по паре «заявка + вид» сработал: параллельный
+          // запрос успел раньше
+          if (msg.includes('application')) {
+            if (transactionID != null) await payload.db.rollbackTransaction(transactionID)
+            const race = await payload.find({
+              collection: 'certificates',
+              where: { application: { equals: app.id } },
+              limit: 10,
+              depth: 0,
+            })
+            if (race.docs.length > 0) return certResponse(primary(race.docs), app, false)
+            return jsonError(500, 'Не удалось создать сертификат')
+          }
+          if (attempt === 4) throw err
         }
-        if (attempt === 4) throw err
       }
+      if (!cert) throw new Error('certificate creation failed')
+      created.push(cert)
     }
-    if (!cert) throw new Error('certificate creation failed')
+    const cert = primary(created)
 
     await payload.update({
       collection: 'applications',

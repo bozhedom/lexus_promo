@@ -18,9 +18,13 @@ export async function readCertificateFiles(certificates: Certificate[]): Promise
     certificates.map(async (cert) => {
       const isRemote = /^https?:\/\//i.test(cert.image)
       const url = isRemote ? cert.image : `${base}/${cert.image.replace(/^\//, '')}`
-      const localFile = isRemote
-        ? null
-        : path.join(process.cwd(), 'public', cert.image.replace(/^\//, ''))
+      // Сохранённое в админке пригласительное лежит на диске: берём файл
+      // оттуда, не гоняя картинку через свой же HTTP.
+      const localFile = cert.file
+        ? path.join(process.cwd(), cert.file)
+        : isRemote
+          ? null
+          : path.join(process.cwd(), 'public', cert.image.replace(/^\//, ''))
       let blob: Blob
       if (localFile) {
         const bytes = await readFile(localFile).catch(() => null)

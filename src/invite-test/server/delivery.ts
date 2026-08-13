@@ -4,7 +4,8 @@ import * as telegram from './telegram'
 import * as whatsapp from './whatsapp'
 
 export type Target =
-  | { channel: 'telegram'; chatId: number | string }
+  /** `business` — диалог клиента с менеджером, туда отвечаем от его имени. */
+  | { channel: 'telegram'; chatId: number | string; business: boolean }
   | { channel: 'whatsapp'; phone: string }
   | { channel: 'max'; userId: number | string }
 
@@ -19,14 +20,19 @@ export async function deliver(code: string, target: Target): Promise<void> {
 
   try {
     if (target.channel === 'telegram') {
-      const businessId = getBusinessId()
-      if (!businessId) throw new Error('Бот не подключён к аккаунту менеджера')
+      const businessId = target.business ? getBusinessId() : ''
+      if (target.business && !businessId) {
+        throw new Error('Бот не подключён к аккаунту менеджера')
+      }
       await telegram.sendCertificates(
         target.chatId,
         session.certificates,
         session.deliveryText,
-        businessId,
+        businessId || undefined,
       )
+      // В своём диалоге бот заканчивает разговор ссылкой на менеджера: в
+      // бизнес-диалоге менеджер и так на другом конце.
+      if (!businessId) await telegram.sendManagerLink(target.chatId)
     } else if (target.channel === 'whatsapp') {
       await whatsapp.sendCertificates(target.phone, session.certificates, session.deliveryText)
     } else {

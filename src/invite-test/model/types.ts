@@ -4,8 +4,15 @@ export type DeliveryStatus = 'idle' | 'waiting' | 'sent' | 'failed'
 
 export interface Certificate {
   id: string
+  /** Публичный адрес картинки: по нему её забирают MAX и WhatsApp. */
   image: string
   alt: string
+  /**
+   * Путь файла от корня проекта, если картинка уже сохранена в админке.
+   * Telegram грузит файл напрямую, не дожидаясь, пока адрес станет доступен
+   * из интернета.
+   */
+  file?: string
 }
 
 export interface PersonalInviteDetails {

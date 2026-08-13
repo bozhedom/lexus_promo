@@ -7,11 +7,18 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
   return data
 }
 
-export const createSession = (details: PersonalInviteDetails): Promise<SessionResponse> =>
+/**
+ * `owner` — заявка гостя: по ней сервер находит уже выписанные пригласительные,
+ * сохраняет их картинки в админку и отдаёт ссылки именно на них.
+ */
+export const createSession = (
+  details: PersonalInviteDetails,
+  owner?: { applicationId?: string | null; sessionId?: string | null },
+): Promise<SessionResponse> =>
   request('/api/invite-test/session', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(details),
+    body: JSON.stringify({ ...details, ...owner }),
   })
 
 export const fetchStatus = (code: string): Promise<StatusResponse> =>

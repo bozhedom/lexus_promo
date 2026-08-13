@@ -6,14 +6,17 @@ import {
   isMaxAutoReady,
   isMaxReady,
   isTelegramAutoReady,
+  isTelegramBotReady,
   isTelegramReady,
   isWhatsappAutoReady,
   isWhatsappReady,
 } from '@/invite-test/config/env'
 import type { PersonalInviteDetails, SessionResponse } from '@/invite-test/model/types'
+import { storeCertificateImages } from '@/invite-test/server/certificateStore'
 import { createSession, getBusinessId } from '@/invite-test/server/store'
 import { getClientIp, jsonError, readJsonBody } from '@/lib/http'
 import { rateLimit } from '@/lib/rateLimit'
+import { validateSessionId } from '@/lib/validation'
 
 // POST /api/invite-test/session: выдаёт код и ссылки на диалоги с менеджером
 export async function POST(req: NextRequest) {
@@ -21,7 +24,7 @@ export async function POST(req: NextRequest) {
     return jsonError(429, 'Слишком много запросов')
   }
 
-  const body = (await readJsonBody(req)) as Partial<Record<keyof PersonalInviteDetails, unknown>> | null
+  const body = (await readJsonBody(req)) as Record<string, unknown> | null
   const fullName = typeof body?.fullName === 'string' ? body.fullName.trim().slice(0, 80) : ''
   if (!fullName) return jsonError(422, 'Не передано имя')
 
@@ -38,12 +41,23 @@ export async function POST(req: NextRequest) {
     amount: Math.max(0, Math.min(rawAmount, 1_000_000)),
   }
 
-  // Позже здесь получаем поля сертификатов по заявке/CMS и передаём вторым
-  // аргументом в createSession. undefined включает безопасный fallback.
-  const created = createSession(fullName, undefined, details)
+  // Пригласительные сохраняются в админку и оттуда же уходят в мессенджеры:
+  // менеджер видит ровно ту картинку, что пришла гостю. Если заявки нет или
+  // сохранить не вышло, остаётся отрисовка по запросу.
+  const applicationId = text(body?.applicationId, 64)
+  const ownerSession = validateSessionId(body?.sessionId)
+  const stored =
+    applicationId && ownerSession
+      ? await storeCertificateImages(applicationId, ownerSession, details)
+      : null
+
+  const created = createSession(fullName, stored ? { certificates: stored } : undefined, details)
   const { code } = created
   const { telegram, max, whatsapp } = inviteTestEnv
   const openingMessage = encodeURIComponent(openingText(code))
+  // Ответ от имени менеджера возможен, только когда он подключил бизнес-бота.
+  const businessDelivery =
+    isTelegramAutoReady() && Boolean(telegram.manager) && Boolean(getBusinessId())
 
   const response: SessionResponse = {
     code,
@@ -51,9 +65,17 @@ export async function POST(req: NextRequest) {
     channels: {
       telegram: {
         enabled: isTelegramReady(),
-        chatLink: isTelegramReady() ? `https://t.me/${telegram.manager}?text=${openingMessage}` : null,
-        // автоответ работает, только когда менеджер подключил бота к аккаунту
-        autoDelivery: isTelegramAutoReady() && Boolean(getBusinessId()),
+        // Пока менеджер не подключил бизнес-бота, кнопка ведёт в диалог с самим
+        // ботом: там он отвечает сертификатами сразу, как в MAX. С подключением
+        // всё возвращается к диалогу с менеджером — сертификаты приходят от него.
+        chatLink: businessDelivery
+          ? `https://t.me/${telegram.manager}?text=${openingMessage}`
+          : isTelegramBotReady()
+            ? `https://t.me/${telegram.botUsername}?start=${encodeURIComponent(code)}`
+            : telegram.manager
+              ? `https://t.me/${telegram.manager}?text=${openingMessage}`
+              : null,
+        autoDelivery: businessDelivery || isTelegramBotReady(),
       },
       whatsapp: {
         enabled: isWhatsappReady(),

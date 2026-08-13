@@ -22,18 +22,19 @@ async function call(method: string, body: FormData | Record<string, unknown>) {
 }
 
 /**
- * Оба сертификата одним альбомом. business_connection_id отправляет их от
- * имени менеджера: в переписке бота не видно.
+ * Оба сертификата одним альбомом. С `business_connection_id` они уходят от
+ * имени менеджера — бота в переписке не видно; без него отвечает сам бот в
+ * своём диалоге, куда клиент пришёл по диплинку.
  */
 export async function sendCertificates(
   chatId: number | string,
   certificates: Certificate[],
   deliveryText: string,
-  businessConnectionId: string,
+  businessConnectionId?: string,
 ) {
   const files = await readCertificateFiles(certificates)
   const form = new FormData()
-  form.set('business_connection_id', businessConnectionId)
+  if (businessConnectionId) form.set('business_connection_id', businessConnectionId)
   form.set('chat_id', String(chatId))
   form.set(
     'media',
@@ -53,12 +54,28 @@ export async function sendCertificates(
 export async function sendText(
   chatId: number | string,
   text: string,
-  businessConnectionId: string,
+  businessConnectionId?: string,
 ) {
   await call('sendMessage', {
-    business_connection_id: businessConnectionId,
+    ...(businessConnectionId ? { business_connection_id: businessConnectionId } : {}),
     chat_id: chatId,
     text,
+  })
+}
+
+/**
+ * Приписка после сертификатов в диалоге с ботом: дальше гость общается с живым
+ * менеджером, поэтому даём кнопку прямо в его чат.
+ */
+export async function sendManagerLink(chatId: number | string) {
+  const manager = inviteTestEnv.telegram.manager
+  if (!manager) return
+  await call('sendMessage', {
+    chat_id: chatId,
+    text: 'Записаться и задать вопросы можно менеджеру — он на связи без выходных.',
+    reply_markup: {
+      inline_keyboard: [[{ text: 'Написать менеджеру', url: `https://t.me/${manager}` }]],
+    },
   })
 }
 
@@ -66,7 +83,8 @@ export async function setWebhook(url: string) {
   return call('setWebhook', {
     url,
     secret_token: inviteTestEnv.telegram.webhookSecret || undefined,
-    allowed_updates: ['business_connection', 'business_message'],
+    // `message` — диалог с самим ботом: диплинк `?start=КОД` приходит сюда.
+    allowed_updates: ['business_connection', 'business_message', 'message'],
     drop_pending_updates: true,
   })
 }
