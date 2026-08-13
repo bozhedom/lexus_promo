@@ -184,31 +184,32 @@ export async function renderCertificate(
               width: plateW,
               height: plateH,
               display: 'flex',
-              // Буквы мельче цифр, но стоят с ними на одной базовой линии: по
-              // центру строчные боксы разного кегля не совпадают и буквы
-              // поднимаются над цифрами.
-              alignItems: 'baseline',
+              alignItems: 'center',
               justifyContent: 'center',
-              paddingTop: plateH * 0.1,
-              gap: Math.round(plateW * 0.012),
-              borderRadius: Math.round(plateW * 0.012),
-              background: '#f1f1ee',
-              color: '#101010',
+              gap: Math.round(plateW * 0.016),
+              borderRadius: Math.round(plateW * 0.026),
+              // Знак серее бумаги и обведён по краю — см. `.carPlate`: ровно
+              // белый прямоугольник выбивался из студийного света кадра.
+              border: `${Math.max(1, Math.round(plateW * 0.007))}px solid rgba(14,14,10,0.5)`,
+              backgroundImage: 'linear-gradient(180deg, #eaeae7 0%, #d8d8d3 55%, #c4c4be 100%)',
+              color: '#17170f',
               fontWeight: 700,
             }}
           >
-            <span style={{ fontSize: plateW * 0.105 }}>{onCar.first}</span>
-            <span style={{ fontSize: plateW * 0.145 }}>{onCar.digits}</span>
-            <span style={{ fontSize: plateW * 0.105 }}>{onCar.last}</span>
+            {/* Буквы и цифры одного кегля: на настоящем знаке они одной высоты,
+                а разный кегль разводил их по разным базовым линиям. */}
+            <span style={{ fontSize: plateW * 0.152 }}>{onCar.first}</span>
+            <span style={{ fontSize: plateW * 0.152 }}>{onCar.digits}</span>
+            <span style={{ fontSize: plateW * 0.152 }}>{onCar.last}</span>
             <span
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                height: plateH * 0.62,
-                marginLeft: plateW * 0.02,
-                paddingLeft: plateW * 0.025,
-                borderLeft: '1px solid rgba(16,16,16,0.55)',
-                fontSize: plateW * 0.09,
+                height: plateH * 0.66,
+                marginLeft: plateW * 0.022,
+                paddingLeft: plateW * 0.026,
+                borderLeft: '1px solid rgba(23,23,15,0.45)',
+                fontSize: plateW * 0.108,
               }}
             >
               {onCar.region}

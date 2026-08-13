@@ -85,35 +85,35 @@ $gold-warm: #e0c7a9;
   // пропорция реального знака с регионом
   aspect-ratio: 4.64;
   display: flex;
-  // На настоящем знаке буквы мельче цифр, но стоят на одной с ними базовой
-  // линии. Выравнивание по центру поднимало их над цифрами: у мелкого кегля
-  // строчный бокс ниже, и середины боксов не совпадают с середин букв.
-  align-items: baseline;
-  padding-top: u(calc(0.03 * var(--plate-width)));
+  align-items: center;
   box-sizing: border-box;
   justify-content: center;
-  gap: u(calc(0.012 * var(--plate-width)));
-  border-radius: u(calc(0.012 * var(--plate-width)));
-  background: #f1f1ee;
-  color: #101010;
+  gap: u(calc(0.016 * var(--plate-width)));
+  border-radius: u(calc(0.026 * var(--plate-width)));
+  // Знак не наклеен поверх кадра: он серее бумаги, обведён по краю и лежит в
+  // тени бампера. Ровно белый прямоугольник выбивался из студийного света.
+  background: linear-gradient(180deg, #eaeae7 0%, #d8d8d3 55%, #c4c4be 100%);
+  box-shadow:
+    inset 0 0 0 u(calc(0.007 * var(--plate-width))) rgba(14, 14, 10, 0.5),
+    0 u(calc(0.012 * var(--plate-width))) u(calc(0.032 * var(--plate-width))) rgba(0, 0, 0, 0.55);
+  color: #17170f;
   font-family: t.$font-plate;
   font-weight: 700;
   line-height: 1;
 
-  b {
-    font-size: u(calc(0.115 * var(--plate-width)));
-  }
-
+  // На настоящем знаке буквы и цифры одной высоты. Разный кегль разводил их по
+  // разным базовым линиям, и строка выглядела прыгающей.
+  b,
   i {
-    font-size: u(calc(0.155 * var(--plate-width)));
+    font-size: u(calc(0.152 * var(--plate-width)));
     font-style: normal;
   }
 
   u {
-    margin-left: u(calc(0.024 * var(--plate-width)));
-    padding-left: u(calc(0.028 * var(--plate-width)));
-    border-left: 1px solid rgba(16, 16, 16, 0.55);
-    font-size: u(calc(0.105 * var(--plate-width)));
+    margin-left: u(calc(0.022 * var(--plate-width)));
+    padding-left: u(calc(0.026 * var(--plate-width)));
+    border-left: 1px solid rgba(23, 23, 15, 0.45);
+    font-size: u(calc(0.108 * var(--plate-width)));
     text-decoration: none;
   }
 }
