@@ -68,19 +68,46 @@ const car = (
 })
 
 /**
- * Кадры из макета. Модельные идут первыми только для читаемости — порядок в
- * подборе не участвует, всё решает счёт совпадения.
+ * Кадры из макета (фрейм 47:1084). Модельные идут первыми только для
+ * читаемости — порядок в подборе почти не участвует, всё решает счёт
+ * совпадения.
+ *
+ * Поколения одной модели разводятся годом выпуска: у нового кадра годов нет,
+ * поэтому он же достаётся автомобилю с неизвестным годом, а старому проставлен
+ * верхний год. В каталоге модель называется без поколения («RAV4», «LX»,
+ * «Land Cruiser Prado»), и по-другому их не различить.
  */
 export const BUILTIN_CAR_PHOTOS: CarPhoto[] = [
   car('Lexus', 'RX', 'lexus-rx-350', 947),
   car('Lexus', 'NX', 'lexus-nx-200', 953),
+  car('Lexus', 'LX', 'lexus-lx-600', 995),
+  car('Lexus', 'LX', 'lexus-lx-570', 1005, [null, 2021]),
+  car('Lexus', 'GX', 'lexus-gx-550', 960),
   car('Toyota', 'Land Cruiser 300', 'toyota-land-cruiser-300', 961),
   car('Toyota', 'Land Cruiser 250', 'toyota-land-cruiser-250', 947),
   car('Toyota', 'Land Cruiser 200', 'toyota-land-cruiser-200', 947),
+  car('Toyota', 'Land Cruiser 100', 'toyota-land-cruiser-100', 965),
   car('Toyota', 'Land Cruiser Prado', 'toyota-land-cruiser-prado-150', 947),
+  car('Toyota', 'Land Cruiser Prado', 'toyota-land-cruiser-prado-120', 985, [null, 2009]),
   car('Toyota', 'RAV4', 'toyota-rav4', 947),
+  car('Toyota', 'RAV4', 'toyota-rav4-2013', 947, [null, 2018]),
+  car('Toyota', 'Harrier', 'toyota-harrier-2020', 947),
+  car('Toyota', 'Harrier', 'toyota-harrier-2016', 985, [null, 2019]),
   car('Toyota', 'Corolla Cross', 'toyota-corolla-cross', 947),
   car('Toyota', 'Alphard', 'toyota-alphard', 1003),
+  car('Subaru', 'Forester', 'subaru-forester', 947),
+  car('Subaru', 'XV', 'subaru-xv', 947),
+  car('Subaru', 'Impreza', 'subaru-impreza', 947),
+  car('Subaru', 'Levorg', 'subaru-levorg', 947),
+  car('Mitsubishi', 'Outlander', 'mitsubishi-outlander', 947),
+  car('Mitsubishi', 'Eclipse Cross', 'mitsubishi-eclipse-cross', 947),
+  // RVR и ASX — одна машина под разными именами: японская и европейская.
+  car('Mitsubishi', 'RVR', 'mitsubishi-rvr', 947),
+  car('Mitsubishi', 'ASX', 'mitsubishi-rvr', 947),
+  car('Mitsubishi', 'Delica', 'mitsubishi-delica', 947),
+  car('Mitsubishi', 'Pajero', 'mitsubishi-pajero', 980),
+  car('Honda', 'Fit', 'honda-fit', 990),
+  car('Honda', 'Vezel', 'honda-vezel', 985),
 
   // Кадры марки целиком: модель, которой нет в списке выше, получает их.
   {
@@ -127,15 +154,27 @@ const normalize = (value: string | null | undefined): string =>
     .trim()
 
 /**
- * Модель совпадает, если одна строка — начало другой. Так кадр «RX» подходит и
- * «RX 350», и «RX 300», а «Land Cruiser 300» не перепутается с «200».
+ * Насколько кадр подходит запрошенной модели. Совпадение считается по началу
+ * строки: кадр «RX» подходит и «RX 350», и «RX 300», а «Land Cruiser 300» с
+ * «200» не путается. `null` — кадр не подходит вовсе.
+ *
+ * Точность важнее длины названия. В каталоге модель называется «Land Cruiser»,
+ * без поколения, и по одной длине владельцу Land Cruiser доставался кадр Prado
+ * — просто потому, что «Land Cruiser Prado» длиннее.
  */
-const modelMatches = (photoModel: string, requested: string): boolean => {
+const MODEL_ANY = 0
+const modelScore = (photoModel: string, requested: string): number | null => {
   const a = normalize(photoModel)
   const b = normalize(requested)
-  if (!a) return true
-  if (!b) return false
-  return a.startsWith(b) || b.startsWith(a)
+  if (!a) return MODEL_ANY
+  if (!b) return null
+  if (a === b) return 900
+  // Кадр общее запроса: «RX» на «RX 350». Чем длиннее общее начало, тем лучше.
+  if (b.startsWith(a)) return 600 + a.length
+  // Кадр конкретнее запроса: «Land Cruiser 300» на «Land Cruiser». Берём
+  // название, ближайшее к запросу, а не самое длинное.
+  if (a.startsWith(b)) return Math.max(1, 300 - (a.length - b.length))
+  return null
 }
 
 const yearMatches = (photo: CarPhoto, year: number | null | undefined): boolean => {
@@ -155,10 +194,11 @@ function score(photo: CarPhoto, query: CarQuery): number | null {
   const photoBrand = normalize(photo.brand)
   if (photoBrand && photoBrand !== normalize(query.brand)) return null
   if (!yearMatches(photo, query.year)) return null
-  if (photo.model && !modelMatches(photo.model, query.model ?? '')) return null
+  const model = modelScore(photo.model, query.model ?? '')
+  if (model == null) return null
 
   let value = photoBrand ? 100 : 0
-  if (photo.model) value += 1000 + normalize(photo.model).length
+  value += model
   if (photo.yearFrom != null || photo.yearTo != null) value += 10_000
   return value
 }

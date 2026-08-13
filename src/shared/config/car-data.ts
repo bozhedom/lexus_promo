@@ -44,9 +44,11 @@ export interface CarCatalogEntry {
  * Каталог до ответа админки и при временной недоступности БД.
  *
  * У Toyota и Lexus модели перечислены полностью: это профиль техцентра. У
- * остальных марок список моделей задаётся уже в админке, а до этого модель
- * вписывается вручную — держать в коде несколько сотен наименований смысла
- * нет, а выбрать свою машину человек должен в любом случае.
+ * ходовых марок — те модели, под которые в макете есть кадр пригласительного:
+ * выбранная из списка модель совпадает с кадром по написанию, а вписанная
+ * руками — как повезёт. Остальные марки ведутся уже в админке, а до этого
+ * модель вписывается вручную: держать в коде несколько сотен наименований
+ * смысла нет, а выбрать свою машину человек должен в любом случае.
  */
 export const DEFAULT_CAR_CATALOG: CarCatalogEntry[] = [
   {
@@ -54,7 +56,9 @@ export const DEFAULT_CAR_CATALOG: CarCatalogEntry[] = [
     models: [
       'Camry',
       'Corolla',
+      'Corolla Cross',
       'RAV4',
+      'Harrier',
       'Land Cruiser',
       'Land Cruiser Prado',
       'Highlander',
@@ -87,7 +91,9 @@ export const DEFAULT_CAR_CATALOG: CarCatalogEntry[] = [
   { brand: 'GAC', models: [] },
   { brand: 'Great Wall', models: [] },
   { brand: 'Haval', models: [] },
-  { brand: 'Honda', models: [] },
+  // У ходовых марок перечислены модели, под которые есть кадр пригласительного:
+  // остальные по-прежнему вписываются через «Другое».
+  { brand: 'Honda', models: ['Fit', 'Vezel'] },
   { brand: 'Hyundai', models: [] },
   { brand: 'Infiniti', models: [] },
   { brand: 'Jaguar', models: [] },
@@ -99,7 +105,7 @@ export const DEFAULT_CAR_CATALOG: CarCatalogEntry[] = [
   { brand: 'Mazda', models: [] },
   { brand: 'Mercedes-Benz', models: [] },
   { brand: 'Mini', models: [] },
-  { brand: 'Mitsubishi', models: [] },
+  { brand: 'Mitsubishi', models: ['Outlander', 'Eclipse Cross', 'RVR', 'ASX', 'Delica', 'Pajero'] },
   { brand: 'Nissan', models: [] },
   { brand: 'Omoda', models: [] },
   { brand: 'Opel', models: [] },
@@ -107,7 +113,7 @@ export const DEFAULT_CAR_CATALOG: CarCatalogEntry[] = [
   { brand: 'Porsche', models: [] },
   { brand: 'Renault', models: [] },
   { brand: 'Skoda', models: [] },
-  { brand: 'Subaru', models: [] },
+  { brand: 'Subaru', models: ['Forester', 'XV', 'Impreza', 'Levorg'] },
   { brand: 'Suzuki', models: [] },
   { brand: 'Tank', models: [] },
   { brand: 'Tesla', models: [] },
