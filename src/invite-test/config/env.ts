@@ -10,9 +10,8 @@ export const inviteTestEnv = {
     /** @username менеджера, к нему ведёт кнопка. */
     manager: read('INVITE_TEST_TG_MANAGER'),
     /**
-     * Username самого бота. Нужен, пока менеджер не подключил бизнес-бота: без
-     * подключения бот умеет отвечать только в собственном диалоге, и кнопка
-     * ведёт в него — как в MAX.
+     * Username самого бота. Обычно пустой: он достаётся из `getMe` по токену
+     * (см. `server/botIdentity`). Задаётся, только если нужно перебить ответ API.
      */
     botUsername: read('INVITE_TEST_TG_BOT_USERNAME'),
     /** Подставляется, если не хочется ждать апдейт business_connection. */
@@ -21,7 +20,10 @@ export const inviteTestEnv = {
     apiUrl: read('INVITE_TEST_TG_API_URL') || 'https://api.telegram.org',
   },
   max: {
-    /** Username официального бота MAX, к нему ведёт диплинк с кодом сессии. */
+    /**
+     * Username официального бота MAX, к нему ведёт диплинк с кодом сессии.
+     * Как и в Telegram, обычно пустой: достаётся из `me` по токену.
+     */
     botUsername: read('INVITE_TEST_MAX_BOT_USERNAME'),
     /** Личный username менеджера: бот показывает ссылку после сертификатов. */
     managerUsername: read('INVITE_TEST_MAX_MANAGER'),
@@ -55,15 +57,17 @@ export const isTelegramReady = (): boolean =>
 export const isTelegramAutoReady = (): boolean =>
   Boolean(inviteTestEnv.telegram.botToken && isTelegramReady())
 
-/** Диплинк в бота: он отвечает сам, подключение к менеджеру не нужно. */
-export const isTelegramBotReady = (): boolean =>
-  Boolean(inviteTestEnv.telegram.botToken && inviteTestEnv.telegram.botUsername)
+/**
+ * Диплинк в бота: он отвечает сам, подключение к менеджеру не нужно. Хватает
+ * токена — username бота приходит из `getMe`.
+ */
+export const isTelegramBotReady = (): boolean => Boolean(inviteTestEnv.telegram.botToken)
 
-export const isMaxReady = (): boolean => Boolean(inviteTestEnv.max.botUsername)
+export const isMaxReady = (): boolean =>
+  Boolean(inviteTestEnv.max.botToken || inviteTestEnv.max.botUsername)
 
 /** MAX передаёт код из диплинка в bot_started, после чего бот может ответить. */
-export const isMaxAutoReady = (): boolean =>
-  Boolean(inviteTestEnv.max.botUsername && inviteTestEnv.max.botToken)
+export const isMaxAutoReady = (): boolean => Boolean(inviteTestEnv.max.botToken)
 
 export const isWhatsappReady = (): boolean => Boolean(inviteTestEnv.whatsapp.phone)
 
