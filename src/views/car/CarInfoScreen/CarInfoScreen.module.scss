@@ -192,6 +192,15 @@
   object-fit: contain;
 }
 
+// Toyota печатается фирменным красным — тем же, что у надписи TOYOTA на
+// пригласительном. Файл марки одноцветный, поэтому цвет даёт заливка, а сам
+// логотип работает маской; пропорция взята у кадра `brands/toyota.png`.
+.brandLogoRed {
+  width: k(28 * 112 / 73);
+  background: #d82f2f;
+  mask: var(--brand-logo) no-repeat center / contain;
+}
+
 .carModel {
   max-width: 100%;
   display: flex;

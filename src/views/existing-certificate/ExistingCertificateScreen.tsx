@@ -66,12 +66,13 @@ export function ExistingCertificateScreen() {
 
   if (!show) return null
 
-  // Мессенджер открывается в соседней вкладке, а гость уходит дальше по
-  // воронке: вернувшись из чата, он попадает на экран команды автомобиля.
+  // Мессенджер открывается в соседней вкладке, а сайт возвращается к началу:
+  // выписывать этому гостю больше нечего, и вернувшись из чата он попадает на
+  // первый экран, а не на повторное сообщение о выданных пригласительных.
   const send = (channel: Channel) => {
     if (!delivery.openChat(channel)) return
     track('outbound_click', { id: `messenger_${channel}` })
-    router.push('/links')
+    router.push('/')
   }
 
   const message = (() => {

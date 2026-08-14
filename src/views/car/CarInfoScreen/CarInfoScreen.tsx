@@ -27,7 +27,7 @@ import {
 import { useFunnel } from '@/shared/lib/funnel'
 import type { CarInfo } from '@/shared/lib/types'
 import { Button, Loader, SelectField, StageLayout, TextField } from '@/shared/ui'
-import { CertificateViewer, type CertificateKind } from '@/widgets/certificate-sheet'
+import { CertificateViewer, isToyota, type CertificateKind } from '@/widgets/certificate-sheet'
 import { validatePlate, validateShortText } from '@/lib/validation'
 import styles from './CarInfoScreen.module.scss'
 
@@ -116,7 +116,7 @@ function initialFrom(lookup: CarInfo | undefined, manual: boolean): InitialState
 // Иконки списка готовности обведены по кадру Figma. Раньше здесь стояли
 // типографские символы (♧, ✉, ∞): они брались из системного шрифта, поэтому
 // на разных телефонах отличались и размером, и начертанием.
-function StepIcon({ kind }: { kind: 'gift' | 'letter' | 'mask' }) {
+function StepIcon({ kind }: { kind: 'gift' | 'letter' | 'owner' }) {
   if (kind === 'gift') {
     return (
       <svg className={styles.stepIcon} viewBox="0 0 26 28" aria-hidden>
@@ -139,10 +139,10 @@ function StepIcon({ kind }: { kind: 'gift' | 'letter' | 'mask' }) {
       </svg>
     )
   }
+  // Подтверждение владельца: человек с галочкой, кадр из макета.
   return (
-    <svg className={styles.stepIcon} viewBox="0 0 28 20" aria-hidden>
-      <path d="M1.2 5.2C1.2 3.2 3 2 4.9 2.5l7.3 2.1c1.2.3 2.4.3 3.6 0l7.3-2.1c1.9-.5 3.7.7 3.7 2.7v6.4c0 2-1.4 3.8-3.3 4.3l-7.9 2.1c-1 .3-2.2.3-3.2 0l-7.9-2.1c-1.9-.5-3.3-2.3-3.3-4.3Z" />
-      <path d="M6.6 9.2c1.6-.4 3 .5 3.6 2M21.4 9.2c-1.6-.4-3 .5-3.6 2" />
+    <svg className={styles.stepIcon} viewBox="0 0 28 25" aria-hidden>
+      <path d="M0.5 24.5C0.5 22.4471 1.09958 20.4378 2.22712 18.7132C3.35465 16.9886 4.96212 15.622 6.85661 14.7774C8.7511 13.9327 10.8521 13.646 12.9075 13.9516C14.9629 14.2571 16.8854 15.142 18.4442 16.5M19.4 21.8333L22.1 24.5L27.5 19.1667M18.05 7.16667C18.05 10.8486 15.0279 13.8333 11.3 13.8333C7.57208 13.8333 4.55 10.8486 4.55 7.16667C4.55 3.48477 7.57208 0.5 11.3 0.5C15.0279 0.5 18.05 3.48477 18.05 7.16667Z" />
     </svg>
   )
 }
@@ -373,6 +373,7 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
   const plateMain = splitPlate(data.plateNumber ?? '').main
   const supportedBrand = /^(toyota|lexus)$/i.test(car?.brand ?? '')
   const logo = car ? brandLogo(car.brand) : null
+  const redLogo = Boolean(car && isToyota(car.brand))
 
   if (ui === 'found' && car) {
     return (
@@ -387,10 +388,19 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
               остальных марок строка выглядит ровно как раньше. */}
           <h1 className={styles.carName}>
             <span className={styles.carBrand}>
-              {logo && (
+              {logo &&
                 // Логотип чисто декоративный: марка тут же написана словом.
-                <Image className={styles.brandLogo} src={logo} alt="" width={56} height={56} />
-              )}
+                (redLogo ? (
+                  // Toyota узнают по красному: одноцветный кадр марки уходит в
+                  // маску, а цвет берётся тот же, что у надписи на сертификате.
+                  <span
+                    className={`${styles.brandLogo} ${styles.brandLogoRed}`}
+                    style={{ '--brand-logo': `url(${logo})` } as CSSProperties}
+                    aria-hidden
+                  />
+                ) : (
+                  <Image className={styles.brandLogo} src={logo} alt="" width={56} height={56} />
+                ))}
               <span>{car.brand}</span>
             </span>
             <span className={styles.carModel} data-size={modelSize(car)}>
@@ -432,7 +442,7 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
                   <b><StepCheck /></b>
                 </li>
                 <li>
-                  <StepIcon kind="mask" />
+                  <StepIcon kind="owner" />
                   <span>Осталось подтвердить<br />владельца</span>
                   <b className={styles.pendingCheck} />
                 </li>
