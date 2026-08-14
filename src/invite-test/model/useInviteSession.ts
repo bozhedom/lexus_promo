@@ -89,14 +89,14 @@ export function useInviteSession(details: PersonalInviteDetails | null, owner?: 
   const openChat = useCallback(
     (channel: Channel) => {
       const info = activeSession?.channels[channel]
-      if (!info?.chatLink) return false
+      if (!activeSession || !info?.chatLink) return false
 
       setOpened(channel)
       // MAX не умеет открыть чужой диалог с готовым текстом: подстановка у него
       // есть только в «Поделиться», где чат выбирает сам гость. Поэтому текст с
       // кодом кладём в буфер обмена — в чате остаётся вставить и отправить.
       // Запрос идёт из обработчика клика, иначе браузер откажет.
-      if (!info.prefilled && activeSession?.message) {
+      if (!info.prefilled && activeSession.message) {
         setCopied(false)
         navigator.clipboard?.writeText(activeSession.message).then(
           () => setCopied(true),
@@ -110,6 +110,17 @@ export function useInviteSession(details: PersonalInviteDetails | null, owner?: 
         startedAt.current = Date.now()
         setError(null)
         setStatus('waiting')
+
+        // Там, где текст в диалог не подставляется, менеджер пишет первым: гость
+        // открывает мессенджер и видит пригласительные уже в чате с человеком.
+        // Буфер обмена остаётся запасным путём — если отправить не вышло,
+        // сообщение с кодом у гостя уже скопировано.
+        if (!info.prefilled) {
+          api.deliverToChat(activeSession.code, channel).then(
+            (result) => result.delivered && setStatus('sent'),
+            () => undefined,
+          )
+        }
       }
       window.open(info.chatLink, '_blank', 'noopener,noreferrer')
       return true

@@ -76,3 +76,12 @@ export interface StatusResponse {
   status: DeliveryStatus
   error: string | null
 }
+
+export interface DeliverResponse {
+  /**
+   * Пригласительные ушли гостю на номер из его заявки, и писать менеджеру ему
+   * не нужно. `false` — номера нет, канал не настроен или мессенджер отказал:
+   * остаётся прежний путь, диалог с менеджером и текст с кодом в буфере.
+   */
+  delivered: boolean
+}

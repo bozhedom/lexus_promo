@@ -117,6 +117,27 @@ describe('GREEN-API: три канала одним клиентом', () => {
     ).toMatchObject({ channel: 'max', text: '', phone: '+79876543210' })
   })
 
+  it('получателя для отправки первым спрашиваем у мессенджера', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(
+      async () =>
+        new Response(JSON.stringify({ exist: true, chatId: '101220915', fromCache: false }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+    )
+    const green = await import('../src/invite-test/server/green')
+
+    const account = await green.checkAccount('max', '+79876543210')
+    expect(account).toMatchObject({ exist: true, chatId: '101220915' })
+    expect(fetchMock.mock.calls[0]![0]).toBe(
+      'https://3100.api.greenapi.test/waInstance3100000000/checkAccount/max-token',
+    )
+    // Номер уходит числом, как просит метод, а chatId собирать из него не нужно.
+    expect(JSON.parse(String(fetchMock.mock.calls[0]![1]?.body))).toEqual({
+      phoneNumber: 79876543210,
+    })
+  })
+
   it('сессия находится по телефону гостя, пока пригласительные не ушли', async () => {
     const store = await import('../src/invite-test/server/store')
 

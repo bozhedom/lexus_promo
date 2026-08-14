@@ -1,4 +1,10 @@
-import type { PersonalInviteDetails, SessionResponse, StatusResponse } from '../model/types'
+import type {
+  Channel,
+  DeliverResponse,
+  PersonalInviteDetails,
+  SessionResponse,
+  StatusResponse,
+} from '../model/types'
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init)
@@ -25,3 +31,15 @@ export const createSession = (
 
 export const fetchStatus = (code: string): Promise<StatusResponse> =>
   request(`/api/invite-test/status?code=${encodeURIComponent(code)}`)
+
+/**
+ * Просит менеджера отправить пригласительные гостю первым — на номер из его
+ * заявки. Ради MAX: подставить текст в диалог с человеком он не умеет, и без
+ * этого гостю пришлось бы вставлять сообщение из буфера обмена.
+ */
+export const deliverToChat = (code: string, channel: Channel): Promise<DeliverResponse> =>
+  request('/api/invite-test/deliver', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ code, channel }),
+  })

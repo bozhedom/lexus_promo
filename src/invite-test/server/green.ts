@@ -158,6 +158,20 @@ export async function sendCertificates(
   }
 }
 
+/**
+ * Есть ли у номера аккаунт в мессенджере и какой у него `chatId`. По нему
+ * менеджер пишет гостю первым — там, где подставить текст в диалог нельзя и
+ * ждать сообщения от гостя не с чего. Формат получателя не угадываем: MAX
+ * отвечает готовым идентификатором чата.
+ *
+ * GREEN-API ограничивает частые проверки одного и того же несуществующего
+ * номера, поэтому зовём метод один раз на нажатие кнопки.
+ */
+export const checkAccount = (channel: Channel, phone: string) =>
+  call<{ exist: boolean; chatId?: string }>(channel, 'checkAccount', {
+    phoneNumber: Number(phone.replace(/\D/g, '')),
+  })
+
 export const getState = (channel: Channel) =>
   call<{ stateInstance: string }>(channel, 'getStateInstance')
 
