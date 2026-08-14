@@ -6,6 +6,7 @@ import * as migration_20260810_120000_car_catalog from './20260810_120000_car_ca
 import * as migration_20260811_140000_certificate_kind from './20260811_140000_certificate_kind';
 import * as migration_20260813_024329_car_photos from './20260813_024329_car_photos';
 import * as migration_20260813_190000_car_photos_seed from './20260813_190000_car_photos_seed';
+import * as migration_20260814_100000_certificate_serial from './20260814_100000_certificate_serial';
 
 export const migrations = [
   {
@@ -47,5 +48,10 @@ export const migrations = [
     up: migration_20260813_190000_car_photos_seed.up,
     down: migration_20260813_190000_car_photos_seed.down,
     name: '20260813_190000_car_photos_seed',
+  },
+  {
+    up: migration_20260814_100000_certificate_serial.up,
+    down: migration_20260814_100000_certificate_serial.down,
+    name: '20260814_100000_certificate_serial',
   },
 ];

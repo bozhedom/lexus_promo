@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { useMemo, useState } from 'react'
 
 import {
+  certificateSerialsOf,
   isApiError,
   issueCertificates,
   patchApplication,
@@ -88,6 +89,7 @@ export function ContactScreen() {
         certificateCode: gift?.code,
         certificateAmount: gift?.amount,
         certificateExpiresAt: gift?.expiresAt ?? undefined,
+        certificateSerials: certificateSerialsOf(issued.certificates),
       })
       setErrors({})
       setSavedFullName(name!)
@@ -199,6 +201,7 @@ export function ContactScreen() {
           carTitle={[data.carBrand, data.carModel].filter(Boolean).join(' ')}
           plate={data.plateNumber}
           amount={data.certificateAmount ?? 1500}
+          serials={data.certificateSerials}
           // Пригласительные гость забирает в мессенджере — на этом путь по
           // сайту заканчивается. Переход делаем сразу по клику, чтобы,
           // вернувшись из чата, он попал на первый экран, а не на модалку с

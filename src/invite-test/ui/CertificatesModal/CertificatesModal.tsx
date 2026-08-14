@@ -22,6 +22,8 @@ interface CertificatesModalProps {
   carTitle?: string | null
   plate?: string | null
   amount?: number
+  /** Номера выдачи по видам: печатаются в правом нижнем углу пригласительного. */
+  serials?: Partial<Record<CertificateKind, number | null>>
   /**
    * Крестик появляется, только когда закрывать модалку действительно можно.
    * На шаге выдачи пригласительных возврата нет: сертификаты уже выписаны на
@@ -65,6 +67,7 @@ export function CertificatesModal({
   carTitle,
   plate,
   amount,
+  serials,
   onClose,
   onSent,
 }: CertificatesModalProps) {
@@ -149,6 +152,7 @@ export function CertificatesModal({
                   carTitle={carTitle}
                   plate={plate}
                   amount={amount}
+                  serial={serials?.[card.kind]}
                 />
               </span>
               <span className={styles.zoom} aria-hidden="true">
@@ -202,6 +206,7 @@ export function CertificatesModal({
           carTitle={carTitle}
           plate={plate}
           amount={amount}
+          serial={serials?.[expanded]}
           onClose={() => setExpanded(null)}
         />
       )}

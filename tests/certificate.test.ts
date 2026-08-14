@@ -2,8 +2,27 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import { computeCertificateAmount, generateCertificateCode } from '@/lib/certificate'
 import type { Application } from '@/payload-types'
+import { certificateSerial } from '@/widgets/certificate-sheet/layout'
 
 const app = { carBrand: 'Toyota', carModel: 'Camry' } as Application
+
+describe('certificateSerial', () => {
+  it('нумерует диагностику буквой A, а замену масла — B', () => {
+    expect(certificateSerial('diagnostics', 1)).toEqual({ letter: 'A', number: '000001' })
+    expect(certificateSerial('gift', 1)).toEqual({ letter: 'B', number: '000001' })
+  })
+
+  it('дополняет номер нулями до шести знаков', () => {
+    expect(certificateSerial('diagnostics', 42)?.number).toBe('000042')
+    expect(certificateSerial('gift', 1234567)?.number).toBe('1234567')
+  })
+
+  it('не печатает номер, пока пригласительное не выписано', () => {
+    expect(certificateSerial('diagnostics', null)).toBeNull()
+    expect(certificateSerial('diagnostics', undefined)).toBeNull()
+    expect(certificateSerial('gift', 0)).toBeNull()
+  })
+})
 
 describe('generateCertificateCode', () => {
   it('генерирует код формата GIFT-XXXXX без неоднозначных символов', () => {

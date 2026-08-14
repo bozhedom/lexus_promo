@@ -1,3 +1,5 @@
+import type { CertificateKind } from '@/widgets/certificate-sheet/layout'
+
 export type Channel = 'telegram' | 'max' | 'whatsapp'
 
 export type DeliveryStatus = 'idle' | 'waiting' | 'sent' | 'failed'
@@ -22,6 +24,12 @@ export interface PersonalInviteDetails {
   year: number | null
   plate: string
   amount: number
+  /**
+   * Номера выдачи — по одному на вид пригласительного. Заполняет сервер по
+   * записям админки: на кадре стоит номер из базы, а не то, что прислал
+   * браузер. Пусто — пригласительные ещё не выписаны.
+   */
+  serials?: Partial<Record<CertificateKind, number>>
 }
 
 export interface InviteSession {

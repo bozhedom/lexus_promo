@@ -34,6 +34,11 @@ export interface FunnelData {
   certificateId?: string
   certificateAmount?: number
   certificateExpiresAt?: string | null
+  /**
+   * Номера выдачи по видам пригласительного: они напечатаны на кадре, и экран
+   * показывает ровно те, что вернул сервер.
+   */
+  certificateSerials?: Partial<Record<'diagnostics' | 'gift', number | null>>
 }
 
 export interface Utm {

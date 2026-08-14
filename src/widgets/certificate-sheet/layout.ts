@@ -65,6 +65,38 @@ export function certificateFace(
   }
 }
 
+/** Буква перед номером: у каждого вида пригласительного своя нумерация. */
+const SERIAL_LETTER: Record<CertificateKind, string> = {
+  diagnostics: 'A',
+  gift: 'B',
+}
+
+export interface CertificateSerial {
+  /** Золотая буква вида: A — диагностика, B — замена масла. */
+  letter: string
+  /** Номер выдачи с ведущими нулями, как в макете: 000001. */
+  number: string
+}
+
+/**
+ * Номер пригласительного для правого нижнего угла. Считается на сервере при
+ * выдаче и живёт в базе: у каждого вида свой отсчёт с единицы, поэтому
+ * диагностика и замена масла нумеруются независимо друг от друга.
+ *
+ * `null` — пригласительное ещё не выписано (превью на экране автомобиля), и
+ * номер не печатается вовсе.
+ */
+export function certificateSerial(
+  kind: CertificateKind,
+  serial: number | null | undefined,
+): CertificateSerial | null {
+  if (serial == null || !Number.isFinite(serial) || serial < 1) return null
+  return {
+    letter: SERIAL_LETTER[kind],
+    number: String(Math.trunc(serial)).padStart(6, '0'),
+  }
+}
+
 /**
  * «Приглашаем Вас в новый специализированный техцентр» — только для Toyota и
  * Lexus: новый техцентр открыт под них. Владельцу любой другой марки техцентр

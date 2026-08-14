@@ -118,7 +118,18 @@ export interface IssuedCertificate {
   kind: 'diagnostics' | 'gift'
   code: string
   amount: number
+  /** Номер выдачи, напечатанный на пригласительном. */
+  serial: number | null
   expiresAt: string | null
+}
+
+/** Номера выдачи по видам — в том виде, в каком их хранит воронка. */
+export function certificateSerialsOf(
+  certificates: IssuedCertificate[],
+): Partial<Record<IssuedCertificate['kind'], number | null>> {
+  const serials: Partial<Record<IssuedCertificate['kind'], number | null>> = {}
+  for (const cert of certificates) serials[cert.kind] = cert.serial
+  return serials
 }
 
 /** Оба пригласительных выписываются на шаге «Оформить приглашение». */

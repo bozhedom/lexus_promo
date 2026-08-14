@@ -411,6 +411,36 @@ $gold-warm: #e0c7a9;
   }
 }
 
+// Номер выдачи: золотой кружок «ID», за ним буква вида и сам номер (52:2472).
+.certId {
+  display: flex;
+  align-items: center;
+  gap: u(6);
+  font-size: u(10.5);
+  line-height: u(12.5);
+  color: rgba(255, 255, 255, 0.88);
+  letter-spacing: u(0.4);
+
+  b {
+    font-weight: inherit;
+    color: $gold-warm;
+  }
+}
+
+.certIdBadge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: u(22);
+  height: u(22);
+  border: 1px solid $gold-line;
+  border-radius: 50%;
+  font-size: u(9);
+  letter-spacing: u(0.5);
+  color: $gold-warm;
+}
+
 .legal {
   font-size: u(7.9);
   line-height: u(9);

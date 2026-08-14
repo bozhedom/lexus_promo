@@ -8,6 +8,7 @@ import {
   CERT_LAYOUT,
   certificateCopy,
   certificateFace,
+  certificateSerial,
   formatPlateLine,
   inviteLines,
   isOwnBrand,
@@ -136,6 +137,7 @@ export async function renderCertificate(
   const onCar = details.plate ? plateParts(details.plate) : null
   const plateW = face.plate ? Math.round(face.plate.w * CERT_WIDTH) : 0
   const plateH = Math.round(plateW / 4.64)
+  const number = certificateSerial(kind, details.serials?.[kind])
 
   return new ImageResponse(
     (
@@ -505,6 +507,33 @@ export async function renderCertificate(
               <span style={{ display: 'flex' }}>Без выходных</span>
             </div>
           </div>
+
+          {/* Номер выдачи — третий в строке контактов, см. `.certId` в
+              CertificateSheet.module.scss. */}
+          {number && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: u(6), height: u(24) }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: u(22),
+                  height: u(22),
+                  border: `1px solid ${GOLD_LINE}`,
+                  borderRadius: u(11),
+                  fontSize: u(9),
+                  letterSpacing: u(0.5),
+                  color: GOLD_WARM,
+                }}
+              >
+                ID
+              </div>
+              <div style={{ display: 'flex', letterSpacing: u(0.4) }}>
+                <span style={{ display: 'flex', color: GOLD_WARM }}>{number.letter}</span>
+                <span style={{ display: 'flex', marginLeft: u(4) }}>{number.number}</span>
+              </div>
+            </div>
+          )}
         </div>
 
         <div

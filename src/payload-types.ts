@@ -170,6 +170,10 @@ export interface Certificate {
   kind: 'diagnostics' | 'gift';
   code: string;
   /**
+   * Issue number printed on the certificate. Each kind is numbered from one
+   */
+  serial?: number | null;
+  /**
    * Amount is computed server-side only
    */
   amount: number;
@@ -523,6 +527,7 @@ export interface CertificatesSelect<T extends boolean = true> {
   application?: T;
   kind?: T;
   code?: T;
+  serial?: T;
   amount?: T;
   image?: T;
   redeemedAt?: T;

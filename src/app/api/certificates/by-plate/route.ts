@@ -64,6 +64,9 @@ export async function POST(req: NextRequest) {
       kind: cert.kind,
       code: cert.code,
       amount: cert.amount,
+      // Номер выдачи напечатан на пригласительном: вернувшийся гость видит тот
+      // же, что уже пришёл ему в мессенджер.
+      serial: cert.serial ?? null,
       expiresAt: cert.expiresAt ?? null,
     })),
     vehicle: {

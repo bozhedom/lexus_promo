@@ -41,7 +41,13 @@ export async function POST(req: NextRequest) {
       ? await storeCertificateImages(applicationId, ownerSession, details)
       : null
 
-  const created = createSession(fullName, stored ? { certificates: stored } : undefined, details)
+  // Номера выдачи приезжают из базы вместе с картинками: по ним подписывается
+  // и пригласительное, которое рисуется по запросу, если админка не ответила.
+  const created = createSession(
+    fullName,
+    stored ? { certificates: stored.certificates } : undefined,
+    stored ? { ...details, serials: stored.serials } : details,
+  )
 
   const response: SessionResponse = {
     code: created.code,

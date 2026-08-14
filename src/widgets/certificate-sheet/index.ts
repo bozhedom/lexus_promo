@@ -4,6 +4,7 @@ export {
   CERT_LAYOUT,
   certificateCopy,
   certificateFace,
+  certificateSerial,
   formatPlateLine,
   inviteLines,
   isLexus,

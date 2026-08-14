@@ -1,6 +1,30 @@
-import type { Access, CollectionConfig } from 'payload'
+import type { Access, CollectionBeforeChangeHook, CollectionConfig } from 'payload'
 
 const authenticated: Access = ({ req }) => Boolean(req.user)
+
+/**
+ * Номер выдачи: у диагностики и замены масла свой отсчёт, и оба начинаются с
+ * единицы. Считается от последнего выписанного номера этого вида, поэтому
+ * очищенный в админке раздел нумеруется заново с первого.
+ *
+ * Номер печатается на самом пригласительном, так что задним числом он не
+ * меняется: у выписанного сертификата поле остаётся тем, что было.
+ */
+const numberCertificate: CollectionBeforeChangeHook = async ({ data, operation, req }) => {
+  if (operation !== 'create' || typeof data.serial === 'number') return data
+
+  const last = await req.payload.find({
+    collection: 'certificates',
+    where: { kind: { equals: data.kind } },
+    sort: '-serial',
+    limit: 1,
+    depth: 0,
+    req,
+  })
+
+  const previous = last.docs[0]?.serial
+  return { ...data, serial: (typeof previous === 'number' ? previous : 0) + 1 }
+}
 
 export const Certificates: CollectionConfig = {
   slug: 'certificates',
@@ -10,7 +34,16 @@ export const Certificates: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'code',
-    defaultColumns: ['image', 'code', 'kind', 'amount', 'application', 'redeemedAt', 'createdAt'],
+    defaultColumns: [
+      'image',
+      'serial',
+      'code',
+      'kind',
+      'amount',
+      'application',
+      'redeemedAt',
+      'createdAt',
+    ],
     listSearchableFields: ['code'],
   },
   access: {
@@ -22,6 +55,7 @@ export const Certificates: CollectionConfig = {
   // На заявку выписывается ровно по одному пригласительному каждого вида:
   // повторный запрос выдачи не должен плодить третий сертификат.
   indexes: [{ fields: ['application', 'kind'], unique: true }],
+  hooks: { beforeChange: [numberCertificate] },
   fields: [
     {
       name: 'application',
@@ -56,6 +90,19 @@ export const Certificates: CollectionConfig = {
       unique: true,
       index: true,
       label: { ru: 'Код', en: 'Code' },
+    },
+    {
+      name: 'serial',
+      type: 'number',
+      index: true,
+      admin: {
+        readOnly: true,
+        description: {
+          ru: 'Номер выдачи, он же напечатан на пригласительном. У каждого вида свой отсчёт с единицы',
+          en: 'Issue number printed on the certificate. Each kind is numbered from one',
+        },
+      },
+      label: { ru: 'Номер выдачи', en: 'Serial' },
     },
     {
       name: 'amount',

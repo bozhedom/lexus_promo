@@ -17,6 +17,8 @@ const brief = (cert: Certificate) => ({
   kind: cert.kind,
   code: cert.code,
   amount: cert.amount,
+  // Номер выдачи напечатан на пригласительном: экран показывает тот же.
+  serial: cert.serial ?? null,
   expiresAt: cert.expiresAt ?? null,
 })
 

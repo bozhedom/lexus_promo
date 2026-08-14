@@ -198,6 +198,7 @@ export function TicketScreen() {
           year={details.year}
           plate={details.plate}
           amount={details.amount}
+          serials={data.certificateSerials}
           onClose={() => setModalOpen(false)}
           // Под модалкой уже лежит готовый экран команды автомобиля: как
           // только гость ушёл в мессенджер, возвращаем его туда, чтобы из

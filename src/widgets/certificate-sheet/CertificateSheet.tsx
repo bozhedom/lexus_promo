@@ -8,6 +8,7 @@ import {
   CERT_LAYOUT,
   certificateCopy,
   certificateFace,
+  certificateSerial,
   formatPlateLine,
   inviteLines,
   isOwnBrand,
@@ -32,6 +33,8 @@ export interface CertificateSheetProps {
   /** Госномер гостя: печатается и в подписи, и прямо на кадре автомобиля. */
   plate?: string | null
   amount?: number
+  /** Номер выдачи из админки. Пусто — пригласительное ещё не выписано. */
+  serial?: number | null
   className?: string
 }
 
@@ -53,6 +56,7 @@ export function CertificateSheet({
   carTitle,
   plate,
   amount = 1500,
+  serial,
   className,
 }: CertificateSheetProps) {
   const toyota = isToyota(brand)
@@ -68,6 +72,7 @@ export function CertificateSheet({
   // — как и на пригласительном для марок техцентра.
   const modelLine = carTitle ?? [brand, model].filter(Boolean).join(' ')
   const invite = inviteLines(brand)
+  const number = certificateSerial(kind, serial)
 
   return (
     <article
@@ -195,6 +200,19 @@ export function CertificateSheet({
             <span>Без выходных</span>
           </span>
         </p>
+
+        {/* Номер выдачи стоит третьим в строке контактов — правый нижний угол
+            кадра. До выдачи его нет, и строка выглядит как раньше. */}
+        {number && (
+          <p className={styles.certId}>
+            <span className={styles.certIdBadge} aria-hidden>
+              ID
+            </span>
+            <span>
+              <b>{number.letter}</b> {number.number}
+            </span>
+          </p>
+        )}
       </div>
 
       <span className={styles.gapContacts} aria-hidden />

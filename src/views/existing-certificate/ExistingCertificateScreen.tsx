@@ -122,6 +122,7 @@ export function ExistingCertificateScreen() {
                   carTitle={carTitle || null}
                   plate={data.plateNumber}
                   amount={amount}
+                  serial={data.certificateSerials?.[card.kind]}
                 />
               </span>
               {/* Значок разворота — тот же, что на слайдах: сразу видно, что
@@ -189,6 +190,7 @@ export function ExistingCertificateScreen() {
           carTitle={carTitle || null}
           plate={data.plateNumber}
           amount={amount}
+          serial={data.certificateSerials?.[expanded]}
           onClose={() => setExpanded(null)}
         />
       )}

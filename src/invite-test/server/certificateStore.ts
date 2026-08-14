@@ -43,9 +43,9 @@ const asCertificate = (kind: CertificateKind, media: Media): Certificate | null 
 
 /**
  * Отпечаток данных, из которых нарисована картинка: имя, автомобиль, номер,
- * сумма и подобранный под них кадр. Он же стоит в имени файла — иначе картинка
- * рисуется один раз и навсегда, и загруженный менеджером кадр не доезжает до
- * гостя, которому пригласительные уже выписали.
+ * сумма, номер выдачи и подобранный под них кадр. Он же стоит в имени файла —
+ * иначе картинка рисуется один раз и навсегда, и загруженный менеджером кадр
+ * не доезжает до гостя, которому пригласительные уже выписали.
  */
 function fingerprint(
   kind: CertificateKind,
@@ -73,16 +73,23 @@ async function renderPng(
   return Buffer.from(await image.arrayBuffer())
 }
 
+export interface StoredCertificates {
+  certificates: Certificate[]
+  /** Номера выдачи из базы: они напечатаны на кадре и нужны экрану гостя. */
+  serials: Partial<Record<CertificateKind, number>>
+}
+
 /**
  * Дорисовывает недостающие картинки пригласительных заявки и возвращает пару
- * ссылок на них. `null` — заявка не найдена или сохранить не удалось: вызывающий
- * откатывается на картинки, которые рисуются по запросу.
+ * ссылок на них вместе с номерами выдачи. `null` — заявка не найдена или
+ * сохранить не удалось: вызывающий откатывается на картинки, которые рисуются
+ * по запросу.
  */
 export async function storeCertificateImages(
   applicationId: string,
   sessionId: string,
   details: PersonalInviteDetails,
-): Promise<Certificate[] | null> {
+): Promise<StoredCertificates | null> {
   try {
     const payload = await getPayload({ config })
 
@@ -100,12 +107,20 @@ export async function storeCertificateImages(
     })
 
     const photos = await loadCarPhotos()
+    // Номер выдачи печатается на кадре, поэтому он часть данных отрисовки:
+    // берём его из базы, а не из тела запроса.
+    const serials: Partial<Record<CertificateKind, number>> = {}
+    for (const doc of issued.docs) {
+      if (typeof doc.serial === 'number') serials[doc.kind as CertificateKind] = doc.serial
+    }
+    const printed: PersonalInviteDetails = { ...details, serials }
+
     const result: Certificate[] = []
     for (const kind of KINDS) {
       const row = issued.docs.find((doc) => doc.kind === kind)
       if (!row) continue
 
-      const stamp = fingerprint(kind, details, photos)
+      const stamp = fingerprint(kind, printed, photos)
       const existing = typeof row.image === 'object' && row.image ? row.image : null
       // Картинка сохранена и нарисована по тем же данным — берём её.
       const ready = existing?.filename?.includes(`-${stamp}.`) ? asCertificate(kind, existing) : null
@@ -114,7 +129,7 @@ export async function storeCertificateImages(
         continue
       }
 
-      const png = await renderPng(kind, details, row.code, photos)
+      const png = await renderPng(kind, printed, row.code, photos)
       const media = await payload.create({
         collection: 'media',
         data: { alt: `Пригласительный ${row.code}` },
@@ -142,7 +157,7 @@ export async function storeCertificateImages(
       if (saved) result.push(saved)
     }
 
-    return result.length === KINDS.length ? result : null
+    return result.length === KINDS.length ? { certificates: result, serials } : null
   } catch {
     // Пригласительные важнее записи в админке: молча уходим на отрисовку по
     // запросу, ошибку видно в логах Payload.

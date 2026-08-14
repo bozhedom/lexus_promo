@@ -10,6 +10,7 @@ import {
   splitPlate,
 } from '@/features/plate-lookup'
 import {
+  certificateSerialsOf,
   createApplication,
   findExistingCertificate,
   isApiError,
@@ -73,6 +74,7 @@ function ReadyCarNumberScreen() {
           certificateCode: previous.certificate.code,
           certificateAmount: previous.certificate.amount,
           certificateExpiresAt: previous.certificate.expiresAt,
+          certificateSerials: certificateSerialsOf(previous.certificates),
         })
         track('plate_submitted', { plate: canonical, existingCertificate: true })
         router.push('/existing-certificate')
