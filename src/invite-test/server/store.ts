@@ -93,6 +93,14 @@ export function getSession(code: string): InviteSession | null {
 }
 
 /**
+ * Пригласительные по этой сессии ещё не ушли. Отправленную и отправляемую прямо
+ * сейчас второй раз не берём, а вот сорвавшуюся — берём: попытка менеджера
+ * написать первым могла не пройти, и тогда всё держится на сообщении гостя.
+ */
+const isPending = (session: InviteSession): boolean =>
+  session.status !== 'waiting' && session.status !== 'sent'
+
+/**
  * Сессия по телефону отправителя. Нужна там, где кода в сообщении нет: MAX не
  * умеет подставить текст в диалог с менеджером, поэтому гость пишет что угодно,
  * а узнаём мы его по номеру, с которого он оставил заявку.
@@ -107,7 +115,7 @@ export function findSessionByPhone(phone: string): InviteSession | null {
 
   let found: InviteSession | null = null
   for (const session of sessions.values()) {
-    if (session.phone !== phone || session.status !== 'idle') continue
+    if (session.phone !== phone || !isPending(session)) continue
     if (!found || session.createdAt >= found.createdAt) found = session
   }
   return found
@@ -126,7 +134,7 @@ export function setStatus(code: string, status: DeliveryStatus, error: string | 
  */
 export function claimSession(code: string): InviteSession | null {
   const session = getSession(code)
-  if (!session || session.status === 'waiting' || session.status === 'sent') return null
+  if (!session || !isPending(session)) return null
   session.status = 'waiting'
   session.error = null
   return session

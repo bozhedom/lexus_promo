@@ -155,6 +155,25 @@ describe('GREEN-API: три канала одним клиентом', () => {
     expect(store.findSessionByPhone('+79876543210')?.code).toBe(session.code)
   })
 
+  /**
+   * Менеджер вправе не суметь написать гостю первым: мессенджер такое сообщение
+   * может не пропустить. Тогда всё держится на сообщении самого гостя, и
+   * сорвавшаяся сессия обязана находиться по номеру.
+   */
+  it('после сорвавшейся отправки сессия по номеру всё ещё находится', async () => {
+    const store = await import('../src/invite-test/server/store')
+
+    const session = store.createSession('Пётр Петрович', null, null, '+79111112233')
+    store.setStatus(session.code, 'failed', 'MAX отказал')
+
+    expect(store.findSessionByPhone('+79111112233')?.code).toBe(session.code)
+    expect(store.claimSession(session.code)?.code).toBe(session.code)
+
+    // А вот пока отправка идёт, второй раз сессию не забрать.
+    expect(store.findSessionByPhone('+79111112233')).toBeNull()
+    expect(store.claimSession(session.code)).toBeNull()
+  })
+
   it('в Telegram уходят три сообщения: два файла и текст', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(
       async () =>

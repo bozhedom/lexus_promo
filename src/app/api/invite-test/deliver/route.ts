@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import type { Channel, DeliverResponse } from '@/invite-test/model/types'
 import { deliver } from '@/invite-test/server/delivery'
 import { checkAccount, isGreenReady } from '@/invite-test/server/green'
-import { getSession } from '@/invite-test/server/store'
+import { getSession, setStatus } from '@/invite-test/server/store'
 import { getClientIp, jsonError, readJsonBody } from '@/lib/http'
 import { rateLimit } from '@/lib/rateLimit'
 
@@ -47,7 +47,11 @@ export async function POST(req: NextRequest) {
 
     await deliver(code, { channel, via: 'green', chatId: account.chatId })
   } catch {
-    // Статус ошибки лежит в сессии; гость дописывает менеджеру сам.
+    // Написать первым — попытка, а не обещание: мессенджер вправе не пропустить
+    // сообщение тому, кто менеджеру не писал. Сессию возвращаем в исходное
+    // состояние, иначе страница покажет ошибку и перестанет ждать, а гость к
+    // этому моменту уже открыл чат и вот-вот отправит своё сообщение.
+    setStatus(code, 'idle')
     return NextResponse.json({ delivered: false } satisfies DeliverResponse)
   }
 
