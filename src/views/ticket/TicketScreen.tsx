@@ -102,7 +102,11 @@ export function TicketScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, result, data.fullName, data.carBrand, data.carModel, data.carYear, data.plateNumber])
 
-  const delivery = useInviteSession(details, { applicationId: data.applicationId, sessionId })
+  const delivery = useInviteSession(details, {
+    applicationId: data.applicationId,
+    sessionId,
+    certificateCode: data.certificateCode,
+  })
 
   if (!show) return null
 

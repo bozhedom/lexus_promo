@@ -36,9 +36,15 @@ interface ChannelOptions {
   code?: string
 }
 
-/** Диалоги с менеджером под выданный код: пригласительные придут в ответ. */
-export const resolveChannels = (code: string): Promise<Record<Channel, ChannelInfo>> =>
-  managerChannels({ opening: openingText(code), code })
+/**
+ * Диалоги с менеджером под выданный код: пригласительные придут в ответ.
+ * `template` — формулировка из админки, пусто — текст по умолчанию.
+ */
+export const resolveChannels = (
+  code: string,
+  template?: string | null,
+): Promise<Record<Channel, ChannelInfo>> =>
+  managerChannels({ opening: openingText(code, template), code })
 
 /**
  * Куда ведёт кнопка канала и придут ли пригласительные сами.
@@ -83,6 +89,9 @@ export async function managerChannels({
     enabled: Boolean(chatLink),
     chatLink,
     autoDelivery: Boolean(chatLink) && autoDelivery && delivers,
+    // Текст с кодом виден прямо в ссылке. Там, где его подставить некуда —
+    // профиль MAX и телефонный диплинк Telegram, — гость вставляет его сам.
+    prefilled: /[?&](text|start)=/.test(chatLink ?? ''),
   })
 
   /** Диплинк бота: код приезжает параметром `start`, без кода — просто диалог. */

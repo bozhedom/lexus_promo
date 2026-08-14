@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { bookingText } from '@/invite-test/config/certificates'
 import { managerChannels } from '@/invite-test/server/channels'
+import { loadMessageTemplates } from '@/invite-test/server/messageTemplates'
 import { getClientIp, jsonError, readJsonBody } from '@/lib/http'
 import { rateLimit } from '@/lib/rateLimit'
 
@@ -24,5 +25,12 @@ export async function POST(req: NextRequest) {
   const car = text(body?.car, 80)
   const plate = text(body?.plate, 16).toUpperCase()
 
-  return NextResponse.json({ channels: await managerChannels({ opening: bookingText(car, plate) }) })
+  const { booking } = await loadMessageTemplates()
+  const opening = bookingText(car, plate, booking)
+  return NextResponse.json({
+    channels: await managerChannels({ opening }),
+    // Тот же текст отдельным полем: в MAX его в ссылку не подставить, и экран
+    // кладёт его гостю в буфер обмена.
+    message: opening,
+  })
 }

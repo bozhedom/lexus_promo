@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+import { openingText } from '@/invite-test/config/certificates'
 import type { PersonalInviteDetails, SessionResponse } from '@/invite-test/model/types'
-import { storeCertificateImages } from '@/invite-test/server/certificateStore'
+import {
+  certificateSerialsByCode,
+  storeCertificateImages,
+} from '@/invite-test/server/certificateStore'
 import { resolveChannels } from '@/invite-test/server/channels'
+import { loadMessageTemplates } from '@/invite-test/server/messageTemplates'
 import { createSession } from '@/invite-test/server/store'
 import { getClientIp, jsonError, readJsonBody } from '@/lib/http'
 import { rateLimit } from '@/lib/rateLimit'
@@ -41,18 +46,31 @@ export async function POST(req: NextRequest) {
       ? await storeCertificateImages(applicationId, ownerSession, details)
       : null
 
-  // Номера выдачи приезжают из базы вместе с картинками: по ним подписывается
-  // и пригласительное, которое рисуется по запросу, если админка не ответила.
+  // Номера выдачи печатаются на кадре, поэтому берутся только из базы. Хозяину
+  // заявки они приезжают вместе с картинками, вернувшемуся гостю — по коду
+  // выданного пригласительного: своей заявкой он уже не владеет.
+  const certificateCode = text(body?.certificateCode, 32)
+  const serials =
+    stored?.serials ?? (certificateCode ? await certificateSerialsByCode(certificateCode) : null)
+
+  // Формулировки менеджер правит в админке: и то, что гость отправляет, и то,
+  // что придёт ему вместе с пригласительными.
+  const templates = await loadMessageTemplates()
+
   const created = createSession(
     fullName,
-    stored ? { certificates: stored.certificates } : undefined,
-    stored ? { ...details, serials: stored.serials } : details,
+    { certificates: stored?.certificates ?? null, deliveryTemplate: templates.delivery },
+    serials ? { ...details, serials } : details,
   )
 
+  const opening = openingText(created.code, templates.opening)
   const response: SessionResponse = {
     code: created.code,
     certificates: created.certificates,
-    channels: await resolveChannels(created.code),
+    channels: await resolveChannels(created.code, templates.opening),
+    // Тот же текст отдельным полем: в MAX его подставить в ссылку нельзя, и
+    // страница кладёт его гостю в буфер обмена.
+    message: opening,
   }
 
   return NextResponse.json(response)

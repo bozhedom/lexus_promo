@@ -49,12 +49,20 @@ export interface ChannelInfo {
   chatLink: string | null
   /** Прилетят ли сертификаты автоматически. */
   autoDelivery: boolean
+  /**
+   * Текст с кодом уже стоит в самой ссылке. У MAX так открыть чужой диалог
+   * нельзя — там гость вставляет текст сам, поэтому страница кладёт его в
+   * буфер обмена.
+   */
+  prefilled: boolean
 }
 
 export interface SessionResponse {
   code: string
   certificates: Certificate[]
   channels: Record<Channel, ChannelInfo>
+  /** Текст с кодом — тот же, что подставляется в ссылку канала. */
+  message: string
 }
 
 export interface StatusResponse {

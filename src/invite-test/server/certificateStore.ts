@@ -73,6 +73,47 @@ async function renderPng(
   return Buffer.from(await image.arrayBuffer())
 }
 
+/** Номера выдачи строк заявки: по ним подписывается кадр пригласительного. */
+const serialsOf = (docs: { kind: string; serial?: number | null }[]) => {
+  const serials: Partial<Record<CertificateKind, number>> = {}
+  for (const doc of docs) {
+    if (typeof doc.serial === 'number') serials[doc.kind as CertificateKind] = doc.serial
+  }
+  return serials
+}
+
+/**
+ * Номера выдачи по коду пригласительного. Вернувшийся гость своей заявкой уже
+ * не владеет — сессия браузера у него новая, — но код у него на руках, и по
+ * нему находится вся выписанная пара.
+ */
+export async function certificateSerialsByCode(
+  code: string,
+): Promise<Partial<Record<CertificateKind, number>>> {
+  try {
+    const payload = await getPayload({ config })
+    const found = await payload.find({
+      collection: 'certificates',
+      where: { code: { equals: code } },
+      limit: 1,
+      depth: 0,
+    })
+    const owner = found.docs[0]?.application
+    if (!owner) return {}
+
+    const pair = await payload.find({
+      collection: 'certificates',
+      where: { application: { equals: typeof owner === 'string' ? owner : owner.id } },
+      limit: 10,
+      depth: 0,
+    })
+    return serialsOf(pair.docs)
+  } catch {
+    // Без базы кадр рисуется без номера — это лучше, чем упавшая выдача.
+    return {}
+  }
+}
+
 export interface StoredCertificates {
   certificates: Certificate[]
   /** Номера выдачи из базы: они напечатаны на кадре и нужны экрану гостя. */
@@ -109,10 +150,7 @@ export async function storeCertificateImages(
     const photos = await loadCarPhotos()
     // Номер выдачи печатается на кадре, поэтому он часть данных отрисовки:
     // берём его из базы, а не из тела запроса.
-    const serials: Partial<Record<CertificateKind, number>> = {}
-    for (const doc of issued.docs) {
-      if (typeof doc.serial === 'number') serials[doc.kind as CertificateKind] = doc.serial
-    }
+    const serials = serialsOf(issued.docs)
     const printed: PersonalInviteDetails = { ...details, serials }
 
     const result: Certificate[] = []

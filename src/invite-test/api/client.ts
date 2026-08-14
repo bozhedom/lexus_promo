@@ -9,11 +9,13 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 
 /**
  * `owner` — заявка гостя: по ней сервер находит уже выписанные пригласительные,
- * сохраняет их картинки в админку и отдаёт ссылки именно на них.
+ * сохраняет их картинки в админку и отдаёт ссылки именно на них. Вернувшийся
+ * гость заявкой не владеет и передаёт только код — по нему сервер достаёт
+ * номера выдачи, которые печатаются на кадре.
  */
 export const createSession = (
   details: PersonalInviteDetails,
-  owner?: { applicationId?: string | null; sessionId?: string | null },
+  owner?: { applicationId?: string | null; sessionId?: string | null; certificateCode?: string | null },
 ): Promise<SessionResponse> =>
   request('/api/invite-test/session', {
     method: 'POST',

@@ -26,51 +26,110 @@ export const personalCertificates = (code: string): Certificate[] => [
   },
 ]
 
+/**
+ * Тексты сообщений редактируются в админке («Тексты сообщений»), а здесь лежат
+ * их значения по умолчанию. Пустое поле в админке означает «оставить текст
+ * отсюда», поэтому очищенный раздел возвращает исходные формулировки.
+ *
+ * Подстановки пишутся в фигурных скобках: неизвестное имя остаётся в тексте
+ * как есть — менеджеру видно опечатку, а сообщение всё равно уходит.
+ */
+export const DEFAULT_OPENING_TEMPLATE =
+  'Здравствуйте! Даю согласие на отправку мне двух пригласительных. Код: {code}'
+
+export const DEFAULT_BOOKING_TEMPLATE =
+  'Здравствуйте! Хочу записаться на сервис. Автомобиль: {car}, номер {plate}.'
+
+export const DEFAULT_DELIVERY_TEMPLATE = [
+  '{name}, добрый день!',
+  '',
+  'Отправляю ваши пригласительные: сертификат на комплексную диагностику',
+  'и подарок {amount} ₽ в честь знакомства.',
+  '',
+  'Автомобиль: {car}, номер {plate}.',
+  '',
+  'Подскажите, когда вам удобно подъехать — в будни или в выходной?',
+  'Мы на Снеговой 1 стр. 7.',
+].join('\n')
+
+/**
+ * Подстановка значений. Строки, где все подстановки оказались пустыми, из
+ * текста выпадают целиком: без модели и номера в сообщении не должно остаться
+ * висящей строки «Автомобиль: , номер .».
+ */
+export function fillTemplate(template: string, values: Record<string, string>): string {
+  const lines = template.split('\n').flatMap((line) => {
+    const used = [...line.matchAll(/\{(\w+)\}/g)].map(([, key]) => values[key] ?? '')
+    if (used.length > 0 && used.every((value) => !value)) return []
+    return [line.replace(/\{(\w+)\}/g, (all, key: string) => values[key] ?? all)]
+  })
+  // Пустые строки на стыке выпавших блоков схлопываются, чтобы в сообщении не
+  // оставалось двойных отбивок.
+  return lines
+    .filter((line, index) => line.trim() || lines[index - 1]?.trim())
+    .join('\n')
+    .trim()
+}
+
+const template = (custom: string | null | undefined, fallback: string): string =>
+  custom?.trim() ? custom : fallback
+
 /** Подставляется клиенту в поле ввода: по коду находим, кому что отправлять. */
-export const openingText = (code: string): string =>
-  `Здравствуйте! Даю согласие на отправку мне двух пригласительных. Код: ${code}`
+export const openingText = (code: string, custom?: string | null): string =>
+  fillTemplate(template(custom, DEFAULT_OPENING_TEMPLATE), { code })
 
 /**
  * Запись на сервис: пригласительные тут не выдаются, поэтому кода в тексте нет
  * — менеджер получает автомобиль гостя и договаривается о времени сам.
  */
-export const bookingText = (car: string, plate: string): string =>
-  [
-    'Здравствуйте! Хочу записаться на сервис.',
-    car && `Автомобиль: ${car}${plate ? `, номер ${plate}` : ''}.`,
-  ]
-    .filter(Boolean)
-    .join(' ')
+export const bookingText = (car: string, plate: string, custom?: string | null): string =>
+  fillTemplate(template(custom, DEFAULT_BOOKING_TEMPLATE), { car, plate })
 
 /**
  * Код приходит двумя путями: в тексте, который клиент отправляет менеджеру, и
  * параметром диплинка — Telegram и MAX присылают его как `/start КОД`.
+ *
+ * Формулировку сообщения менеджер правит в админке, поэтому слово «Код:» перед
+ * кодом может и пропасть. На этот случай код узнаём и по самому себе: десять
+ * знаков из алфавита выдачи, среди которых есть цифра, — на случайное слово в
+ * переписке это не похоже.
  */
-const CODE_PATTERN = /(?:Код:\s*|^\/start(?:@\S+)?\s+)([A-Z0-9]{10})(?![A-Z0-9])/i
+export const CODE_ALPHABET = 'ACEFHJKLMNPRTUVWXY34679'
+export const CODE_LENGTH = 10
 
-export const extractCode = (text: string): string | null =>
-  text.match(CODE_PATTERN)?.[1]?.toUpperCase() ?? null
+const LABELLED_CODE = new RegExp(
+  `(?:Код:\\s*|^/start(?:@\\S+)?\\s+)([${CODE_ALPHABET}]{${CODE_LENGTH}})(?![A-Z0-9])`,
+  'i',
+)
+const BARE_CODE = new RegExp(
+  `(?<![A-Z0-9])(?=[${CODE_ALPHABET}]*\\d)([${CODE_ALPHABET}]{${CODE_LENGTH}})(?![A-Z0-9])`,
+)
+
+export const extractCode = (text: string): string | null => {
+  const upper = text.toUpperCase()
+  const found = upper.match(LABELLED_CODE)?.[1] ?? upper.match(BARE_CODE)?.[1]
+  return found ?? null
+}
 
 /** Ответ менеджера: сертификаты и сразу вопрос, чтобы завязать разговор. */
-export const replyText = (fullName: string, details?: PersonalInviteDetails | null): string => {
-  const car = details
-    ? [details.brand, details.model, details.year].filter(Boolean).join(' ')
-    : ''
-  return [
-    `${fullName}, добрый день!`,
-    '',
-    'Отправляю ваши пригласительные: сертификат на комплексную диагностику',
-    `и подарок ${new Intl.NumberFormat('ru-RU').format(details?.amount ?? 1500)} ₽ в честь знакомства.`,
-    ...(car ? ['', `Автомобиль: ${car}${details?.plate ? `, номер ${details.plate}` : ''}.`] : []),
-    '',
-    'Подскажите, когда вам удобно подъехать — в будни или в выходной?',
-    'Мы на Снеговой 1 стр. 7.',
-  ].join('\n')
-}
+export const replyText = (
+  fullName: string,
+  details?: PersonalInviteDetails | null,
+  custom?: string | null,
+): string =>
+  fillTemplate(template(custom, DEFAULT_DELIVERY_TEMPLATE), {
+    name: fullName,
+    car: details ? [details.brand, details.model, details.year].filter(Boolean).join(' ') : '',
+    plate: details?.plate ?? '',
+    amount: new Intl.NumberFormat('ru-RU').format(details?.amount ?? 1500),
+  })
 
 export interface InviteContentFields {
   certificates?: Certificate[] | null
+  /** Готовый текст: подстановки в нём уже сделаны. */
   deliveryText?: string | null
+  /** Формулировка из админки: подстановки в ней делает `replyText`. */
+  deliveryTemplate?: string | null
 }
 
 /**

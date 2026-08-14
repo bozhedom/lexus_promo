@@ -54,7 +54,13 @@ export function ContactScreen() {
       amount: data.certificateAmount ?? 1500,
     }
   }, [certificatesOpen, data.carBrand, data.carModel, data.carYear, data.plateNumber, data.certificateAmount, savedFullName])
-  const delivery = useInviteSession(inviteDetails)
+  // Заявку передаём сюда же: по ней сервер сохраняет картинки в админку и
+  // печатает на них номер выдачи — без неё в мессенджер уходило пригласительное
+  // без номера и мимо карточки заявки.
+  const delivery = useInviteSession(inviteDetails, {
+    applicationId: data.applicationId,
+    sessionId,
+  })
   const preparingCertificates = certificatesOpen && !delivery.session
 
   if (!show) return null

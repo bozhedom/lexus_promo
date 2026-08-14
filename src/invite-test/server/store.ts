@@ -70,7 +70,9 @@ export function createSession(
     error: null,
     ...content,
     certificates: fields?.certificates?.length ? content.certificates : personalCertificates(code),
-    deliveryText: fields?.deliveryText?.trim() ? content.deliveryText : replyText(fullName, details),
+    deliveryText: fields?.deliveryText?.trim()
+      ? content.deliveryText
+      : replyText(fullName, details, fields?.deliveryTemplate),
     details,
   }
   sessions.set(code, session)

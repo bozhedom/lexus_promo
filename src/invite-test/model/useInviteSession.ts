@@ -15,6 +15,11 @@ const POLL_LIMIT_MS = 120_000
 export interface InviteOwner {
   applicationId?: string | null
   sessionId?: string | null
+  /**
+   * Код выданного пригласительного. Нужен вернувшемуся гостю: своей заявкой он
+   * уже не владеет, а номера выдачи для кадра сервер находит по коду.
+   */
+  certificateCode?: string | null
 }
 
 export function useInviteSession(details: PersonalInviteDetails | null, owner?: InviteOwner) {
@@ -23,6 +28,8 @@ export function useInviteSession(details: PersonalInviteDetails | null, owner?: 
   const [status, setStatus] = useState<DeliveryStatus>('idle')
   const [error, setError] = useState<string | null>(null)
   const [opened, setOpened] = useState<Channel | null>(null)
+  // `null` — текст стоял прямо в ссылке и копировать было нечего.
+  const [copied, setCopied] = useState<boolean | null>(null)
   const startedAt = useRef(0)
   const detailsKey = details ? JSON.stringify(details) : ''
   const activeSession = resolvedKey === detailsKey ? session : null
@@ -85,6 +92,20 @@ export function useInviteSession(details: PersonalInviteDetails | null, owner?: 
       if (!info?.chatLink) return false
 
       setOpened(channel)
+      // MAX не умеет открыть чужой диалог с готовым текстом: подстановка у него
+      // есть только в «Поделиться», где чат выбирает сам гость. Поэтому текст с
+      // кодом кладём в буфер обмена — в чате остаётся вставить и отправить.
+      // Запрос идёт из обработчика клика, иначе браузер откажет.
+      if (!info.prefilled && activeSession?.message) {
+        setCopied(false)
+        navigator.clipboard?.writeText(activeSession.message).then(
+          () => setCopied(true),
+          () => setCopied(false),
+        )
+      } else {
+        setCopied(null)
+      }
+
       if (info.autoDelivery) {
         startedAt.current = Date.now()
         setError(null)
@@ -96,5 +117,5 @@ export function useInviteSession(details: PersonalInviteDetails | null, owner?: 
     [activeSession],
   )
 
-  return { session: activeSession, status, error, opened, openChat }
+  return { session: activeSession, status, error, opened, copied, openChat }
 }

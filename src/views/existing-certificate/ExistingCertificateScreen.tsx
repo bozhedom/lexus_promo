@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useMemo, useState, ReactNode } from 'react'
 
+import { deliveryHint } from '@/invite-test/model/deliveryHint'
 import { useInviteSession } from '@/invite-test/model/useInviteSession'
 import type { Channel, PersonalInviteDetails } from '@/invite-test/model/types'
 import { MessengerButton } from '@/invite-test/ui/MessengerButton'
@@ -62,7 +63,9 @@ export function ExistingCertificateScreen() {
     }
   }, [show, data.fullName, brand, model, year, data.plateNumber, amount])
 
-  const delivery = useInviteSession(details)
+  // Заявка осталась за прошлой сессией браузера, поэтому сервер находит номера
+  // выдачи по коду — печатать их на кадре со слов клиента нельзя.
+  const delivery = useInviteSession(details, { certificateCode: data.certificateCode })
 
   if (!show) return null
 
@@ -75,19 +78,7 @@ export function ExistingCertificateScreen() {
     router.push('/')
   }
 
-  const message = (() => {
-    const { status, error, opened, session } = delivery
-    if (status === 'sent') return 'Пригласительные отправлены в чат'
-    if (status === 'failed') return error ?? 'Менеджер отправит приглашения вручную'
-    if (status === 'waiting') return 'Отправьте сообщение в чате — приглашения придут в ответ'
-    if (opened === 'max' && session && !session.channels.max.autoDelivery) {
-      return `Для автоматической отправки настройте бота MAX. Код: ${session.code}`
-    }
-    if (opened === 'whatsapp' && session && !session.channels.whatsapp.autoDelivery) {
-      return `Отправьте сообщение менеджеру в WhatsApp. Код: ${session.code}`
-    }
-    return null
-  })()
+  const message = deliveryHint(delivery)
 
   return (
     <main className={styles.screen}>

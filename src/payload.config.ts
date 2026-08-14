@@ -16,6 +16,7 @@ import { PromoSlides } from "./collections/PromoSlides";
 import { CertificateRules } from "./collections/CertificateRules";
 import { CarCatalog } from "./collections/CarCatalog";
 import { CarPhotos } from "./collections/CarPhotos";
+import { MessageTemplates } from "./globals/MessageTemplates";
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
@@ -48,6 +49,7 @@ export default buildConfig({
     Users,
     Media,
   ],
+  globals: [MessageTemplates],
   i18n: {
     supportedLanguages: { en, ru },
     fallbackLanguage: "ru",

@@ -34,6 +34,7 @@ export function BookingScreen() {
   useScreenView('booking')
 
   const [channels, setChannels] = useState<Channels | null>(null)
+  const [opening, setOpening] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -52,9 +53,10 @@ export function BookingScreen() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ car, plate }),
       })
-      const body = (await res.json()) as { channels?: Channels }
+      const body = (await res.json()) as { channels?: Channels; message?: string }
       if (!res.ok || !body.channels) throw new Error()
       track('cta_click', { id: 'booking' })
+      setOpening(body.message ?? '')
       setChannels(body.channels)
     } catch {
       setError('Не удалось открыть мессенджеры, попробуйте ещё раз')
@@ -66,9 +68,12 @@ export function BookingScreen() {
   // Разговор продолжается в чате, а сайт возвращается к началу — так же, как
   // после отправки пригласительных.
   const send = (channel: Channel) => {
-    const link = channels?.[channel].chatLink
-    if (!link) return
-    window.open(link, '_blank', 'noopener,noreferrer')
+    const info = channels?.[channel]
+    if (!info?.chatLink) return
+    // В MAX текст в чужой диалог не подставить — кладём его в буфер обмена,
+    // чтобы гостю осталось вставить и отправить.
+    if (!info.prefilled && opening) navigator.clipboard?.writeText(opening).catch(() => undefined)
+    window.open(info.chatLink, '_blank', 'noopener,noreferrer')
     track('outbound_click', { id: `booking_${channel}` })
     router.push('/')
   }

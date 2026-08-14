@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 
 import { CertificateSheet, CertificateViewer, type CertificateKind } from '@/widgets/certificate-sheet'
 
+import { deliveryHint } from '../../model/deliveryHint'
 import type { Channel } from '../../model/types'
 import type { useInviteSession } from '../../model/useInviteSession'
 import { MessengerButton } from '../MessengerButton'
@@ -71,7 +72,7 @@ export function CertificatesModal({
   onClose,
   onSent,
 }: CertificatesModalProps) {
-  const { session, status, error, opened, openChat } = delivery
+  const { session, status, error, opened, copied, openChat } = delivery
   const [expanded, setExpanded] = useState<CertificateKind | null>(null)
 
   useEffect(() => {
@@ -95,18 +96,7 @@ export function CertificatesModal({
     if (openChat(channel)) onSent?.(channel)
   }
 
-  const message = (() => {
-    if (status === 'sent') return 'Пригласительные отправлены в чат'
-    if (status === 'failed') return error ?? 'Менеджер отправит приглашения вручную'
-    if (status === 'waiting') return 'Отправьте сообщение в чате — приглашения придут в ответ'
-    if (opened === 'max' && session && !session.channels.max.autoDelivery) {
-      return `Для автоматической отправки настройте бота MAX. Код: ${session.code}`
-    }
-    if (opened === 'whatsapp' && session && !session.channels.whatsapp.autoDelivery) {
-      return `Отправьте сообщение менеджеру в WhatsApp. Код: ${session.code}`
-    }
-    return null
-  })()
+  const message = deliveryHint({ session, status, error, opened, copied })
 
   return (
     <div className={styles.overlay} onClick={onClose ? () => onClose() : undefined}>

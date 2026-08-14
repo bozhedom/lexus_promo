@@ -101,8 +101,12 @@ export interface Config {
     defaultIDType: string;
   };
   fallbackLocale: null;
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    'message-templates': MessageTemplate;
+  };
+  globalsSelect: {
+    'message-templates': MessageTemplatesSelect<false> | MessageTemplatesSelect<true>;
+  };
   locale: null;
   widgets: {
     collections: CollectionsWidget;
@@ -747,6 +751,41 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * Placeholders go in curly braces. An empty field falls back to the default text.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "message-templates".
+ */
+export interface MessageTemplate {
+  id: string;
+  /**
+   * Sent to the guest right after the two pictures.
+   */
+  delivery?: string | null;
+  /**
+   * Prefilled in the messenger input. {code} is required.
+   */
+  opening?: string | null;
+  /**
+   * Prefilled for guests who came to book a service slot.
+   */
+  booking?: string | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "message-templates_select".
+ */
+export interface MessageTemplatesSelect<T extends boolean = true> {
+  delivery?: T;
+  opening?: T;
+  booking?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
