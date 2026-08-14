@@ -26,6 +26,20 @@ export function maxConversationLink(manager: string, opening: string): string {
   return `https://max.ru/:share?text=${opening}`
 }
 
+interface ChannelOptions {
+  /** Текст, который мессенджер подставит гостю в поле ввода. */
+  opening: string
+  /**
+   * Код выдачи для диплинка бота. Пусто — пригласительных за этим диалогом
+   * нет (запись на сервис), и ждать автодоставки нечего.
+   */
+  code?: string
+}
+
+/** Диалоги с менеджером под выданный код: пригласительные придут в ответ. */
+export const resolveChannels = (code: string): Promise<Record<Channel, ChannelInfo>> =>
+  managerChannels({ opening: openingText(code), code })
+
 /**
  * Куда ведёт кнопка канала и придут ли пригласительные сами.
  *
@@ -37,11 +51,19 @@ export function maxConversationLink(manager: string, opening: string): string {
  * Ссылка на диалог собирается по аккаунту самого инстанса, а не по переменной:
  * писать гость должен тому, кто слушает вебхук. Переменные с username остаются
  * для запасного пути и для каналов без инстанса.
+ *
+ * Без кода это просто диалог с менеджером: так на сервис записываются, и
+ * пригласительных за таким разговором не стоит.
  */
-export async function resolveChannels(code: string): Promise<Record<Channel, ChannelInfo>> {
+export async function managerChannels({
+  opening: openingRaw,
+  code,
+}: ChannelOptions): Promise<Record<Channel, ChannelInfo>> {
   const { telegram, max, whatsapp } = inviteTestEnv
-  const opening = encodeURIComponent(openingText(code))
-  const start = encodeURIComponent(code)
+  const opening = encodeURIComponent(openingRaw)
+  const start = encodeURIComponent(code ?? '')
+  // Сертификаты уходят в ответ только там, где выдан код.
+  const delivers = Boolean(code)
 
   // Ответ от имени менеджера через бизнес-бота возможен только с подключением.
   const businessDelivery =
@@ -60,8 +82,11 @@ export async function resolveChannels(code: string): Promise<Record<Channel, Cha
   const info = (chatLink: string | null, autoDelivery: boolean): ChannelInfo => ({
     enabled: Boolean(chatLink),
     chatLink,
-    autoDelivery: Boolean(chatLink) && autoDelivery,
+    autoDelivery: Boolean(chatLink) && autoDelivery && delivers,
   })
+
+  /** Диплинк бота: код приезжает параметром `start`, без кода — просто диалог. */
+  const botChat = (url: string): string => (start ? `${url}?start=${start}` : url)
 
   /**
    * Диалог в Telegram: по username подставляется и готовый текст с кодом, по
@@ -86,12 +111,12 @@ export async function resolveChannels(code: string): Promise<Record<Channel, Cha
       : businessDelivery
         ? info(telegramChat(tgAccount, telegram.manager), true)
         : telegramBot
-          ? info(`https://t.me/${telegramBot}?start=${start}`, true)
+          ? info(botChat(`https://t.me/${telegramBot}`), true)
           : info(telegramChat(tgAccount, telegram.manager), false),
     max: isGreenReady('max')
       ? info(maxConversationLink(maxManager, opening), true)
       : maxBot
-        ? info(`https://max.ru/${maxBot}?start=${start}`, true)
+        ? info(botChat(`https://max.ru/${maxBot}`), true)
         : info(
             max.managerUsername ? maxConversationLink(max.managerUsername, opening) : null,
             false,

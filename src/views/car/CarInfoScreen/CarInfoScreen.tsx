@@ -24,6 +24,7 @@ import {
   isFeaturedBrand,
   isPopularBrand,
 } from '@/shared/config/car-data'
+import { flowRoutes, type FunnelFlow } from '@/shared/lib/flow'
 import { useFunnel } from '@/shared/lib/funnel'
 import type { CarInfo } from '@/shared/lib/types'
 import { Button, Loader, SelectField, StageLayout, TextField } from '@/shared/ui'
@@ -179,10 +180,13 @@ function StepCheck() {
 // Экран 3, данные авто: найдено (3a) / марка и модель вручную (3b) / год и номер (3c)
 interface CarInfoScreenProps {
   manualRequested?: boolean
+  /** Ветка воронки: от неё зависит только то, куда экран ведёт дальше. */
+  flow?: FunnelFlow
 }
 
-export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
+export function CarInfoScreen({ manualRequested = false, flow = 'invite' }: CarInfoScreenProps) {
   const router = useRouter()
+  const routes = flowRoutes(flow)
   const { data, ready, sessionId, utm, update, reset, track } = useFunnel()
   const show = ready && (manualRequested || Boolean(data.applicationId && data.plateNumber))
   useScreenView('car_info')
@@ -240,8 +244,8 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
   }
 
   useEffect(() => {
-    if (ready && !show) router.replace('/car-number')
-  }, [ready, router, show])
+    if (ready && !show) router.replace(routes.plate)
+  }, [ready, router, routes.plate, show])
 
   // Событие определения шлём один раз на пришедший ответ.
   useEffect(() => {
@@ -282,7 +286,8 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
 
   if (!show) return null
 
-  const goPersonal = () => router.push('/personal')
+  // Ветка приглашения ведёт на личные данные, ветка записи — на свой экран.
+  const goNext = () => router.push(routes.next)
 
   // 3a: подтверждение найденного авто
   const confirmFound = async () => {
@@ -303,7 +308,7 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
         carDataSource: 'api',
         status: 'draft_car',
       })
-      goPersonal()
+      goNext()
     } catch (e) {
       setErrors({ form: isApiError(e) ? e.message : 'Не удалось сохранить' })
       setSubmitting(false)
@@ -362,7 +367,7 @@ export function CarInfoScreen({ manualRequested = false }: CarInfoScreenProps) {
         status: 'draft_car',
       })
       track('car_manual', { brand, model: finalModel })
-      goPersonal()
+      goNext()
     } catch (e) {
       setErrors({ form: isApiError(e) ? e.message : 'Не удалось сохранить' })
       setSubmitting(false)

@@ -630,20 +630,29 @@
 }
 
 .cta,
+// Кнопка, а не ссылка: отсюда начинается своя ветка воронки, а не переход на
+// внешний сайт, поэтому системные стили кнопки снимаются вручную.
 .booking {
   width: 100%;
   min-height: f.vh(36, 48);
+  padding-inline: 0;
   padding-block: f.vh(7, 12);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   border-radius: 0;
+  background: none;
   font-family: t.$font-condensed;
   font-size: 16px;
   font-weight: 300;
   letter-spacing: 1.28px;
   text-transform: uppercase;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: default;
+  }
 }
 
 .cta {

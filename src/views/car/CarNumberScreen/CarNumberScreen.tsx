@@ -18,6 +18,7 @@ import {
   patchApplication,
 } from '@/shared/api/funnel'
 import { useScreenView } from '@/shared/analytics'
+import { flowRoutes, type FunnelFlow } from '@/shared/lib/flow'
 import { useFunnel } from '@/shared/lib/funnel'
 import type { CarInfo } from '@/shared/lib/types'
 import { Button, Loader, StageLayout } from '@/shared/ui'
@@ -25,15 +26,16 @@ import { validatePlate } from '@/lib/validation'
 import styles from './CarNumberScreen.module.scss'
 
 // Экран 2: ввод госномера
-export function CarNumberScreen() {
+export function CarNumberScreen({ flow = 'invite' }: { flow?: FunnelFlow }) {
   const { ready } = useFunnel()
   useScreenView('plate')
   if (!ready) return null
-  return <ReadyCarNumberScreen />
+  return <ReadyCarNumberScreen flow={flow} />
 }
 
-function ReadyCarNumberScreen() {
+function ReadyCarNumberScreen({ flow }: { flow: FunnelFlow }) {
   const router = useRouter()
+  const routes = flowRoutes(flow)
   const { data, sessionId, utm, update, reset, track } = useFunnel()
   const [plate, setPlate] = useState(data.plateNumber ?? DEFAULT_PLATE_REGION)
   const [error, setError] = useState<string | null>(null)
@@ -43,7 +45,7 @@ function ReadyCarNumberScreen() {
     // Ручная форма живёт на следующем экране, но номер (даже частично
     // заполненный) не должен пропадать при переключении вкладки.
     update({ plateNumber: plate, carLookup: undefined })
-    router.push('/car-info?manual=1')
+    router.push(`${routes.car}?manual=1`)
   }
 
   const submit = async () => {
@@ -60,7 +62,13 @@ function ReadyCarNumberScreen() {
     // прошлый прогон уже completed) начинаем новый прогон с чистого листа.
     const canContinue = Boolean(data.applicationId) && data.status !== 'completed'
     try {
-      const previous = await findExistingCertificate(canonical, sessionId)
+      // Выданные пригласительные перехватывают только ветку приглашения: гость,
+      // который пришёл записываться, идёт дальше независимо от того, выписаны
+      // они ему или нет.
+      const previous =
+        flow === 'invite'
+          ? await findExistingCertificate(canonical, sessionId)
+          : ({ existing: false } as const)
       if (previous.existing) {
         reset()
         update({
@@ -96,8 +104,8 @@ function ReadyCarNumberScreen() {
       }
 
       update({ carLookup: await lookup })
-      track('plate_submitted', { plate: canonical })
-      router.push('/car-info')
+      track('plate_submitted', { plate: canonical, flow })
+      router.push(routes.car)
     } catch (e) {
       setError(isApiError(e) ? e.message : 'Не удалось сохранить номер')
       track('plate_error', { reason: 'server' })

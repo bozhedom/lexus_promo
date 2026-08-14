@@ -4,14 +4,13 @@ import Image from 'next/image'
 import type { CSSProperties } from 'react'
 
 import { useScreenView } from '@/shared/analytics'
-import { OUTBOUND_LINKS } from '@/shared/config/links'
+import { flowRoutes } from '@/shared/lib/flow'
 import { useFunnel } from '@/shared/lib/funnel'
 import { useSceneAssets } from '@/shared/lib/useSceneAssets'
 import { useStageTransition } from '@/widgets/curtain-transition'
 import { Button } from '@/shared/ui'
 import styles from './WelcomeScreen.module.scss'
 
-const booking = OUTBOUND_LINKS.find((link) => link.id === 'booking')!
 const introCurtainEnabled = process.env.NEXT_PUBLIC_INTRO_CURTAIN_ENABLED === 'true'
 
 type BrandVariant = 'toyota' | 'lexus' | 'both'
@@ -34,7 +33,12 @@ export function WelcomeScreen({ brand = 'both' }: { brand?: BrandVariant }) {
 
   const start = () => {
     track('cta_click')
-    go('/car-number')
+    go(flowRoutes('invite').plate)
+  }
+
+  const book = () => {
+    track('cta_click', { id: 'booking' })
+    go(flowRoutes('booking').plate)
   }
 
   return (
@@ -108,15 +112,12 @@ export function WelcomeScreen({ brand = 'both' }: { brand?: BrandVariant }) {
               Получить приглашение <span aria-hidden>⟶</span>
             </Button>
 
-            <a
-              className={styles.booking}
-              href={booking.href}
-              target={booking.external ? '_blank' : undefined}
-              rel={booking.external ? 'noopener noreferrer' : undefined}
-              onClick={() => track('outbound_click', { id: booking.id, url: booking.href })}
-            >
+            {/* Вторая ветка воронки: номер вводится и автомобиль определяется
+                теми же экранами, а вместо пригласительного гость уходит
+                записываться на сервис. */}
+            <button type="button" className={styles.booking} onClick={book} disabled={busy}>
               Рассчитать и записаться
-            </a>
+            </button>
           </div>
 
           <p className={styles.tagline}>Дело, как искусство</p>

@@ -25,3 +25,5 @@ export type ScreenName =
   | 'personal'
   | 'certificate'
   | 'final'
+  /** Ветка записи на сервис: экран после подтверждения автомобиля. */
+  | 'booking'
