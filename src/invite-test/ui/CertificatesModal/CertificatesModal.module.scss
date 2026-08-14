@@ -97,6 +97,10 @@
   margin-top: 16px;
 }
 
+// Оформление подписи живёт на самой подписи, а не на кнопке: кегль,
+// межбуквенное и uppercase наследуются внутрь пригласительного, а там свои
+// размеры в долях кадра. От чужого letter-spacing строка контактов
+// разъезжалась, и номер выдачи вылезал за золотую рамку превью.
 .previewButton {
   position: relative;
   flex: 1 1 0;
@@ -105,11 +109,7 @@
   padding: 0;
   border: 0;
   background: none;
-  color: t.$gold-light;
   font-family: inherit;
-  font-size: 11px;
-  letter-spacing: 0.45px;
-  text-transform: uppercase;
   cursor: zoom-in;
 }
 
@@ -134,7 +134,11 @@
   margin-top: 7px;
   // Подпись не должна прилипать к разделителю «отправить в мессенджер».
   margin-bottom: 6px;
+  color: t.$gold-light;
+  font-size: 11px;
   line-height: 1.2;
+  letter-spacing: 0.45px;
+  text-transform: uppercase;
 }
 
 .zoom {
@@ -219,8 +223,8 @@
     gap: 10px;
     margin: 10px auto 0;
   }
-  .previewButton { max-width: 118px; font-size: 10px; }
-  .previewLabel { margin-top: 5px; margin-bottom: 3px; }
+  .previewButton { max-width: 118px; }
+  .previewLabel { margin-top: 5px; margin-bottom: 3px; font-size: 10px; }
   .or { margin-top: 10px; font-size: 11px; }
   .actions { margin-top: 8px; }
   .note,
