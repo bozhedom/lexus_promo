@@ -15,7 +15,7 @@ import { readCertificateFiles } from './assets'
 export interface GreenWebhook {
   typeWebhook?: string
   instanceData?: { idInstance?: number | string; typeInstance?: string }
-  senderData?: { chatId?: string }
+  senderData?: { chatId?: string; chatType?: string }
   messageData?: {
     typeMessage?: string
     textMessageData?: { textMessage?: string }
@@ -27,7 +27,8 @@ export interface GreenWebhook {
 const INSTANCE_TYPE: Record<Channel, string> = {
   whatsapp: 'whatsapp',
   telegram: 'telegram',
-  max: 'max',
+  // В API GREEN-API для MAX исторически используется имя версии `v3`.
+  max: 'v3',
 }
 
 export const greenCredentials = (channel: Channel): GreenCredentials | null => {
@@ -84,8 +85,14 @@ export function parseIncoming(
   if (type && type !== INSTANCE_TYPE[channel]) return null
 
   const chatId = update.senderData?.chatId ?? ''
-  // Групповые чаты нам не нужны: код присылают из личного диалога.
-  if (!chatId.endsWith('@c.us')) return null
+  // Форматы chatId у продуктов GREEN-API различаются. WhatsApp использует
+  // суффиксы @c.us (и новый @lid), а Telegram и MAX — положительный числовой
+  // идентификатор без суффикса. Отрицательный id и @g.us означают группу.
+  const isPersonalChat =
+    channel === 'whatsapp'
+      ? chatId.endsWith('@c.us') || chatId.endsWith('@lid')
+      : /^\d+$/.test(chatId)
+  if (!isPersonalChat) return null
 
   const text =
     update.messageData?.typeMessage === 'textMessage'
@@ -97,7 +104,11 @@ export function parseIncoming(
   return text ? { channel, chatId, text } : null
 }
 
-/** GREEN-API отправляет по одному файлу на запрос. */
+/**
+ * GREEN-API отправляет по одному файлу на запрос, и текст мы шлём отдельным
+ * сообщением: подпись под картинкой сливалась со вторым пригласительным, а в
+ * чате должно остаться три сообщения — два сертификата и слова менеджера.
+ */
 export async function sendCertificates(
   channel: Channel,
   chatId: string,
@@ -106,12 +117,18 @@ export async function sendCertificates(
 ) {
   const files = await readCertificateFiles(certificates)
 
-  for (const [index, file] of files.entries()) {
+  for (const file of files) {
     await call<{ idMessage: string }>(channel, 'sendFileByUrl', {
       chatId,
       urlFile: file.url,
       fileName: file.name,
-      ...(index === files.length - 1 ? { caption: deliveryText } : {}),
+    })
+  }
+
+  if (deliveryText.trim()) {
+    await call<{ idMessage: string }>(channel, 'sendMessage', {
+      chatId,
+      message: deliveryText,
     })
   }
 }

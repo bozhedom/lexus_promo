@@ -5,10 +5,15 @@ const CERTIFICATES = [
   { id: 'gift', image: '/invite-test/cert-gift.png', alt: 'Подарок' },
 ]
 
-const incoming = (idInstance: number | string, typeInstance: string, text: string) => ({
+const incoming = (
+  idInstance: number | string,
+  typeInstance: string,
+  text: string,
+  chatId = '79990001122@c.us',
+) => ({
   typeWebhook: 'incomingMessageReceived',
   instanceData: { idInstance, typeInstance },
-  senderData: { chatId: '79990001122@c.us' },
+  senderData: { chatId },
   messageData: { typeMessage: 'textMessage', textMessageData: { textMessage: text } },
 })
 
@@ -25,6 +30,9 @@ describe('GREEN-API: три канала одним клиентом', () => {
     vi.stubEnv('INVITE_TEST_TG_GREEN_INSTANCE_ID', '4100000000')
     vi.stubEnv('INVITE_TEST_TG_GREEN_API_TOKEN', 'tg-token')
     vi.stubEnv('INVITE_TEST_TG_GREEN_API_URL', 'https://4100.api.greenapi.test')
+    vi.stubEnv('INVITE_TEST_MAX_GREEN_INSTANCE_ID', '3100000000')
+    vi.stubEnv('INVITE_TEST_MAX_GREEN_API_TOKEN', 'max-token')
+    vi.stubEnv('INVITE_TEST_MAX_GREEN_API_URL', 'https://3100.api.greenapi.test')
     vi.stubEnv('INVITE_TEST_GREEN_WEBHOOK_TOKEN', 'webhook-test-token')
     vi.stubEnv('NEXT_PUBLIC_SITE_URL', 'https://promo.test')
     delete (globalThis as { __greenAccounts?: unknown }).__greenAccounts
@@ -44,21 +52,41 @@ describe('GREEN-API: три канала одним клиентом', () => {
       chatId: '79990001122@c.us',
       text: 'Код: ACEF34679A',
     })
-    expect(green.parseIncoming(incoming(4100000000, 'telegram', 'Код: ACEF34679A'))?.channel).toBe(
-      'telegram',
-    )
-    // Чужой инстанс: MAX не настроен, значит и принимать от него нечего.
-    expect(green.parseIncoming(incoming(9999999999, 'max', 'Код: ACEF34679A'))).toBeNull()
+    expect(
+      green.parseIncoming(incoming(4100000000, 'telegram', 'Код: ACEF34679A', '123456789')),
+    ).toMatchObject({ channel: 'telegram', chatId: '123456789' })
+    expect(
+      green.parseIncoming(incoming(3100000000, 'v3', 'Код: ACEF34679A', '987654321')),
+    ).toMatchObject({ channel: 'max', chatId: '987654321' })
+    // Чужой инстанс и неверное имя типа не принимаются.
+    expect(green.parseIncoming(incoming(9999999999, 'v3', 'Код: ACEF34679A'))).toBeNull()
+    expect(
+      green.parseIncoming(incoming(3100000000, 'max', 'Код: ACEF34679A', '987654321')),
+    ).toBeNull()
   })
 
   it('групповой чат игнорируется', async () => {
     const green = await import('../src/invite-test/server/green')
-    const update = incoming(7103000000, 'whatsapp', 'Код: ACEF34679A')
-    update.senderData.chatId = '79990001122-1234@g.us'
-    expect(green.parseIncoming(update)).toBeNull()
+    expect(
+      green.parseIncoming(
+        incoming(7103000000, 'whatsapp', 'Код: ACEF34679A', '79990001122-1234@g.us'),
+      ),
+    ).toBeNull()
+    expect(
+      green.parseIncoming(incoming(4100000000, 'telegram', 'Код: ACEF34679A', '-123456789')),
+    ).toBeNull()
   })
 
-  it('в Telegram файлы уходят на адрес его инстанса', async () => {
+  it('принимает новый личный chatId WhatsApp в формате lid', async () => {
+    const green = await import('../src/invite-test/server/green')
+    expect(
+      green.parseIncoming(
+        incoming(7103000000, 'whatsapp', 'Код: ACEF34679A', '155508384256027@lid'),
+      ),
+    ).toMatchObject({ channel: 'whatsapp', chatId: '155508384256027@lid' })
+  })
+
+  it('в Telegram уходят три сообщения: два файла и текст', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(
       async () =>
         new Response(JSON.stringify({ idMessage: 'message-id' }), {
@@ -70,24 +98,30 @@ describe('GREEN-API: три канала одним клиентом', () => {
 
     await green.sendCertificates(
       'telegram',
-      '79990001122@c.us',
+      '123456789',
       CERTIFICATES,
       'Иван Иванович, добрый день!',
     )
 
-    expect(fetchMock).toHaveBeenCalledTimes(2)
-    for (const [index, call] of fetchMock.mock.calls.entries()) {
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+    for (const [index, call] of fetchMock.mock.calls.slice(0, 2).entries()) {
       expect(call[0]).toBe(
         'https://4100.api.greenapi.test/waInstance4100000000/sendFileByUrl/tg-token',
       )
       const body = JSON.parse(String(call[1]?.body))
-      expect(body.chatId).toBe('79990001122@c.us')
+      expect(body.chatId).toBe('123456789')
       expect(body.urlFile).toBe(
         `https://promo.test/invite-test/${index === 0 ? 'cert-diagnostics.png' : 'cert-gift.png'}`,
       )
-      if (index === 0) expect(body.caption).toBeUndefined()
-      else expect(body.caption).toContain('Иван Иванович')
+      // Подписи под пригласительными нет: текст уходит отдельным сообщением.
+      expect(body.caption).toBeUndefined()
     }
+
+    const last = fetchMock.mock.calls[2]!
+    expect(last[0]).toBe('https://4100.api.greenapi.test/waInstance4100000000/sendMessage/tg-token')
+    const text = JSON.parse(String(last[1]?.body))
+    expect(text.chatId).toBe('123456789')
+    expect(text.message).toContain('Иван Иванович')
   })
 
   it('в WhatsApp — на адрес его инстанса', async () => {
@@ -127,17 +161,13 @@ describe('GREEN-API: три канала одним клиентом', () => {
   })
 
   it('вебхук настраивается на общий адрес с токеном', async () => {
-    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ saveSettings: true }), {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(
+      async () => new Response(JSON.stringify({ saveSettings: true }), {
         status: 200,
         headers: { 'content-type': 'application/json' },
       }),
     )
     const green = await import('../src/invite-test/server/green')
-
-    await green.configureWebhook('max', 'https://promo.test/api/invite-test/green/webhook')
-      .then(() => expect.unreachable('MAX не настроен, вызов должен упасть'))
-      .catch((err: Error) => expect(err.message).toContain('не настроен'))
 
     await green.configureWebhook('telegram', 'https://promo.test/api/invite-test/green/webhook')
     const body = JSON.parse(String(fetchMock.mock.calls[0]![1]?.body))

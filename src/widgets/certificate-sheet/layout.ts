@@ -72,7 +72,7 @@ export function certificateFace(
  */
 export function inviteLines(brand: string): [string, string] {
   return [
-    isOwnBrand(brand) ? 'приглашаем Вас в новый' : 'приглашаем Вас в',
+    isOwnBrand(brand) ? 'приглашаем Вас и Ваш автомобиль в новый' : 'приглашаем Вас и Ваш автомобиль в',
     'специализированный техцентр',
   ]
 }

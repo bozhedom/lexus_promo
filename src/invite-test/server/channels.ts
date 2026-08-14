@@ -5,6 +5,27 @@ import { maxBotUsername, telegramBotUsername } from './botIdentity'
 import { accountIdentity, isGreenReady, type GreenAccount } from './green'
 import { getBusinessId } from './store'
 
+const MAX_PHONE = /^\+?\d+$/
+const MAX_PROFILE_URL = /^https:\/\/(?:www\.)?max\.ru\/[^\s]+$/i
+
+/**
+ * У MAX нет аналога wa.me для телефонного номера. Если из настроек пришла
+ * настоящая ссылка профиля или публичный ник, открываем этот профиль. Номер
+ * телефона открыть напрямую нельзя, поэтому используем официальный share
+ * deeplink: MAX подставит текст с кодом и попросит выбрать чат менеджера.
+ */
+export function maxConversationLink(manager: string, opening: string): string {
+  const reference = manager.trim()
+  if (MAX_PROFILE_URL.test(reference)) return reference
+
+  const username = reference.replace(/^@/, '')
+  if (username && !MAX_PHONE.test(username)) {
+    return `https://max.ru/${encodeURIComponent(username)}`
+  }
+
+  return `https://max.ru/:share?text=${opening}`
+}
+
 /**
  * Куда ведёт кнопка канала и придут ли пригласительные сами.
  *
@@ -53,7 +74,7 @@ export async function resolveChannels(code: string): Promise<Record<Channel, Cha
   }
 
   const waPhone = waAccount.phone || whatsapp.phone
-  const maxUsername = maxAccount.username || max.managerUsername
+  const maxManager = maxAccount.username || max.managerUsername
 
   return {
     whatsapp: info(
@@ -68,9 +89,12 @@ export async function resolveChannels(code: string): Promise<Record<Channel, Cha
           ? info(`https://t.me/${telegramBot}?start=${start}`, true)
           : info(telegramChat(tgAccount, telegram.manager), false),
     max: isGreenReady('max')
-      ? info(maxUsername ? `https://max.ru/${maxUsername}` : null, true)
+      ? info(maxConversationLink(maxManager, opening), true)
       : maxBot
         ? info(`https://max.ru/${maxBot}?start=${start}`, true)
-        : info(max.managerUsername ? `https://max.ru/${max.managerUsername}` : null, false),
+        : info(
+            max.managerUsername ? maxConversationLink(max.managerUsername, opening) : null,
+            false,
+          ),
   }
 }

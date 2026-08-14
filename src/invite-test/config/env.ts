@@ -53,7 +53,7 @@ export const inviteTestEnv = {
      * Как и в Telegram, обычно пустой: достаётся из `me` по токену.
      */
     botUsername: read('INVITE_TEST_MAX_BOT_USERNAME'),
-    /** Личный username менеджера в MAX: к нему ведёт кнопка канала. */
+    /** Ссылка личного профиля MAX или публичный username менеджера. */
     managerUsername: read('INVITE_TEST_MAX_MANAGER'),
     botToken: read('INVITE_TEST_MAX_BOT_TOKEN'),
     webhookSecret: read('INVITE_TEST_MAX_WEBHOOK_SECRET'),
