@@ -7,7 +7,12 @@ import {
   replyText,
   resolveInviteContent,
 } from '../config/certificates'
-import type { DeliveryStatus, InviteSession, PersonalInviteDetails } from '../model/types'
+import type {
+  Channel,
+  DeliveryStatus,
+  InviteSession,
+  PersonalInviteDetails,
+} from '../model/types'
 
 // Сессии живут в памяти процесса: ради них не заводим коллекцию и миграцию.
 // При перезапуске сервера выданные коды протухают.
@@ -46,8 +51,6 @@ export function createSession(
   fullName: string,
   fields?: InviteContentFields | null,
   personal?: PersonalInviteDetails | null,
-  /** Телефон гостя из заявки: по нему вебхук узнаёт его без кода в тексте. */
-  phone?: string | null,
 ): InviteSession {
   sweep()
   if (sessions.size >= MAX_SESSIONS) sessions.clear()
@@ -67,8 +70,9 @@ export function createSession(
   const session: InviteSession = {
     code,
     fullName,
-    phone: phone ?? '',
     createdAt: Date.now(),
+    openedChannel: null,
+    openedAt: 0,
     status: 'idle',
     error: null,
     ...content,
@@ -100,23 +104,36 @@ export function getSession(code: string): InviteSession | null {
 const isPending = (session: InviteSession): boolean =>
   session.status !== 'waiting' && session.status !== 'sent'
 
+/** Гость успевает написать за минуты; всё, что дольше, — уже не он. */
+const OPENED_TTL_MS = 10 * 60 * 1000
+
+/** Гость нажал кнопку мессенджера и ушёл в диалог с менеджером. */
+export function markOpened(code: string, channel: Channel): void {
+  const session = getSession(code)
+  if (!session) return
+  session.openedChannel = channel
+  session.openedAt = Date.now()
+}
+
 /**
- * Сессия по телефону отправителя. Нужна там, где кода в сообщении нет: MAX не
- * умеет подставить текст в диалог с менеджером, поэтому гость пишет что угодно,
- * а узнаём мы его по номеру, с которого он оставил заявку.
+ * Кто из гостей только что ушёл в этот мессенджер. Нужно там, где кода в
+ * сообщении нет: MAX не умеет подставить текст в диалог с менеджером, поэтому
+ * гость отправляет что придётся, и связать сообщение с выдачей больше нечем.
  *
- * Берём последнюю неотправленную: гость мог обновить страницу и получить
- * несколько кодов, и пригласительные должны уйти по свежему. Выданные в одну
- * миллисекунду разбираются порядком вставки — Map его сохраняет.
+ * Отвечаем, только когда ждёт ровно один: на пригласительных напечатаны имя и
+ * номер автомобиля, и отдать их не тому хуже, чем попросить прислать код. Если
+ * в окне оказалось двое, оба дошлют код из буфера обмена.
  */
-export function findSessionByPhone(phone: string): InviteSession | null {
-  if (!phone) return null
+export function findOpenedSession(channel: Channel): InviteSession | null {
   sweep()
+  const since = Date.now() - OPENED_TTL_MS
 
   let found: InviteSession | null = null
   for (const session of sessions.values()) {
-    if (session.phone !== phone || !isPending(session)) continue
-    if (!found || session.createdAt >= found.createdAt) found = session
+    if (session.openedChannel !== channel || session.openedAt < since) continue
+    if (!isPending(session)) continue
+    if (found) return null
+    found = session
   }
   return found
 }

@@ -35,14 +35,14 @@ export interface PersonalInviteDetails {
 export interface InviteSession {
   code: string
   fullName: string
-  /**
-   * Телефон гостя из его заявки, `+7XXXXXXXXXX`. По нему вебхук узнаёт
-   * отправителя, когда кода в сообщении нет: в MAX подставить текст в диалог с
-   * менеджером нельзя, и гость шлёт что угодно. Пусто — заявка не найдена, и
-   * остаётся только код.
-   */
-  phone: string
   createdAt: number
+  /**
+   * Мессенджер, в который гость ушёл за пригласительными, и когда. По этой
+   * отметке вебхук узнаёт его, когда кода в сообщении нет: в MAX подставить
+   * текст в диалог с менеджером нельзя, и гость отправляет что угодно.
+   */
+  openedChannel: Channel | null
+  openedAt: number
   status: DeliveryStatus
   error: string | null
   certificates: Certificate[]
@@ -77,11 +77,6 @@ export interface StatusResponse {
   error: string | null
 }
 
-export interface DeliverResponse {
-  /**
-   * Пригласительные ушли гостю на номер из его заявки, и писать менеджеру ему
-   * не нужно. `false` — номера нет, канал не настроен или мессенджер отказал:
-   * остаётся прежний путь, диалог с менеджером и текст с кодом в буфере.
-   */
-  delivered: boolean
+export interface OpenedResponse {
+  ok: boolean
 }

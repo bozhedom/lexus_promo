@@ -5,7 +5,6 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 
 import { loadCarPhotos } from '@/lib/carPhotos'
-import { validatePhone } from '@/lib/validation'
 import type { Media } from '@/payload-types'
 import type { CarPhoto } from '@/shared/config/car-photos'
 import { certificateFace, type CertificateKind } from '@/widgets/certificate-sheet/layout'
@@ -112,51 +111,6 @@ export async function certificateSerialsByCode(
   } catch {
     // Без базы кадр рисуется без номера — это лучше, чем упавшая выдача.
     return {}
-  }
-}
-
-/**
- * Телефон гостя в каноническом виде `+7XXXXXXXXXX`. По нему вебхук узнаёт
- * отправителя, когда кода в сообщении нет: в MAX текст в диалог с менеджером не
- * подставляется, и гость шлёт что придётся.
- *
- * Хозяин заявки находится по её идентификатору с проверкой сессии, вернувшийся
- * гость — по коду выданного пригласительного: заявкой он уже не владеет, но код
- * у него на руках. Пусто — заявки нет или базы нет, и остаётся только код.
- */
-export async function guestPhone(owner: {
-  applicationId?: string
-  sessionId?: string
-  certificateCode?: string
-}): Promise<string> {
-  try {
-    const payload = await getPayload({ config })
-
-    let applicationId = ''
-    if (owner.applicationId && owner.sessionId) {
-      applicationId = owner.applicationId
-    } else if (owner.certificateCode) {
-      const found = await payload.find({
-        collection: 'certificates',
-        where: { code: { equals: owner.certificateCode } },
-        limit: 1,
-        depth: 0,
-      })
-      const application = found.docs[0]?.application
-      applicationId = typeof application === 'string' ? application : (application?.id ?? '')
-    }
-    if (!applicationId) return ''
-
-    const application = await payload
-      .findByID({ collection: 'applications', id: applicationId, depth: 0 })
-      .catch(() => null)
-    // Чужой идентификатор заявки не должен выдавать телефон её хозяина.
-    if (!application) return ''
-    if (owner.sessionId && application.sessionId !== owner.sessionId) return ''
-
-    return validatePhone(application.phone) ?? ''
-  } catch {
-    return ''
   }
 }
 

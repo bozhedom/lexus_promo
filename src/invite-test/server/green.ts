@@ -1,5 +1,3 @@
-import { validatePhone } from '@/lib/validation'
-
 import { inviteTestEnv, type GreenCredentials } from '../config/env'
 import type { Certificate, Channel } from '../model/types'
 import { readCertificateFiles } from './assets'
@@ -17,12 +15,7 @@ import { readCertificateFiles } from './assets'
 export interface GreenWebhook {
   typeWebhook?: string
   instanceData?: { idInstance?: number | string; typeInstance?: string }
-  senderData?: {
-    chatId?: string
-    chatType?: string
-    /** Номер отправителя. Telegram отдаёт его не всегда, MAX и WhatsApp — да. */
-    senderPhoneNumber?: number | string
-  }
+  senderData?: { chatId?: string; chatType?: string }
   messageData?: {
     typeMessage?: string
     textMessageData?: { textMessage?: string }
@@ -74,14 +67,11 @@ async function call<T>(
 export interface IncomingMessage {
   channel: Channel
   chatId: string
-  /** Текст сообщения. Пусто — прислали картинку, стикер или что-то ещё. */
-  text: string
   /**
-   * Номер отправителя в каноническом виде `+7XXXXXXXXXX`. По нему гость
-   * узнаётся, когда кода в тексте нет: в MAX подставить текст в чужой диалог
-   * нельзя, и сообщение приходит любое.
+   * Текст сообщения. Пусто — прислали картинку, стикер или что-то ещё; такое
+   * сообщение тоже годится, когда гостя опознают не по коду.
    */
-  phone: string
+  text: string
 }
 
 /**
@@ -119,14 +109,9 @@ export function parseIncoming(update: GreenWebhook | null): IncomingMessage | nu
         ? update.messageData.extendedTextMessageData?.text
         : null
 
-  // Номер отправителя: у WhatsApp он же и есть chatId, у MAX и Telegram —
-  // отдельным полем. Возвращаем даже сообщение без текста: гость, которому
-  // текст подставить некуда, шлёт что придётся, и узнаём мы его по номеру.
-  const phone =
-    validatePhone(String(update.senderData?.senderPhoneNumber ?? '')) ??
-    (channel === 'whatsapp' ? validatePhone(chatId.split('@')[0]!) : null)
-
-  return { channel, chatId, text: text ?? '', phone: phone ?? '' }
+  // Сообщение без текста тоже возвращаем: гость, которому текст подставить
+  // некуда, отправляет что придётся — вплоть до стикера.
+  return { channel, chatId, text: text ?? '' }
 }
 
 /**
@@ -157,20 +142,6 @@ export async function sendCertificates(
     })
   }
 }
-
-/**
- * Есть ли у номера аккаунт в мессенджере и какой у него `chatId`. По нему
- * менеджер пишет гостю первым — там, где подставить текст в диалог нельзя и
- * ждать сообщения от гостя не с чего. Формат получателя не угадываем: MAX
- * отвечает готовым идентификатором чата.
- *
- * GREEN-API ограничивает частые проверки одного и того же несуществующего
- * номера, поэтому зовём метод один раз на нажатие кнопки.
- */
-export const checkAccount = (channel: Channel, phone: string) =>
-  call<{ exist: boolean; chatId?: string }>(channel, 'checkAccount', {
-    phoneNumber: Number(phone.replace(/\D/g, '')),
-  })
 
 export const getState = (channel: Channel) =>
   call<{ stateInstance: string }>(channel, 'getStateInstance')

@@ -111,16 +111,10 @@ export function useInviteSession(details: PersonalInviteDetails | null, owner?: 
         setError(null)
         setStatus('waiting')
 
-        // Там, где текст в диалог не подставляется, менеджер пишет первым: гость
-        // открывает мессенджер и видит пригласительные уже в чате с человеком.
-        // Буфер обмена остаётся запасным путём — если отправить не вышло,
-        // сообщение с кодом у гостя уже скопировано.
-        if (!info.prefilled) {
-          api.deliverToChat(activeSession.code, channel).then(
-            (result) => result.delivered && setStatus('sent'),
-            () => undefined,
-          )
-        }
+        // Говорим серверу, за какими пригласительными гость ушёл. Без этого в
+        // MAX его сообщение не с чем связать: код туда не подставляется, и
+        // отправит он что угодно.
+        api.markChatOpened(activeSession.code, channel).catch(() => undefined)
       }
       window.open(info.chatLink, '_blank', 'noopener,noreferrer')
       return true

@@ -10,11 +10,10 @@ const incoming = (
   typeInstance: string,
   text: string,
   chatId = '79990001122@c.us',
-  senderPhoneNumber?: number,
 ) => ({
   typeWebhook: 'incomingMessageReceived',
   instanceData: { idInstance, typeInstance },
-  senderData: { chatId, ...(senderPhoneNumber ? { senderPhoneNumber } : {}) },
+  senderData: { chatId },
   messageData: { typeMessage: 'textMessage', textMessageData: { textMessage: text } },
 })
 
@@ -37,12 +36,16 @@ describe('GREEN-API: три канала одним клиентом', () => {
     vi.stubEnv('INVITE_TEST_GREEN_WEBHOOK_TOKEN', 'webhook-test-token')
     vi.stubEnv('NEXT_PUBLIC_SITE_URL', 'https://promo.test')
     delete (globalThis as { __greenAccounts?: unknown }).__greenAccounts
+    // Сессии живут на globalThis и переживают resetModules: без этого ждущий
+    // гость из прошлого теста мешает опознать гостя в следующем.
+    delete (globalThis as { __invitePromoSessions?: unknown }).__invitePromoSessions
   })
 
   afterEach(() => {
     vi.unstubAllEnvs()
     vi.restoreAllMocks()
     delete (globalThis as { __greenAccounts?: unknown }).__greenAccounts
+    delete (globalThis as { __invitePromoSessions?: unknown }).__invitePromoSessions
   })
 
   it('канал определяется по идентификатору инстанса', async () => {
@@ -52,8 +55,6 @@ describe('GREEN-API: три канала одним клиентом', () => {
       channel: 'whatsapp',
       chatId: '79990001122@c.us',
       text: 'Код: ACEF34679A',
-      // В WhatsApp номер отправителя — сам chatId.
-      phone: '+79990001122',
     })
     expect(
       green.parseIncoming(incoming(4100000000, 'telegram', 'Код: ACEF34679A', '123456789')),
@@ -91,86 +92,79 @@ describe('GREEN-API: три канала одним клиентом', () => {
 
   /**
    * Главный случай MAX: подставить текст в диалог с менеджером мессенджер не
-   * умеет, поэтому гость отправляет что угодно, а узнаём мы его по номеру, с
-   * которого он оставил заявку.
+   * умеет, поэтому гость отправляет что придётся — вплоть до стикера.
    */
-  it('в MAX номер отправителя приходит отдельным полем, текста может не быть', async () => {
+  it('сообщение без текста тоже разбирается', async () => {
     const green = await import('../src/invite-test/server/green')
 
-    expect(
-      green.parseIncoming(incoming(3100000000, 'v3', 'Здравствуйте', '987654321', 79876543210)),
-    ).toEqual({
+    expect(green.parseIncoming(incoming(3100000000, 'v3', 'Здравствуйте', '987654321'))).toEqual({
       channel: 'max',
       chatId: '987654321',
       text: 'Здравствуйте',
-      phone: '+79876543210',
     })
 
-    // Стикер или картинка — текста нет, но по номеру гость всё равно узнаётся.
     expect(
       green.parseIncoming({
         typeWebhook: 'incomingMessageReceived',
         instanceData: { idInstance: 3100000000, typeInstance: 'v3' },
-        senderData: { chatId: '987654321', senderPhoneNumber: 79876543210 },
+        senderData: { chatId: '987654321' },
         messageData: { typeMessage: 'stickerMessage' },
       }),
-    ).toMatchObject({ channel: 'max', text: '', phone: '+79876543210' })
-  })
-
-  it('получателя для отправки первым спрашиваем у мессенджера', async () => {
-    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(
-      async () =>
-        new Response(JSON.stringify({ exist: true, chatId: '101220915', fromCache: false }), {
-          status: 200,
-          headers: { 'content-type': 'application/json' },
-        }),
-    )
-    const green = await import('../src/invite-test/server/green')
-
-    const account = await green.checkAccount('max', '+79876543210')
-    expect(account).toMatchObject({ exist: true, chatId: '101220915' })
-    expect(fetchMock.mock.calls[0]![0]).toBe(
-      'https://3100.api.greenapi.test/waInstance3100000000/checkAccount/max-token',
-    )
-    // Номер уходит числом, как просит метод, а chatId собирать из него не нужно.
-    expect(JSON.parse(String(fetchMock.mock.calls[0]![1]?.body))).toEqual({
-      phoneNumber: 79876543210,
-    })
-  })
-
-  it('сессия находится по телефону гостя, пока пригласительные не ушли', async () => {
-    const store = await import('../src/invite-test/server/store')
-
-    const session = store.createSession('Иван Иванович', null, null, '+79876543210')
-    expect(store.findSessionByPhone('+79876543210')?.code).toBe(session.code)
-    expect(store.findSessionByPhone('+79990001122')).toBeNull()
-    expect(store.findSessionByPhone('')).toBeNull()
-
-    // Обновил страницу — код новый, пригласительные уходят по свежему.
-    const again = store.createSession('Иван Иванович', null, null, '+79876543210')
-    expect(store.findSessionByPhone('+79876543210')?.code).toBe(again.code)
-
-    // Уже отправленная сессия второй раз по номеру не находится.
-    store.setStatus(again.code, 'sent')
-    expect(store.findSessionByPhone('+79876543210')?.code).toBe(session.code)
+    ).toEqual({ channel: 'max', chatId: '987654321', text: '' })
   })
 
   /**
-   * Менеджер вправе не суметь написать гостю первым: мессенджер такое сообщение
-   * может не пропустить. Тогда всё держится на сообщении самого гостя, и
-   * сорвавшаяся сессия обязана находиться по номеру.
+   * Телефона гость в этой воронке не оставляет — только имя. Поэтому сообщение
+   * без кода связывается с выдачей единственным доступным признаком: гость
+   * только что нажал кнопку этого мессенджера.
    */
-  it('после сорвавшейся отправки сессия по номеру всё ещё находится', async () => {
+  it('сессия находится по отметке о переходе в мессенджер', async () => {
     const store = await import('../src/invite-test/server/store')
 
-    const session = store.createSession('Пётр Петрович', null, null, '+79111112233')
+    const session = store.createSession('Иван Иванович')
+    expect(store.findOpenedSession('max')).toBeNull()
+
+    store.markOpened(session.code, 'max')
+    expect(store.findOpenedSession('max')?.code).toBe(session.code)
+    // Ушёл в MAX — в Telegram его сообщения не ждут.
+    expect(store.findOpenedSession('telegram')).toBeNull()
+
+    // Отправленная сессия второй раз не находится: повторный комплект не нужен.
+    store.setStatus(session.code, 'sent')
+    expect(store.findOpenedSession('max')).toBeNull()
+  })
+
+  /**
+   * На пригласительных напечатаны имя и номер автомобиля, поэтому между двумя
+   * ждущими гостями не угадываем: оба дошлют код из буфера обмена.
+   */
+  it('двое ждущих в одном мессенджере не опознаются', async () => {
+    const store = await import('../src/invite-test/server/store')
+
+    const first = store.createSession('Иван Иванович')
+    const second = store.createSession('Пётр Петрович')
+    store.markOpened(first.code, 'max')
+    store.markOpened(second.code, 'max')
+
+    expect(store.findOpenedSession('max')).toBeNull()
+
+    // Первый забрал своё по коду — второй снова опознаётся однозначно.
+    store.setStatus(first.code, 'sent')
+    expect(store.findOpenedSession('max')?.code).toBe(second.code)
+  })
+
+  it('сорвавшаяся отправка не закрывает путь по сообщению гостя', async () => {
+    const store = await import('../src/invite-test/server/store')
+
+    const session = store.createSession('Пётр Петрович')
+    store.markOpened(session.code, 'max')
     store.setStatus(session.code, 'failed', 'MAX отказал')
 
-    expect(store.findSessionByPhone('+79111112233')?.code).toBe(session.code)
+    expect(store.findOpenedSession('max')?.code).toBe(session.code)
     expect(store.claimSession(session.code)?.code).toBe(session.code)
 
     // А вот пока отправка идёт, второй раз сессию не забрать.
-    expect(store.findSessionByPhone('+79111112233')).toBeNull()
+    expect(store.findOpenedSession('max')).toBeNull()
     expect(store.claimSession(session.code)).toBeNull()
   })
 

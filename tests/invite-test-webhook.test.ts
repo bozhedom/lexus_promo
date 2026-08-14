@@ -4,12 +4,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 /**
  * Главный сценарий MAX: гость попадает в диалог с менеджером и отправляет что
  * угодно — «Здравствуйте», стикер, что придёт в голову. Кода в сообщении нет и
- * быть не может: подставить текст в чужой диалог MAX не умеет. Узнаём гостя по
- * номеру, с которого он оставил заявку.
+ * быть не может: подставить текст в чужой диалог MAX не умеет. Телефона гость
+ * в этой воронке не оставляет, поэтому связываем сообщение с выдачей по
+ * отметке о переходе в мессенджер.
  */
 describe('вебхук GREEN-API: сообщение без кода', () => {
-  const PHONE = '+79876543210'
-
   const post = (body: unknown) =>
     new NextRequest('https://promo.test/api/invite-test/green/webhook', {
       method: 'POST',
@@ -20,10 +19,10 @@ describe('вебхук GREEN-API: сообщение без кода', () => {
       body: JSON.stringify(body),
     })
 
-  const fromGuest = (text: string, phone = 79876543210) => ({
+  const fromGuest = (text: string) => ({
     typeWebhook: 'incomingMessageReceived',
     instanceData: { idInstance: 3100000000, typeInstance: 'v3' },
-    senderData: { chatId: '101220915', senderPhoneNumber: phone },
+    senderData: { chatId: '101220915' },
     messageData: {
       typeMessage: 'textMessage',
       textMessageData: { textMessage: text },
@@ -59,12 +58,13 @@ describe('вебхук GREEN-API: сообщение без кода', () => {
         }),
     )
 
-  it('любое сообщение с номера заявки приносит пригласительные', async () => {
+  it('любое сообщение приносит пригласительные тому, кто ушёл в MAX', async () => {
     const fetchMock = greenOk()
     const store = await import('../src/invite-test/server/store')
     const { POST } = await import('../src/app/api/invite-test/green/webhook/route')
 
-    const session = store.createSession('Иван Иванович', null, null, PHONE)
+    const session = store.createSession('Иван Иванович')
+    store.markOpened(session.code, 'max')
 
     const response = await POST(post(fromGuest('Здравствуйте')))
     expect(response.status).toBe(200)
@@ -82,7 +82,8 @@ describe('вебхук GREEN-API: сообщение без кода', () => {
     const store = await import('../src/invite-test/server/store')
     const { POST } = await import('../src/app/api/invite-test/green/webhook/route')
 
-    store.createSession('Иван Иванович', null, null, PHONE)
+    const session = store.createSession('Иван Иванович')
+    store.markOpened(session.code, 'max')
 
     await POST(post(fromGuest('Здравствуйте')))
     const afterFirst = sent(fetchMock).length
@@ -90,23 +91,48 @@ describe('вебхук GREEN-API: сообщение без кода', () => {
     expect(sent(fetchMock)).toHaveLength(afterFirst)
   })
 
-  it('сообщение с чужого номера остаётся без ответа', async () => {
+  it('сообщение без ждущего гостя остаётся без ответа', async () => {
     const fetchMock = greenOk()
     const store = await import('../src/invite-test/server/store')
     const { POST } = await import('../src/app/api/invite-test/green/webhook/route')
 
-    const session = store.createSession('Иван Иванович', null, null, PHONE)
+    // Гость получил код, но в мессенджер не уходил: пишет кто-то другой.
+    const session = store.createSession('Иван Иванович')
 
-    await POST(post(fromGuest('Здравствуйте', 79111112233)))
+    await POST(post(fromGuest('Здравствуйте')))
     expect(sent(fetchMock)).toHaveLength(0)
     expect(store.getSession(session.code)?.status).toBe('idle')
+  })
+
+  /**
+   * На пригласительных напечатаны имя и номер автомобиля: отдать их не тому
+   * хуже, чем попросить прислать код.
+   */
+  it('пока ждут двое, ничего не отправляется', async () => {
+    const fetchMock = greenOk()
+    const store = await import('../src/invite-test/server/store')
+    const { POST } = await import('../src/app/api/invite-test/green/webhook/route')
+
+    const first = store.createSession('Иван Иванович')
+    const second = store.createSession('Пётр Петрович')
+    store.markOpened(first.code, 'max')
+    store.markOpened(second.code, 'max')
+
+    await POST(post(fromGuest('Здравствуйте')))
+    expect(sent(fetchMock)).toHaveLength(0)
+
+    // А с кодом в тексте выдача находится однозначно и без отметки.
+    await POST(post(fromGuest(`Здравствуйте! Код: ${second.code}`)))
+    expect(sent(fetchMock)).toHaveLength(3)
+    expect(store.getSession(second.code)?.status).toBe('sent')
   })
 
   it('неверный токен вебхука отбивается', async () => {
     const store = await import('../src/invite-test/server/store')
     const { POST } = await import('../src/app/api/invite-test/green/webhook/route')
 
-    store.createSession('Иван Иванович', null, null, PHONE)
+    const session = store.createSession('Иван Иванович')
+    store.markOpened(session.code, 'max')
     const request = new NextRequest('https://promo.test/api/invite-test/green/webhook', {
       method: 'POST',
       headers: { authorization: 'Bearer wrong', 'content-type': 'application/json' },

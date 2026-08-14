@@ -1,6 +1,6 @@
 import type {
   Channel,
-  DeliverResponse,
+  OpenedResponse,
   PersonalInviteDetails,
   SessionResponse,
   StatusResponse,
@@ -33,12 +33,12 @@ export const fetchStatus = (code: string): Promise<StatusResponse> =>
   request(`/api/invite-test/status?code=${encodeURIComponent(code)}`)
 
 /**
- * Просит менеджера отправить пригласительные гостю первым — на номер из его
- * заявки. Ради MAX: подставить текст в диалог с человеком он не умеет, и без
- * этого гостю пришлось бы вставлять сообщение из буфера обмена.
+ * Отмечает, что гость ушёл в диалог с менеджером. Ради MAX: текст с кодом туда
+ * не подставляется, гость отправляет что угодно, и по этой отметке вебхук
+ * понимает, чьи пригласительные слать в ответ.
  */
-export const deliverToChat = (code: string, channel: Channel): Promise<DeliverResponse> =>
-  request('/api/invite-test/deliver', {
+export const markChatOpened = (code: string, channel: Channel): Promise<OpenedResponse> =>
+  request('/api/invite-test/opened', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ code, channel }),

@@ -9,7 +9,7 @@ import {
   type GreenWebhook,
   type IncomingMessage,
 } from '@/invite-test/server/green'
-import { findSessionByPhone, getSession } from '@/invite-test/server/store'
+import { findOpenedSession, getSession } from '@/invite-test/server/store'
 
 /**
  * POST /api/invite-test/green/webhook — входящее сообщение из любого инстанса
@@ -42,11 +42,12 @@ export async function POST(req: NextRequest) {
     return send(code, incoming)
   }
 
-  // Кода в сообщении нет — узнаём гостя по номеру, с которого он оставил
-  // заявку. Ради MAX: подставить текст в диалог с менеджером он не умеет, и
-  // гость отправляет что придётся. Ни кода, ни номера — писал кто-то другой.
-  const known = findSessionByPhone(incoming.phone)
-  return known ? send(known.code, incoming) : NextResponse.json({ ok: true })
+  // Кода в сообщении нет — берём гостя, который только что ушёл в этот же
+  // мессенджер. Ради MAX: подставить текст в диалог с менеджером он не умеет, и
+  // гость отправляет что придётся. Ждущих сразу двое — не угадываем, пусть
+  // дошлют код; никто не уходил — писал не гость.
+  const waiting = findOpenedSession(incoming.channel)
+  return waiting ? send(waiting.code, incoming) : NextResponse.json({ ok: true })
 }
 
 async function send(code: string, incoming: IncomingMessage) {
