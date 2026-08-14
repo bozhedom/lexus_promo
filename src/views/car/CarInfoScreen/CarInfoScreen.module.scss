@@ -198,6 +198,9 @@
 .brandLogoRed {
   width: k(28 * 112 / 73);
   background: #d82f2f;
+  // Префикс проставлен руками: iOS Safari до 15.4 знает маску только с ним, а
+  // это половина телефонов, с которых приходят по QR.
+  -webkit-mask: var(--brand-logo) no-repeat center / contain;
   mask: var(--brand-logo) no-repeat center / contain;
 }
 
