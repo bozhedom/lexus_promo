@@ -190,7 +190,12 @@ export function ContactScreen() {
         <CertificatesModal
           delivery={delivery}
           guestName={savedFullName}
-          brand={data.carBrand ?? 'Lexus'}
+          brand={inviteDetails.brand}
+          // Модель и год нужны не подписи, а подбору кадра: без них на
+          // пригласительном оказывался кадр марки вообще или дефолтный
+          // автомобиль — не тот, который гость только что подтвердил.
+          model={inviteDetails.model}
+          year={inviteDetails.year}
           carTitle={[data.carBrand, data.carModel].filter(Boolean).join(' ')}
           plate={data.plateNumber}
           amount={data.certificateAmount ?? 1500}
