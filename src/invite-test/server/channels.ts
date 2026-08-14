@@ -9,9 +9,9 @@ const MAX_PHONE = /^\+?\d+$/
 const MAX_PROFILE_URL = /^https:\/\/(?:www\.)?max\.ru\/[^\s]+$/i
 
 /**
- * Текст диалога подставляется тем же параметром, что в WhatsApp и Telegram:
- * `?text=`. Если в ссылке из настроек он уже стоит, второй раз не дописываем.
- * `opening` приходит сюда уже закодированным.
+ * Подставляет текст диалога параметром `?text=` — так его принимают WhatsApp,
+ * Telegram и диплинк бота. Если в ссылке он уже стоит, второй раз не
+ * дописываем. `opening` приходит сюда уже закодированным.
  */
 const withOpening = (url: string, opening: string): string => {
   if (!opening || /[?&]text=/.test(url)) return url
@@ -19,20 +19,21 @@ const withOpening = (url: string, opening: string): string => {
 }
 
 /**
- * У MAX нет аналога wa.me для телефонного номера. Если из настроек пришла
- * настоящая ссылка профиля или публичный ник, открываем этот профиль и
- * подставляем текст параметром `?text=` — так гостю остаётся только нажать
- * «отправить», а с кодом в тексте пригласительные уходят автоматически. Номер
- * телефона открыть напрямую нельзя, поэтому для него остаётся официальный
- * share deeplink: MAX подставит текст и попросит выбрать чат менеджера.
+ * У MAX нет ни аналога wa.me для телефонного номера, ни подстановки текста в
+ * чужой диалог: официальный список диплинков (dev.max.ru/help/deeplinks) — это
+ * `max.ru/<бот>?start=`, `max.ru/<бот>?startapp=` и `max.ru/:share?text=`.
+ * Поэтому ссылка профиля открывается как есть, без `?text=`: параметр MAX
+ * молча проглотит, а страница решит, что текст подставлен, и не положит его
+ * гостю в буфер. Текст подставляется только в share deeplink, но чат там
+ * выбирает сам гость — туда уходим, когда профиля менеджера у нас нет.
  */
 export function maxConversationLink(manager: string, opening: string): string {
   const reference = manager.trim()
-  if (MAX_PROFILE_URL.test(reference)) return withOpening(reference, opening)
+  if (MAX_PROFILE_URL.test(reference)) return reference
 
   const username = reference.replace(/^@/, '')
   if (username && !MAX_PHONE.test(username)) {
-    return withOpening(`https://max.ru/${encodeURIComponent(username)}`, opening)
+    return `https://max.ru/${encodeURIComponent(username)}`
   }
 
   return `https://max.ru/:share?text=${opening}`

@@ -35,6 +35,13 @@ export interface PersonalInviteDetails {
 export interface InviteSession {
   code: string
   fullName: string
+  /**
+   * Телефон гостя из его заявки, `+7XXXXXXXXXX`. По нему вебхук узнаёт
+   * отправителя, когда кода в сообщении нет: в MAX подставить текст в диалог с
+   * менеджером нельзя, и гость шлёт что угодно. Пусто — заявка не найдена, и
+   * остаётся только код.
+   */
+  phone: string
   createdAt: number
   status: DeliveryStatus
   error: string | null

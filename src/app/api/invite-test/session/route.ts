@@ -4,6 +4,7 @@ import { openingText } from '@/invite-test/config/certificates'
 import type { PersonalInviteDetails, SessionResponse } from '@/invite-test/model/types'
 import {
   certificateSerialsByCode,
+  guestPhone,
   storeCertificateImages,
 } from '@/invite-test/server/certificateStore'
 import { resolveChannels } from '@/invite-test/server/channels'
@@ -57,10 +58,19 @@ export async function POST(req: NextRequest) {
   // что придёт ему вместе с пригласительными.
   const templates = await loadMessageTemplates()
 
+  // Телефон из заявки: по нему вебхук узнаёт гостя, когда кода в сообщении нет.
+  // Так работает MAX — текст в диалог с менеджером он не подставляет.
+  const phone = await guestPhone({
+    applicationId: applicationId || undefined,
+    sessionId: ownerSession || undefined,
+    certificateCode: certificateCode || undefined,
+  })
+
   const created = createSession(
     fullName,
     { certificates: stored?.certificates ?? null, deliveryTemplate: templates.delivery },
     serials ? { ...details, serials } : details,
+    phone,
   )
 
   const opening = openingText(created.code, templates.opening)

@@ -1,3 +1,5 @@
+import { validatePhone } from '@/lib/validation'
+
 import { inviteTestEnv, type GreenCredentials } from '../config/env'
 import type { Certificate, Channel } from '../model/types'
 import { readCertificateFiles } from './assets'
@@ -15,7 +17,12 @@ import { readCertificateFiles } from './assets'
 export interface GreenWebhook {
   typeWebhook?: string
   instanceData?: { idInstance?: number | string; typeInstance?: string }
-  senderData?: { chatId?: string; chatType?: string }
+  senderData?: {
+    chatId?: string
+    chatType?: string
+    /** Номер отправителя. Telegram отдаёт его не всегда, MAX и WhatsApp — да. */
+    senderPhoneNumber?: number | string
+  }
   messageData?: {
     typeMessage?: string
     textMessageData?: { textMessage?: string }
@@ -64,13 +71,24 @@ async function call<T>(
   return data
 }
 
+export interface IncomingMessage {
+  channel: Channel
+  chatId: string
+  /** Текст сообщения. Пусто — прислали картинку, стикер или что-то ещё. */
+  text: string
+  /**
+   * Номер отправителя в каноническом виде `+7XXXXXXXXXX`. По нему гость
+   * узнаётся, когда кода в тексте нет: в MAX подставить текст в чужой диалог
+   * нельзя, и сообщение приходит любое.
+   */
+  phone: string
+}
+
 /**
  * Входящее сообщение. Канал определяем по идентификатору инстанса: вебхук у
  * всех трёх один, а какой инстанс его прислал — видно из тела.
  */
-export function parseIncoming(
-  update: GreenWebhook | null,
-): { channel: Channel; chatId: string; text: string } | null {
+export function parseIncoming(update: GreenWebhook | null): IncomingMessage | null {
   if (update?.typeWebhook !== 'incomingMessageReceived') return null
 
   const id = update.instanceData?.idInstance
@@ -101,7 +119,14 @@ export function parseIncoming(
         ? update.messageData.extendedTextMessageData?.text
         : null
 
-  return text ? { channel, chatId, text } : null
+  // Номер отправителя: у WhatsApp он же и есть chatId, у MAX и Telegram —
+  // отдельным полем. Возвращаем даже сообщение без текста: гость, которому
+  // текст подставить некуда, шлёт что придётся, и узнаём мы его по номеру.
+  const phone =
+    validatePhone(String(update.senderData?.senderPhoneNumber ?? '')) ??
+    (channel === 'whatsapp' ? validatePhone(chatId.split('@')[0]!) : null)
+
+  return { channel, chatId, text: text ?? '', phone: phone ?? '' }
 }
 
 /**

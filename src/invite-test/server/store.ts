@@ -46,6 +46,8 @@ export function createSession(
   fullName: string,
   fields?: InviteContentFields | null,
   personal?: PersonalInviteDetails | null,
+  /** Телефон гостя из заявки: по нему вебхук узнаёт его без кода в тексте. */
+  phone?: string | null,
 ): InviteSession {
   sweep()
   if (sessions.size >= MAX_SESSIONS) sessions.clear()
@@ -65,6 +67,7 @@ export function createSession(
   const session: InviteSession = {
     code,
     fullName,
+    phone: phone ?? '',
     createdAt: Date.now(),
     status: 'idle',
     error: null,
@@ -87,6 +90,27 @@ export function getSession(code: string): InviteSession | null {
     return null
   }
   return session
+}
+
+/**
+ * Сессия по телефону отправителя. Нужна там, где кода в сообщении нет: MAX не
+ * умеет подставить текст в диалог с менеджером, поэтому гость пишет что угодно,
+ * а узнаём мы его по номеру, с которого он оставил заявку.
+ *
+ * Берём последнюю неотправленную: гость мог обновить страницу и получить
+ * несколько кодов, и пригласительные должны уйти по свежему. Выданные в одну
+ * миллисекунду разбираются порядком вставки — Map его сохраняет.
+ */
+export function findSessionByPhone(phone: string): InviteSession | null {
+  if (!phone) return null
+  sweep()
+
+  let found: InviteSession | null = null
+  for (const session of sessions.values()) {
+    if (session.phone !== phone || session.status !== 'idle') continue
+    if (!found || session.createdAt >= found.createdAt) found = session
+  }
+  return found
 }
 
 export function setStatus(code: string, status: DeliveryStatus, error: string | null = null) {
