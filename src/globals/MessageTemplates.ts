@@ -81,8 +81,9 @@ export const MessageTemplates: GlobalConfig = {
             [
               ['car', 'марка, модель и год'],
               ['plate', 'госномер'],
+              ['services', 'работы, отмеченные гостём'],
             ],
-          )}`,
+          )}. Без {services} отмеченные работы допишутся отдельной строкой в конце.`,
           en: 'Prefilled for guests who came to book a service slot.',
         },
       },

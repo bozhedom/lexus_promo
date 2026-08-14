@@ -1,14 +1,14 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import type { Channel, ChannelInfo } from '@/invite-test/model/types'
 import { MessengerButton } from '@/invite-test/ui/MessengerButton'
 import { useScreenView } from '@/shared/analytics'
 import { useFunnel, useFunnelGuard } from '@/shared/lib/funnel'
 import { flowRoutes } from '@/shared/lib/flow'
-import { Button, Loader } from '@/shared/ui'
+import { Loader } from '@/shared/ui'
 import { formatPlateLine } from '@/widgets/certificate-sheet'
 import styles from './BookingScreen.module.scss'
 
@@ -19,10 +19,10 @@ type Channels = Record<Channel, ChannelInfo>
  * экрана по «Рассчитать и записаться», вводит номер и подтверждает автомобиль
  * теми же экранами, что и за пригласительным.
  *
- * Пригласительные здесь не выписываются: «Записаться» открывает мессенджеры с
- * готовым текстом про автомобиль, дальше время встречи назначает менеджер.
- * Макета у экрана пока нет — свёрстан он теми же карточкой и рядом кнопок, что
- * и остальные окна воронки.
+ * Пригласительные здесь не выписываются: гость сразу выбирает мессенджер и
+ * уходит туда с готовым текстом — автомобиль и отмеченные работы уже в
+ * сообщении, дальше время встречи назначает менеджер. Макета у экрана пока нет
+ * — свёрстан он теми же карточкой и рядом кнопок, что и остальные окна воронки.
  */
 export function BookingScreen() {
   const router = useRouter()
@@ -35,43 +35,46 @@ export function BookingScreen() {
 
   const [channels, setChannels] = useState<Channels | null>(null)
   const [opening, setOpening] = useState('')
-  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const car = [data.carBrand, data.carModel, data.carYear].filter(Boolean).join(' ')
   const plate = data.plateNumber ?? ''
+  const services = data.services ?? []
 
   // Ссылки на диалоги собирает сервер: в них уже подставлен текст с
-  // автомобилем гостя, чтобы менеджер не переспрашивал.
-  const openMessengers = async () => {
-    if (channels || loading) return
-    setLoading(true)
-    setError('')
-    try {
-      const res = await fetch('/api/booking/channels', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ car, plate }),
+  // автомобилем и работами, чтобы менеджер не переспрашивал. Запрос уходит
+  // сразу — выбор мессенджера и есть единственное действие на экране.
+  useEffect(() => {
+    if (!show) return
+    let active = true
+    fetch('/api/booking/channels', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ car, plate, services }),
+    })
+      .then(async (res) => {
+        const body = (await res.json()) as { channels?: Channels; message?: string }
+        if (!res.ok || !body.channels) throw new Error()
+        if (!active) return
+        setOpening(body.message ?? '')
+        setChannels(body.channels)
       })
-      const body = (await res.json()) as { channels?: Channels; message?: string }
-      if (!res.ok || !body.channels) throw new Error()
-      track('cta_click', { id: 'booking' })
-      setOpening(body.message ?? '')
-      setChannels(body.channels)
-    } catch {
-      setError('Не удалось открыть мессенджеры, попробуйте ещё раз')
-    } finally {
-      setLoading(false)
+      .catch(() => {
+        if (active) setError('Не удалось открыть мессенджеры, попробуйте ещё раз')
+      })
+    return () => {
+      active = false
     }
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [show])
 
   // Разговор продолжается в чате, а сайт возвращается к началу — так же, как
   // после отправки пригласительных.
   const send = (channel: Channel) => {
     const info = channels?.[channel]
     if (!info?.chatLink) return
-    // В MAX текст в чужой диалог не подставить — кладём его в буфер обмена,
-    // чтобы гостю осталось вставить и отправить.
+    // Там, где текст в ссылку не подставить, кладём его в буфер обмена, чтобы
+    // гостю осталось вставить и отправить.
     if (!info.prefilled && opening) navigator.clipboard?.writeText(opening).catch(() => undefined)
     window.open(info.chatLink, '_blank', 'noopener,noreferrer')
     track('outbound_click', { id: `booking_${channel}` })
@@ -97,42 +100,50 @@ export function BookingScreen() {
           для Вашего автомобиля
         </p>
 
-        {!channels && (
-          <Button block onClick={openMessengers} disabled={loading}>
-            {loading ? <Loader label="Открываем" /> : 'Записаться'}
-          </Button>
+        {/* Гость видит, что именно уйдёт менеджеру: работы он отмечал экраном
+            раньше, а формулировку менеджер правит в админке. */}
+        {services.length > 0 && (
+          <ul className={styles.services}>
+            {services.map((service) => (
+              <li key={service}>{service}</li>
+            ))}
+          </ul>
         )}
 
-        {channels && (
-          <>
-            <p className={styles.or}>
-              <span />
-              выберите мессенджер
-              <span />
-            </p>
+        <p className={styles.or}>
+          <span />
+          выберите мессенджер
+          <span />
+        </p>
 
-            <div className={styles.messengers}>
-              <MessengerButton
-                icon="/invite-test/icon-max.png"
-                label="MAX"
-                disabled={!channels.max.enabled}
-                onClick={() => send('max')}
-              />
-              <MessengerButton
-                icon="/invite-test/icon-telegram.png"
-                label="Telegram"
-                disabled={!channels.telegram.enabled}
-                onClick={() => send('telegram')}
-              />
-              <MessengerButton
-                icon="/invite-test/icon-whatsapp.svg"
-                label="W"
-                ariaLabel="WhatsApp"
-                disabled={!channels.whatsapp.enabled}
-                onClick={() => send('whatsapp')}
-              />
+        {channels ? (
+          <div className={styles.messengers}>
+            <MessengerButton
+              icon="/invite-test/icon-max.png"
+              label="MAX"
+              disabled={!channels.max.enabled}
+              onClick={() => send('max')}
+            />
+            <MessengerButton
+              icon="/invite-test/icon-telegram.png"
+              label="Telegram"
+              disabled={!channels.telegram.enabled}
+              onClick={() => send('telegram')}
+            />
+            <MessengerButton
+              icon="/invite-test/icon-whatsapp.svg"
+              label="W"
+              ariaLabel="WhatsApp"
+              disabled={!channels.whatsapp.enabled}
+              onClick={() => send('whatsapp')}
+            />
+          </div>
+        ) : (
+          !error && (
+            <div className={styles.messengersLoading} role="status">
+              <Loader label="Открываем мессенджеры" />
             </div>
-          </>
+          )
         )}
 
         {error && <p className={styles.error}>{error}</p>}

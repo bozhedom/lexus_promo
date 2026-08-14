@@ -157,6 +157,25 @@
   }
 }
 
+/**
+ * Карточка ветки записи: вместо ленты подарков и списка готовности — три
+ * строки работ, и до макетных 707px содержимое не дотягивает. Растягивать
+ * рамку на весь экран нечем — распорки выше своего макетного зазора не растут,
+ * и внизу осталась бы пустая половина. Поэтому здесь рамка обнимает
+ * содержимое, а свободную высоту забирает центрирование экрана.
+ */
+.foundPanelCompact {
+  flex: 0 1 auto;
+
+  // Рамка по содержимому, поэтому свободной высоты внутри нет и делить
+  // распоркам нечего: макетный зазор они держат сами, а сжимаются по-прежнему
+  // все разом, когда окно ниже макета.
+  .gap {
+    flex-grow: 0;
+    flex-basis: k(var(--gap));
+  }
+}
+
 .carName {
   width: 100%;
   min-width: 0;
@@ -364,6 +383,86 @@
   span {
     @include t.gold-text;
   }
+}
+
+/**
+ * Работы в ветке записи. Карточка та же, что у найденного автомобиля, поэтому
+ * строки списка повторяют её золото: галочка на золотом круге — как отмеченный
+ * шаг в списке готовности.
+ */
+.serviceList {
+  width: k(304);
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: k(8);
+}
+
+.service {
+  position: relative;
+  min-height: k(48);
+  padding: k(10) k(14);
+  display: grid;
+  grid-template-columns: k(26) 1fr;
+  gap: k(12);
+  align-items: center;
+  border: 1px solid rgba(154, 123, 86, 0.5);
+  border-radius: k(8);
+  background: rgba(255, 255, 255, 0.03);
+  font-size: k(15);
+  line-height: 1.2;
+  text-align: left;
+  cursor: pointer;
+  user-select: none;
+}
+
+// Сам checkbox лежит поверх строки: попасть по нему можно откуда угодно, а
+// клавиатура и скринридер работают с настоящим полем, а не с картинкой.
+.serviceInput {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.serviceBox {
+  width: k(26);
+  height: k(26);
+  display: grid;
+  place-items: center;
+  border: 1px solid t.$gold;
+  border-radius: 50%;
+
+  svg {
+    width: k(13);
+    height: k(13);
+    fill: none;
+    stroke: #17130c;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0;
+  }
+}
+
+.serviceInput:checked ~ .serviceBox {
+  border-color: transparent;
+  background: linear-gradient(135deg, t.$gold-light, t.$gold-dark);
+
+  svg {
+    opacity: 1;
+  }
+}
+
+.serviceInput:checked ~ span:last-child {
+  color: #fff;
+}
+
+.serviceInput:focus-visible ~ .serviceBox {
+  box-shadow: 0 0 0 3px rgba(228, 204, 174, 0.35);
 }
 
 // Лента подарков: один слайд в кадре, следующий выглядывает справа — как в

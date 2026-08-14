@@ -11,13 +11,21 @@ describe('MAX conversation link', () => {
     )
   })
 
-  it('keeps a full MAX profile link', () => {
+  it('prefills the opening text on a full MAX profile link', () => {
     expect(maxConversationLink('https://max.ru/u/profile-hash', opening)).toBe(
-      'https://max.ru/u/profile-hash',
+      `https://max.ru/u/profile-hash?text=${opening}`,
     )
   })
 
-  it('supports a public username', () => {
-    expect(maxConversationLink('@autogarant', opening)).toBe('https://max.ru/autogarant')
+  it('prefills the opening text on a public username', () => {
+    expect(maxConversationLink('@autogarant', opening)).toBe(
+      `https://max.ru/autogarant?text=${opening}`,
+    )
+  })
+
+  it('does not add a second text parameter', () => {
+    expect(maxConversationLink(`https://max.ru/autogarant?text=${opening}`, opening)).toBe(
+      `https://max.ru/autogarant?text=${opening}`,
+    )
   })
 })

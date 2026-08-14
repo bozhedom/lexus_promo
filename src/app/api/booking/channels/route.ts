@@ -24,9 +24,14 @@ export async function POST(req: NextRequest) {
 
   const car = text(body?.car, 80)
   const plate = text(body?.plate, 16).toUpperCase()
+  // Работы гость отмечает сам, поэтому список подрезаем: в сообщение уходит
+  // ровно то, что пришло из браузера.
+  const services = Array.isArray(body?.services)
+    ? body.services.map((item) => text(item, 60)).filter(Boolean).slice(0, 10)
+    : []
 
   const { booking } = await loadMessageTemplates()
-  const opening = bookingText(car, plate, booking)
+  const opening = bookingText(car, plate, services, booking)
   return NextResponse.json({
     channels: await managerChannels({ opening }),
     // Тот же текст отдельным полем: в MAX его в ссылку не подставить, и экран

@@ -37,8 +37,11 @@ export const personalCertificates = (code: string): Certificate[] => [
 export const DEFAULT_OPENING_TEMPLATE =
   'Здравствуйте! Даю согласие на отправку мне двух пригласительных. Код: {code}'
 
-export const DEFAULT_BOOKING_TEMPLATE =
-  'Здравствуйте! Хочу записаться на сервис. Автомобиль: {car}, номер {plate}.'
+export const DEFAULT_BOOKING_TEMPLATE = [
+  'Здравствуйте! Хочу записаться на сервис.',
+  'Автомобиль: {car}, номер {plate}.',
+  'Нужны работы: {services}.',
+].join('\n')
 
 export const DEFAULT_DELIVERY_TEMPLATE = [
   '{name}, добрый день!',
@@ -80,10 +83,25 @@ export const openingText = (code: string, custom?: string | null): string =>
 
 /**
  * Запись на сервис: пригласительные тут не выдаются, поэтому кода в тексте нет
- * — менеджер получает автомобиль гостя и договаривается о времени сам.
+ * — менеджер получает автомобиль гостя, отмеченные работы и договаривается о
+ * времени сам.
+ *
+ * Формулировку менеджер правит в админке, и в старых текстах подстановки
+ * `{services}` может не быть. Тогда отмеченные работы дописываем отдельной
+ * строкой: молча потерять их выбор хуже, чем добавить строку к тексту.
  */
-export const bookingText = (car: string, plate: string, custom?: string | null): string =>
-  fillTemplate(template(custom, DEFAULT_BOOKING_TEMPLATE), { car, plate })
+export const bookingText = (
+  car: string,
+  plate: string,
+  services: string[] = [],
+  custom?: string | null,
+): string => {
+  const chosen = services.filter((item) => item.trim()).join(', ')
+  const source = template(custom, DEFAULT_BOOKING_TEMPLATE)
+  const text = fillTemplate(source, { car, plate, services: chosen })
+  if (!chosen || source.includes('{services}')) return text
+  return `${text}\nНужны работы: ${chosen}.`
+}
 
 /**
  * Код приходит двумя путями: в тексте, который клиент отправляет менеджеру, и

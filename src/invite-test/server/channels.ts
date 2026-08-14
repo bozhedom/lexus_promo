@@ -9,18 +9,30 @@ const MAX_PHONE = /^\+?\d+$/
 const MAX_PROFILE_URL = /^https:\/\/(?:www\.)?max\.ru\/[^\s]+$/i
 
 /**
+ * Текст диалога подставляется тем же параметром, что в WhatsApp и Telegram:
+ * `?text=`. Если в ссылке из настроек он уже стоит, второй раз не дописываем.
+ * `opening` приходит сюда уже закодированным.
+ */
+const withOpening = (url: string, opening: string): string => {
+  if (!opening || /[?&]text=/.test(url)) return url
+  return `${url}${url.includes('?') ? '&' : '?'}text=${opening}`
+}
+
+/**
  * У MAX нет аналога wa.me для телефонного номера. Если из настроек пришла
- * настоящая ссылка профиля или публичный ник, открываем этот профиль. Номер
- * телефона открыть напрямую нельзя, поэтому используем официальный share
- * deeplink: MAX подставит текст с кодом и попросит выбрать чат менеджера.
+ * настоящая ссылка профиля или публичный ник, открываем этот профиль и
+ * подставляем текст параметром `?text=` — так гостю остаётся только нажать
+ * «отправить», а с кодом в тексте пригласительные уходят автоматически. Номер
+ * телефона открыть напрямую нельзя, поэтому для него остаётся официальный
+ * share deeplink: MAX подставит текст и попросит выбрать чат менеджера.
  */
 export function maxConversationLink(manager: string, opening: string): string {
   const reference = manager.trim()
-  if (MAX_PROFILE_URL.test(reference)) return reference
+  if (MAX_PROFILE_URL.test(reference)) return withOpening(reference, opening)
 
   const username = reference.replace(/^@/, '')
   if (username && !MAX_PHONE.test(username)) {
-    return `https://max.ru/${encodeURIComponent(username)}`
+    return withOpening(`https://max.ru/${encodeURIComponent(username)}`, opening)
   }
 
   return `https://max.ru/:share?text=${opening}`
@@ -94,8 +106,12 @@ export async function managerChannels({
     prefilled: /[?&](text|start)=/.test(chatLink ?? ''),
   })
 
-  /** Диплинк бота: код приезжает параметром `start`, без кода — просто диалог. */
-  const botChat = (url: string): string => (start ? `${url}?start=${start}` : url)
+  /**
+   * Диплинк бота: код приезжает параметром `start`. Без кода (запись на сервис)
+   * подставляем текст — гостю останется нажать «отправить».
+   */
+  const botChat = (url: string): string =>
+    start ? `${url}?start=${start}` : withOpening(url, opening)
 
   /**
    * Диалог в Telegram: по username подставляется и готовый текст с кодом, по

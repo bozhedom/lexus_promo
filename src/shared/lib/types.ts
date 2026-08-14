@@ -26,6 +26,11 @@ export interface FunnelData {
   carModel?: string
   carYear?: number | null
   carDataSource?: CarDataSource
+  /**
+   * Работы, отмеченные на экране автомобиля в ветке записи на сервис. Уходят в
+   * текст, который гость отправляет менеджеру.
+   */
+  services?: string[]
   fullName?: string
   phone?: string
   phoneVerificationToken?: string

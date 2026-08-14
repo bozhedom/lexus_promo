@@ -24,6 +24,7 @@ import {
   isFeaturedBrand,
   isPopularBrand,
 } from '@/shared/config/car-data'
+import { BOOKING_SERVICES } from '@/shared/config/services'
 import { flowRoutes, type FunnelFlow } from '@/shared/lib/flow'
 import { useFunnel } from '@/shared/lib/funnel'
 import type { CarInfo } from '@/shared/lib/types'
@@ -187,6 +188,10 @@ interface CarInfoScreenProps {
 export function CarInfoScreen({ manualRequested = false, flow = 'invite' }: CarInfoScreenProps) {
   const router = useRouter()
   const routes = flowRoutes(flow)
+  // Ветка записи: подарков и пригласительных на карточке нет, вместо них — что
+  // сделать с автомобилем, и до карточки доходит любой автомобиль, хоть
+  // определённый, хоть вписанный руками.
+  const booking = flow === 'booking'
   const { data, ready, sessionId, utm, update, reset, track } = useFunnel()
   const show = ready && (manualRequested || Boolean(data.applicationId && data.plateNumber))
   useScreenView('car_info')
@@ -201,6 +206,10 @@ export function CarInfoScreen({ manualRequested = false, flow = 'invite' }: CarI
   // пока не редактировал поле», поэтому после восстановления берём номер из сессии.
   const [plate, setPlate] = useState<string | null>(null)
   const [manualNotice, setManualNotice] = useState(false)
+  // Автомобиль на карточке уже сохранён: в ветке записи сюда попадают и после
+  // ручного ввода, и второй раз патчить заявку нечем.
+  const [carSaved, setCarSaved] = useState(false)
+  const [services, setServices] = useState<string[]>(data.services ?? [])
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
   const [catalog, setCatalog] = useState(DEFAULT_CAR_CATALOG)
@@ -289,25 +298,37 @@ export function CarInfoScreen({ manualRequested = false, flow = 'invite' }: CarI
   // Ветка приглашения ведёт на личные данные, ветка записи — на свой экран.
   const goNext = () => router.push(routes.next)
 
-  // 3a: подтверждение найденного авто
+  const toggleService = (service: string) =>
+    setServices((prev) =>
+      prev.includes(service) ? prev.filter((item) => item !== service) : [...prev, service],
+    )
+
+  // 3a: подтверждение автомобиля на карточке. Вписанный руками автомобиль
+  // сохранён ещё формой, поэтому повторно заявку не трогаем — остаётся только
+  // отметить выбранные работы и уйти дальше.
   const confirmFound = async () => {
     if (!car || !data.applicationId) return
     setSubmitting(true)
     try {
-      await patchApplication(data.applicationId, {
-        sessionId,
-        carBrand: car.brand,
-        carModel: car.model,
-        carYear: car.year ?? undefined,
-        carDataSource: 'api',
-      })
-      update({
-        carBrand: car.brand,
-        carModel: car.model,
-        carYear: car.year,
-        carDataSource: 'api',
-        status: 'draft_car',
-      })
+      if (!carSaved) {
+        await patchApplication(data.applicationId, {
+          sessionId,
+          carBrand: car.brand,
+          carModel: car.model,
+          carYear: car.year ?? undefined,
+          carDataSource: 'api',
+        })
+        update({
+          carBrand: car.brand,
+          carModel: car.model,
+          carYear: car.year,
+          carDataSource: 'api',
+          status: 'draft_car',
+          ...(booking ? { services } : {}),
+        })
+      } else if (booking) {
+        update({ services })
+      }
       goNext()
     } catch (e) {
       setErrors({ form: isApiError(e) ? e.message : 'Не удалось сохранить' })
@@ -367,6 +388,16 @@ export function CarInfoScreen({ manualRequested = false, flow = 'invite' }: CarI
         status: 'draft_car',
       })
       track('car_manual', { brand, model: finalModel })
+      // В ветке записи карточка автомобиля показывается всегда: с неё гость
+      // отмечает работы, поэтому вручную вписанный автомобиль уходит не дальше,
+      // а на ту же карточку.
+      if (booking) {
+        setCar({ brand, model: finalModel, year: Number(year) })
+        setCarSaved(true)
+        setUi('found')
+        setSubmitting(false)
+        return
+      }
       goNext()
     } catch (e) {
       setErrors({ form: isApiError(e) ? e.message : 'Не удалось сохранить' })
@@ -383,9 +414,12 @@ export function CarInfoScreen({ manualRequested = false, flow = 'invite' }: CarI
   if (ui === 'found' && car) {
     return (
       <main className={styles.foundScreen}>
-        <p className={styles.foundEyebrow}>Автомобиль успешно найден</p>
+        {/* Вписанный руками автомобиль никто не «находил»: подпись честная. */}
+        <p className={styles.foundEyebrow}>
+          {carSaved ? 'Ваш автомобиль' : 'Автомобиль успешно найден'}
+        </p>
 
-        <section className={styles.foundPanel}>
+        <section className={`${styles.foundPanel} ${booking ? styles.foundPanelCompact : ''}`}>
           <Gap size={24} />
 
           {/* Марка отдельной строкой, под ней модель с годом (39:3661, 39:3718).
@@ -429,12 +463,41 @@ export function CarInfoScreen({ manualRequested = false, flow = 'invite' }: CarI
             </span>
           </div>
 
-          <Gap size={supportedBrand ? 44 : 24} />
+          <Gap size={booking ? 32 : supportedBrand ? 44 : 24} />
 
-          {/* Список готовности — про марки техцентра. Чужой марке вместо него
-              одна строка о другом техцентре, а подарки показываются в обоих
-              случаях. */}
-          {supportedBrand ? (
+          {/* Ветка записи: вместо подарков и списка готовности — что сделать с
+              автомобилем. Отмеченные работы уедут менеджеру в текст сообщения. */}
+          {booking ? (
+            <>
+              <p className={styles.giftLead}>
+                Отметьте, что нужно сделать
+                <span>с Вашим автомобилем</span>
+              </p>
+
+              <Gap size={16} />
+
+              <ul className={styles.serviceList}>
+                {BOOKING_SERVICES.map((service) => (
+                  <li key={service}>
+                    <label className={styles.service}>
+                      <input
+                        type="checkbox"
+                        className={styles.serviceInput}
+                        checked={services.includes(service)}
+                        onChange={() => toggleService(service)}
+                      />
+                      <span className={styles.serviceBox} aria-hidden>
+                        <StepCheck />
+                      </span>
+                      <span>{service}</span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+
+              <Gap size={16} />
+            </>
+          ) : supportedBrand ? (
             <ul className={styles.progressList}>
                 <li>
                   <StepIcon kind="gift" />
@@ -473,45 +536,49 @@ export function CarInfoScreen({ manualRequested = false, flow = 'invite' }: CarI
             </article>
           )}
 
-          <Gap size={supportedBrand ? 32 : 20} />
+          {!booking && (
+            <>
+              <Gap size={supportedBrand ? 32 : 20} />
 
-          <p className={styles.giftLead}>
-            Для Вашего автомобиля мы приготовили
-            <span>персональные подарки в честь знакомства</span>
-          </p>
+              <p className={styles.giftLead}>
+                Для Вашего автомобиля мы приготовили
+                <span>персональные подарки в честь знакомства</span>
+              </p>
 
-          <Gap size={4} />
+              <Gap size={4} />
 
-          {/* Подарки листаются свайпом: в кадр помещается один, второй
-              выглядывает справа. Тап открывает сам пригласительный. */}
-          <ul
-            className={styles.giftRail}
-            ref={giftRailRef}
-            onScroll={onGiftScroll}
-            aria-label="Подарки в честь знакомства"
-          >
-            {GIFTS.map((gift) => (
-              <li className={styles.giftSlide} key={gift.kind}>
-                <button
-                  type="button"
-                  className={styles.giftCard}
-                  onClick={() => setPreview(gift.kind)}
-                  aria-label={`Посмотреть пригласительный: ${gift.title}`}
-                >
-                  {/* Текст прижат к верху карточки, кнопка — к низу: между ними
-                      распорка `justify-content`, как в макете. */}
-                  <span className={styles.giftCardInner}>
-                    <small>Сертификат</small>
-                    {gift.amount && <strong>{gift.amount}</strong>}
-                    <span className={styles.giftTitle}>{gift.text}</span>
-                  </span>
-                  <span className={styles.giftMore}>Подробно</span>
-                </button>
-              </li>
-            ))}
-          </ul>
+              {/* Подарки листаются свайпом: в кадр помещается один, второй
+                  выглядывает справа. Тап открывает сам пригласительный. */}
+              <ul
+                className={styles.giftRail}
+                ref={giftRailRef}
+                onScroll={onGiftScroll}
+                aria-label="Подарки в честь знакомства"
+              >
+                {GIFTS.map((gift) => (
+                  <li className={styles.giftSlide} key={gift.kind}>
+                    <button
+                      type="button"
+                      className={styles.giftCard}
+                      onClick={() => setPreview(gift.kind)}
+                      aria-label={`Посмотреть пригласительный: ${gift.title}`}
+                    >
+                      {/* Текст прижат к верху карточки, кнопка — к низу: между
+                          ними распорка `justify-content`, как в макете. */}
+                      <span className={styles.giftCardInner}>
+                        <small>Сертификат</small>
+                        {gift.amount && <strong>{gift.amount}</strong>}
+                        <span className={styles.giftTitle}>{gift.text}</span>
+                      </span>
+                      <span className={styles.giftMore}>Подробно</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
 
-          
+
 
           {errors.form && <p className={styles.error}>{errors.form}</p>}
 
@@ -596,7 +663,7 @@ export function CarInfoScreen({ manualRequested = false, flow = 'invite' }: CarI
       {ui === 'manual' && (
         <div className={styles.manualPanel}>
           <div className={styles.tabs} aria-label="Способ ввода автомобиля">
-            <button type="button" onClick={() => router.push('/car-number')}>По номеру авто</button>
+            <button type="button" onClick={() => router.push(routes.plate)}>По номеру авто</button>
             <span className={styles.tabActive}>Указать вручную</span>
           </div>
 

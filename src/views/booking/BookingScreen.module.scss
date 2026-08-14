@@ -75,6 +75,40 @@
   color: rgba(255, 255, 255, 0.8);
 }
 
+// Отмеченные работы: строки с золотой точкой, как маркированный список.
+.services {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  list-style: none;
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.3;
+
+  li {
+    display: grid;
+    grid-template-columns: 6px 1fr;
+    gap: 10px;
+    align-items: baseline;
+
+    &::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #e4ccae;
+      transform: translateY(-2px);
+    }
+  }
+}
+
+// Место под ряд кнопок, пока сервер собирает ссылки: карточка не прыгает.
+.messengersLoading {
+  display: grid;
+  place-items: center;
+  min-height: 88px;
+}
+
 .or {
   display: flex;
   align-items: center;
