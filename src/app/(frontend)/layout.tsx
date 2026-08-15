@@ -3,14 +3,29 @@ import React from 'react'
 
 import { AnalyticsScripts } from '@/shared/analytics'
 import { fontVariables } from '@/shared/config/fonts'
+import { SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, SITE_URL } from '@/shared/config/site'
 import { FunnelProvider } from '@/shared/lib/funnel'
 import { StageTransitionProvider } from '@/widgets/curtain-transition'
 import './globals.scss'
 
 export const metadata: Metadata = {
-  title: 'Персональный пригласительный на тех. открытие автоцентра',
-  description:
-    'Получите персональный пригласительный и подарок в честь знакомства с новым автоцентром.',
+  // Без metadataBase Next собирает canonical и og:image относительными, а
+  // мессенджеры и поиск принимают только абсолютные адреса.
+  metadataBase: new URL(SITE_URL),
+  title: { default: SITE_TITLE, template: `%s — ${SITE_NAME}` },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  // Ссылку на воронку рассылают в мессенджерах — карточка ссылки видна гостю
+  // раньше самого сайта.
+  openGraph: {
+    type: 'website',
+    locale: 'ru_RU',
+    siteName: SITE_NAME,
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    url: '/',
+  },
+  twitter: { card: 'summary_large_image', title: SITE_TITLE, description: SITE_DESCRIPTION },
 }
 
 export const viewport: Viewport = {

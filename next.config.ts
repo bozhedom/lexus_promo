@@ -42,7 +42,17 @@ const nextConfig: NextConfig = {
     formats: ["image/avif", "image/webp"],
   },
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      // robots.txt только просит не обходить адрес: если ссылка на картинку
+      // утечёт из переписки, страница всё равно может попасть в индекс. Заголовок
+      // запрещает индексацию самого ответа, а на пригласительном напечатаны имя
+      // гостя и госномер его автомобиля.
+      {
+        source: "/:path(api|payload-api)/:rest*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      },
+    ];
   },
 };
 

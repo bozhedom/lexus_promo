@@ -1,4 +1,14 @@
+import type { Metadata } from 'next'
+
 import { WelcomeScreen } from '@/views/welcome'
+
+/**
+ * Единственный индексируемый адрес. `?toyota` и `?lexus` — те же QR-ссылки на
+ * ту же страницу, поэтому canonical у всех вариантов один.
+ */
+export const metadata: Metadata = {
+  alternates: { canonical: '/' },
+}
 
 type BrandVariant = 'toyota' | 'lexus' | 'both'
 
