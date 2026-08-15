@@ -584,26 +584,6 @@
   text-transform: uppercase;
 }
 
-.giftDots {
-  height: k(4);
-  display: flex;
-  gap: k(4);
-
-  i {
-    width: k(4);
-    height: k(4);
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.4);
-    transition: width 0.28s cubic-bezier(0.2, 0.72, 0.2, 1), background 0.24s ease;
-
-    &[data-active] {
-      width: k(16);
-      border-radius: k(4);
-      background: linear-gradient(90deg, t.$gold-dark, t.$gold-light, t.$gold);
-    }
-  }
-}
-
 /**
  * Чужая марка: вместо списка готовности одна плашка (39:3718) — 304×160, всё
  * содержимое по центру. Она синяя, а не золотая: так чужой автомобиль сразу
