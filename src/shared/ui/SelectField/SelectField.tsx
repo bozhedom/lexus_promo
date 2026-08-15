@@ -1,19 +1,15 @@
 'use client'
 
 import clsx from 'clsx'
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
+import { createTypeahead, type SelectOption } from './options'
+import { SelectPopup } from './SelectPopup'
+import { usePopupPlacement } from './usePopupPlacement'
 import styles from './SelectField.module.scss'
 
-export interface SelectOption {
-  value: string
-  label: string
-  /** Приоритетный пункт: стоит наверху списка и подсвечен золотом. */
-  featured?: boolean
-  /** Отчеркнуть группу: линия рисуется под этим пунктом. */
-  divider?: boolean
-}
+export type { SelectOption }
 
 interface SelectFieldProps {
   label?: string
@@ -28,24 +24,9 @@ interface SelectFieldProps {
   onChange: (value: string) => void
 }
 
-interface PopupBox {
-  left: number
-  top: number
-  width: number
-  maxHeight: number
-  up: boolean
-}
-
-const OPTION_H = 40
-const GAP = 8
-const EDGE = 12
-
 /**
- * Свой выпадающий список: системный select рисует попап силами ОС, оформить
- * его нельзя. Умеет клавиатуру и поиск по первым буквам.
- *
- * Список уходит порталом в body и позиционируется fixed, иначе его режет
- * overflow: hidden у сцены.
+ * Свой выпадающий список: системный select рисует попап силами ОС, оформить его
+ * нельзя. Умеет клавиатуру и поиск по первым буквам.
  */
 export function SelectField({
   label,
@@ -65,14 +46,13 @@ export function SelectField({
   const listId = `${fieldId}-list`
 
   const [open, setOpen] = useState(false)
-  const [box, setBox] = useState<PopupBox | null>(null)
   const [cursor, setCursor] = useState(-1)
 
   const triggerRef = useRef<HTMLButtonElement>(null)
   const listRef = useRef<HTMLUListElement>(null)
-  const search = useRef({ text: '', at: 0 })
+  const typeahead = useRef(createTypeahead())
 
-  const selectedIndex = options.findIndex((o) => o.value === value)
+  const selectedIndex = options.findIndex((option) => option.value === value)
   const selected = selectedIndex >= 0 ? options[selectedIndex] : null
 
   const close = useCallback((focusTrigger = true) => {
@@ -81,58 +61,25 @@ export function SelectField({
     if (focusTrigger) triggerRef.current?.focus()
   }, [])
 
+  const dismiss = useCallback(() => close(false), [close])
+
+  const box = usePopupPlacement({
+    open,
+    optionCount: options.length,
+    triggerRef,
+    listRef,
+    onDismiss: dismiss,
+  })
+
   const pick = useCallback(
-    (i: number) => {
-      const o = options[i]
-      if (!o) return
-      onChange(o.value)
+    (index: number) => {
+      const option = options[index]
+      if (!option) return
+      onChange(option.value)
       close()
     },
     [options, onChange, close],
   )
-
-  // раскрываем вниз, а если снизу тесно: вверх; в обоих случаях режем высоту
-  // по свободному месту, чтобы список никогда не уезжал за экран
-  const place = useCallback(() => {
-    const t = triggerRef.current
-    if (!t) return
-    const r = t.getBoundingClientRect()
-    const wanted = Math.min(options.length * OPTION_H + 12, 264)
-    const below = window.innerHeight - r.bottom - GAP - EDGE
-    const above = r.top - GAP - EDGE
-    const up = below < wanted && above > below
-    const maxHeight = Math.max(120, Math.min(wanted, up ? above : below))
-    setBox({
-      left: r.left,
-      top: up ? r.top - GAP - maxHeight : r.bottom + GAP,
-      width: r.width,
-      maxHeight,
-      up,
-    })
-  }, [options.length])
-
-  useLayoutEffect(() => {
-    if (open) place()
-  }, [open, place])
-
-  // клик мимо, скролл и ресайз: закрываем или пересчитываем позицию
-  useEffect(() => {
-    if (!open) return
-    const onDown = (e: PointerEvent) => {
-      const target = e.target as Node
-      if (triggerRef.current?.contains(target) || listRef.current?.contains(target)) return
-      close(false)
-    }
-    const onScroll = () => place()
-    document.addEventListener('pointerdown', onDown)
-    window.addEventListener('resize', onScroll)
-    window.addEventListener('scroll', onScroll, true)
-    return () => {
-      document.removeEventListener('pointerdown', onDown)
-      window.removeEventListener('resize', onScroll)
-      window.removeEventListener('scroll', onScroll, true)
-    }
-  }, [open, close, place])
 
   // держим активный пункт в зоне видимости
   useEffect(() => {
@@ -151,8 +98,8 @@ export function SelectField({
 
   const step = (delta: number) => {
     setOpen(true)
-    setCursor((c) => {
-      const from = c < 0 ? selectedIndex : c
+    setCursor((current) => {
+      const from = current < 0 ? selectedIndex : current
       const next = from + delta
       if (next < 0) return options.length - 1
       if (next >= options.length) return 0
@@ -197,57 +144,14 @@ export function SelectField({
         return
     }
 
-    // поиск по первым буквам: «то» -> Toyota
     if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
-      const now = Date.now()
-      search.current.text = now - search.current.at > 900 ? e.key : search.current.text + e.key
-      search.current.at = now
-      const q = search.current.text.toLowerCase()
-      const i = options.findIndex((o) => o.label.toLowerCase().startsWith(q))
-      if (i >= 0) {
+      const found = typeahead.current(e.key, options)
+      if (found >= 0) {
         setOpen(true)
-        setCursor(i)
+        setCursor(found)
       }
     }
   }
-
-  const popup = open && box && (
-    <ul
-      ref={listRef}
-      id={listId}
-      role="listbox"
-      aria-labelledby={label ? labelId : undefined}
-      className={clsx(styles.popup, box.up && styles.popupUp)}
-      style={{ left: box.left, top: box.top, width: box.width, maxHeight: box.maxHeight }}
-      tabIndex={-1}
-    >
-      {options.map((o, i) => (
-        <li
-          key={o.value}
-          id={`${fieldId}-opt-${i}`}
-          role="option"
-          aria-selected={o.value === value}
-          className={clsx(
-            styles.option,
-            i === cursor && styles.optionActive,
-            o.value === value && styles.optionSelected,
-            o.featured && styles.optionFeatured,
-            // Черта отделяет группу (марки техцентра, ходовые марки) от следующей.
-            o.divider && styles.optionFeaturedLast,
-          )}
-          // click, а не pointerdown: иначе на телефоне пункт выбирается в
-          // момент касания и список не пролистать
-          onClick={() => pick(i)}
-          // на тач-экране палец «наводится» на всё, мимо чего проезжает
-          onPointerEnter={(e) => {
-            if (e.pointerType === 'mouse') setCursor(i)
-          }}
-        >
-          {o.label}
-        </li>
-      ))}
-    </ul>
-  )
 
   return (
     <div className={clsx(styles.wrap, className)}>
@@ -279,7 +183,23 @@ export function SelectField({
         </button>
       </div>
 
-      {popup && createPortal(popup, document.body)}
+      {open &&
+        box &&
+        createPortal(
+          <SelectPopup
+            listRef={listRef}
+            id={listId}
+            labelledBy={label ? labelId : undefined}
+            fieldId={fieldId}
+            box={box}
+            options={options}
+            value={value}
+            cursor={cursor}
+            onPick={pick}
+            onHover={setCursor}
+          />,
+          document.body,
+        )}
       {name && <input type="hidden" name={name} value={value} />}
       {error && <span className={styles.error}>{error}</span>}
     </div>
