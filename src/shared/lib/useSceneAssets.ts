@@ -2,17 +2,20 @@
 
 import { useEffect, useState } from 'react'
 
+/** Кадры текущего экрана ждут показа, кадры следующих — нет. */
+type ScenePriority = 'high' | 'low'
+
 const loaded = new Set<string>()
 const pending = new Map<string, Promise<void>>()
 
-const loadOne = (src: string): Promise<void> => {
+const loadOne = (src: string, priority: ScenePriority): Promise<void> => {
   if (loaded.has(src)) return Promise.resolve()
   const current = pending.get(src)
   if (current) return current
 
   const task = new Promise<void>((resolve) => {
     const image = new window.Image()
-    image.fetchPriority = 'high'
+    image.fetchPriority = priority
     const finish = () => {
       loaded.add(src)
       pending.delete(src)
@@ -30,8 +33,15 @@ const loadOne = (src: string): Promise<void> => {
   return task
 }
 
-export const preloadSceneAssets = (sources: readonly string[]): Promise<void> =>
-  Promise.all(sources.map(loadOne)).then(() => undefined)
+/**
+ * `low` — для кадров следующих экранов: они грузятся впрок и не должны отбирать
+ * канал у того, что человек видит прямо сейчас.
+ */
+export const preloadSceneAssets = (
+  sources: readonly string[],
+  priority: ScenePriority = 'high',
+): Promise<void> =>
+  Promise.all(sources.map((src) => loadOne(src, priority))).then(() => undefined)
 
 export function useSceneAssets(sources: readonly string[]): boolean {
   // При переходе между экранами сцены эти ассеты уже находятся в нашем кэше.
@@ -43,7 +53,7 @@ export function useSceneAssets(sources: readonly string[]): boolean {
   useEffect(() => {
     let active = true
     const list = key ? key.split('|') : []
-    preloadSceneAssets(list).then(() => active && setReady(true))
+    preloadSceneAssets(list, 'high').then(() => active && setReady(true))
     return () => {
       active = false
     }

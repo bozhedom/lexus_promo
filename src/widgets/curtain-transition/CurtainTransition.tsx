@@ -62,14 +62,15 @@ export function StageTransitionProvider({ children }: { children: ReactNode }) {
   const [phase, setPhase] = useState<Phase>('idle')
   const target = useRef<string | null>(null)
 
-  // После первого кадра тихо готовим изображения следующих шагов. Они весят
-  // немного, зато при переходе фон уже находится в памяти и не догоняет текст.
+  // После первого кадра тихо готовим изображения следующих шагов: при переходе
+  // фон уже в памяти и не догоняет текст. Приоритет низкий — эти кадры нужны
+  // на следующем экране, а не на том, который человек читает сейчас.
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null
     const schedule = () => {
       // Сначала отдаём канал стартовой сцене; остальные изображения начинаем
       // после window.load и короткой паузы, чтобы они не конкурировали с ней.
-      timer = setTimeout(() => void preloadSceneAssets(COMMON_STAGE_ASSETS), 420)
+      timer = setTimeout(() => void preloadSceneAssets(COMMON_STAGE_ASSETS, 'low'), 420)
     }
     if (document.readyState === 'complete') schedule()
     else window.addEventListener('load', schedule, { once: true })
