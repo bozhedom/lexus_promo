@@ -15,7 +15,8 @@
     "db:down": "docker compose down",
     "migrate": "NODE_OPTIONS='--network-family-autoselection-attempt-timeout=1000' payload migrate",
     "admin:reset": "NODE_OPTIONS='--network-family-autoselection-attempt-timeout=1000' payload run scripts/reset-admin.ts",
-    "seed:car-photos": "NODE_OPTIONS='--network-family-autoselection-attempt-timeout=1000' payload run scripts/seed-car-photos.ts"
+    "seed:car-photos": "NODE_OPTIONS='--network-family-autoselection-attempt-timeout=1000' payload run scripts/seed-car-photos.ts",
+    "setup": "npm run migrate && npm run admin:reset && npm run seed:car-photos"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "^3.86.0",
